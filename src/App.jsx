@@ -4,7 +4,7 @@ import { WishlistProvider } from './context/WishlistContext';
 import { SearchProvider } from './context/SearchContext';
 import Layout from './components/Layout';
 import Home from './components/Home';
-import Sarees from './components/sarees';
+import Sarees from './components/Sarees';
 import Kurtas from './components/Kurtas';
 import Lehengas from './components/Lehengas';
 import CoOrds from './components/CoOrds';
