@@ -2873,13 +2873,13 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     height: 360px;
   }
 }
-/* ===== Welcome Popup — Royal Maroon & Gold ===== */
+/* ===== Welcome Popup — Deep Green & Gold ===== */
 /* Add this block to index.css */
 
 .welcome-popup-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(42, 8, 8, 0.65);
+  background: rgba(0, 0, 0, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2901,7 +2901,7 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   padding: 48px 40px;
   text-align: center;
   border-radius: 4px;
-  box-shadow: 0 30px 60px rgba(42, 8, 8, 0.35);
+  box-shadow: 0 30px 60px rgba(31, 61, 46, 0.35);
   animation: dm-pop-in 0.35s ease;
 }
 
@@ -2914,7 +2914,7 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   content: "";
   position: absolute;
   inset: 14px;
-  border: 1px solid rgba(176, 141, 69, 0.45);
+  border: 1px solid rgba(201, 168, 76, 0.45);
   pointer-events: none;
 }
 
@@ -2926,7 +2926,7 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   border: none;
   font-size: 22px;
   line-height: 1;
-  color: #4A0E0E;
+  color: #1f3d2e;
   cursor: pointer;
   width: 32px;
   height: 32px;
@@ -2935,14 +2935,14 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 }
 
 .welcome-popup-close:hover {
-  background: rgba(74, 14, 14, 0.08);
+  background: rgba(31, 61, 46, 0.08);
 }
 
 .welcome-popup-eyebrow {
   font-size: 12px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #B08D45;
+  color: #c9a84c;
   font-style: italic;
   margin: 0 0 12px;
 }
@@ -2951,7 +2951,7 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   font-family: var(--font-serif, 'Playfair Display', Georgia, serif);
   font-size: 30px;
   font-weight: 600;
-  color: #2A0808;
+  color: #1a2e22;
   margin: 0 0 16px;
   line-height: 1.15;
 }
@@ -2959,14 +2959,14 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 .welcome-popup-text {
   font-size: 14px;
   line-height: 1.6;
-  color: #5C4A3A;
+  color: #5c6b5e;
   margin: 0 0 24px;
 }
 
 .welcome-popup-frame {
   display: inline-block;
-  border-top: 1px solid #B08D45;
-  border-bottom: 1px solid #B08D45;
+  border-top: 1px solid #c9a84c;
+  border-bottom: 1px solid #c9a84c;
   padding: 10px 24px;
   margin-bottom: 26px;
 }
@@ -2976,12 +2976,12 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   font-size: 16px;
   font-weight: 600;
   letter-spacing: 0.04em;
-  color: #4A0E0E;
+  color: #1f3d2e;
 }
 
 .welcome-popup-btn {
   display: inline-block;
-  background: #4A0E0E;
+  background: #1f3d2e;
   color: #F8F4EC;
   font-size: 13px;
   font-weight: 600;
@@ -2989,13 +2989,13 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   text-transform: uppercase;
   text-decoration: none;
   padding: 14px 32px;
-  border: 1px solid #4A0E0E;
+  border: 1px solid #1f3d2e;
   transition: background 0.25s ease, color 0.25s ease;
 }
 
 .welcome-popup-btn:hover {
   background: transparent;
-  color: #4A0E0E;
+  color: #1f3d2e;
 }
 
 @media (max-width: 480px) {

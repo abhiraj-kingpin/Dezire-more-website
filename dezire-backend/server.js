@@ -34,8 +34,11 @@ mongoose
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
+const chatRoute = require('./routes/chat');  
+
 app.use('/api/products', productRoutes);
 app.use('/api/admin',    adminRoutes);
+app.use('/api/chat',     chatRoute);        
 
 // Health check
 app.get('/api/health', async (req, res) => {
@@ -54,4 +57,5 @@ app.listen(PORT, () => {
   console.log(`✅  Dezire More API → http://localhost:${PORT}`);
   console.log(`   Admin login  → POST /api/admin/login`);
   console.log(`   Products     → GET  /api/products`);
+  console.log(`   Chat         → POST /api/chat`);
 });

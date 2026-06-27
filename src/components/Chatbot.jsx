@@ -1,142 +1,47 @@
 import { useState, useRef, useEffect } from "react";
 
-const STORE_INFO = {
-  name: "Dezire More",
-  tagline: "Ethnic Elegance. Modern You.",
-  shipping: "Free shipping on orders above ₹1699",
-  exchange: "7-day exchange policy",
-  delivery: "5–7 working days",
-  contact: "Use the Contact Us page for order queries",
-  categories: ["Sarees", "Kurtas", "Lehengas", "Co-ords", "Dress Materials", "Ready to Wear", "Western Apparels"],
-  occasions: {
-    wedding: ["Lehengas", "Silk Sarees", "Heavy Embroidered Sarees"],
-    mehendi: ["Co-ords", "Kurtas", "Dress Materials"],
-    casual: ["Kurtas", "Ready to Wear", "Western Apparels"],
-    festive: ["Sarees", "Lehengas", "Co-ords"],
-    office: ["Kurtas", "Dress Materials", "Ready to Wear"],
-    party: ["Western Apparels", "Co-ords", "Lehengas"],
-  },
-};
+const SYSTEM_PROMPT = `You are a warm, helpful, and knowledgeable personal style assistant for "Dezire More" — a premium Indian ethnic fashion store with the tagline "Ethnic Elegance. Modern You."
 
-const getBotReply = (message) => {
-  const msg = message.toLowerCase().trim();
+STORE DETAILS:
+- Store Name: Dezire More
+- Tagline: Ethnic Elegance. Modern You.
+- Free shipping on orders above ₹1699
+- 7-day exchange policy (no refunds, exchange only)
+- Delivery: 5–7 working days
+- Discount code: DEZIRE10 (10% off)
+- Sale: Up to 40% off on sale items
+- Customer Rating: 4.8 stars
 
-  // Greetings
-  if (/^(hi|hello|hey|hii|helo|namaste|good morning|good evening|good afternoon)/.test(msg)) {
-    return `Namaste! 🙏 Welcome to *Dezire More* — Ethnic Elegance. Modern You.\n\nI'm your personal style assistant! I can help you with:\n• Finding the perfect outfit for any occasion\n• Product categories & collections\n• Shipping & exchange info\n• Size guidance\n\nWhat are you looking for today? 😊`;
-  }
+PRODUCT CATEGORIES:
+1. Sarees — Banarasi Silk, Chiffon, Organza Silk, Embroidered, Printed
+2. Kurtas — Casual, Festive, Office-wear styles
+3. Lehengas — Bridal, Festive, Party
+4. Co-ords — Trendy matching sets
+5. Dress Materials — Custom stitch fabric sets
+6. Ready to Wear — Easy, everyday styles
+7. Western Apparels — Modern western styles
+8. New Arrivals — Latest drops every week
+9. Bestsellers — Most loved pieces
+10. Sale — Up to 40% off
 
-  // Wedding
-  if (/wedding|bridal|bride|shaadi|shadi/.test(msg)) {
-    return `💍 *Wedding Collection*\n\nFor weddings, our top picks are:\n• *Lehengas* — Heavy embroidered bridal lehengas\n• *Silk Sarees* — Kanjivaram, Banarasi & more\n• *Embroidered Sarees* — Perfect for bride's family\n\nWe have stunning options for the bride, bridesmaids, and family!\n\n👉 Check our *Lehengas* and *Sarees* sections on the website.`;
-  }
+OCCASION GUIDE:
+- Wedding/Bridal → Lehengas, Silk Sarees, Embroidered Sarees
+- Mehendi/Sangeet → Co-ords, Kurtas, Dress Materials
+- Festive/Diwali/Navratri → Sarees, Lehengas, Co-ords
+- Casual/Daily/Office → Kurtas, Ready to Wear, Dress Materials
+- Party/Birthday → Western Apparels, Co-ords, Lehengas
 
-  // Mehendi / Haldi
-  if (/mehendi|mehndi|haldi|sangeet/.test(msg)) {
-    return `🌸 *Mehendi & Sangeet Outfits*\n\nFor these fun functions, we recommend:\n• *Co-ords* — Trendy & comfortable\n• *Kurtas* — Flowy & festive\n• *Dress Materials* — Stitch it your way!\n\nPastel and bright colours work beautifully for these occasions 🌈\n\n👉 Visit the *Co-ords* or *Kurtas* section to explore!`;
-  }
-
-  // Festive / Diwali / Puja
-  if (/festive|diwali|puja|navratri|durga|festival|eid|onam/.test(msg)) {
-    return `🪔 *Festive Collection*\n\nFor festivals, our bestsellers are:\n• *Sarees* — Classic silk & chiffon sarees\n• *Lehengas* — Festive lehengas with mirror work\n• *Co-ords* — Modern festive sets\n\nFestivals deserve something special — browse our *New Arrivals* for the latest festive drops! ✨`;
-  }
-
-  // Casual / Daily wear
-  if (/casual|daily|everyday|office|work|college/.test(msg)) {
-    return `👗 *Everyday & Office Wear*\n\nFor daily or office wear, we suggest:\n• *Kurtas* — Light, comfortable & elegant\n• *Dress Materials* — Get custom stitched!\n• *Ready to Wear* — Just wear & go!\n• *Western Apparels* — For a modern look\n\nAll designed to keep you stylish without any fuss 😊`;
-  }
-
-  // Party / Night out
-  if (/party|night out|birthday|date|club/.test(msg)) {
-    return `🎉 *Party Wear*\n\nStand out at every party with:\n• *Western Apparels* — Trendy & bold\n• *Co-ords* — Chic matching sets\n• *Lehengas* — Indo-western party lehengas\n\nYou'll be the best dressed in the room! 💃`;
-  }
-
-  // Sarees
-  if (/saree|sari|sarees/.test(msg)) {
-    return `🥻 *Our Saree Collection*\n\nWe have a gorgeous range of sarees:\n• Banarasi Silk\n• Chiffon Sarees\n• Organza Silk\n• Embroidered Sarees\n• Printed Sarees\n\nAvailable in a wide range of colours — Red, Blue, Black, White, Yellow & more!\n\n👉 Visit the *Sarees* section to explore the full collection.`;
-  }
-
-  // Lehengas
-  if (/lehenga|lehnga|lehngas/.test(msg)) {
-    return `👘 *Our Lehenga Collection*\n\nOur lehengas are perfect for:\n• Bridal & Wedding functions\n• Festive occasions\n• Sangeet & Mehendi\n\nHeavy embroidery, mirror work, and modern cuts — all available!\n\n👉 Visit the *Lehengas* section to see all options.`;
-  }
-
-  // Kurtas
-  if (/kurta|kurti|kurtas/.test(msg)) {
-    return `👚 *Our Kurta Collection*\n\nLight, elegant, and perfect for any occasion:\n• Casual daily wear kurtas\n• Festive embroidered kurtas\n• Office-friendly styles\n\nAvailable in multiple fabrics and sizes!\n\n👉 Visit the *Kurtas* section to browse.`;
-  }
-
-  // Co-ords
-  if (/coord|co-ord|coords|co ord|set/.test(msg)) {
-    return `✨ *Co-ord Sets*\n\nOur Co-ord sets are super trendy right now! Perfect for:\n• Mehendi & Sangeet\n• Casual outings\n• Birthday parties\n\nMatching top & bottom sets that look effortlessly put together 💫\n\n👉 Visit the *Co-ords* section to shop!`;
-  }
-
-  // Shipping
-  if (/ship|shipping|delivery|deliver|courier|dispatch/.test(msg)) {
-    return `🚚 *Shipping Info*\n\n• *Free shipping* on orders above ₹1699\n• Standard delivery: *5–7 working days*\n• Orders are dispatched within 1–2 business days\n• You'll receive a tracking link once your order ships\n\nFor any order-related queries, reach us via the *Contact Us* page! 📦`;
-  }
-
-  // Exchange / Return
-  if (/exchange|return|refund|replace|policy/.test(msg)) {
-    return `🔄 *Exchange Policy*\n\n• We offer a *7-day exchange policy* from delivery date\n• Items must be unused, unwashed, and with original tags\n• Sale items are not eligible for exchange\n• We do *not* offer refunds — exchange only\n\nTo initiate an exchange, contact us via the *Contact Us* page with your order details! 😊`;
-  }
-
-  // Size / Size guide
-  if (/size|sizing|fit|measurement|small|medium|large|xl/.test(msg)) {
-    return `📏 *Size Guide*\n\nWe offer sizes from S to XXL on most products. Some items are *Free Size*.\n\nFor a perfect fit:\n• Check the size chart on each product page\n• Visit our *Size Guide* page on the website\n• When in doubt, size up!\n\nNeed help with a specific product's sizing? Just ask! 😊`;
-  }
-
-  // Discount / Sale / Offer
-  if (/discount|sale|offer|coupon|code|promo|deal/.test(msg)) {
-    return `🏷️ *Offers & Discounts*\n\n• Use code *DEZIRE10* for extra savings!\n• Check our *Sale* section for discounted items — up to 40% off!\n• Free shipping on orders above ₹1699\n• New collection drops regularly — follow us for early access!\n\n👉 Visit the *Sale* section on the website to grab deals! 🎉`;
-  }
-
-  // New arrivals
-  if (/new|latest|new arrival|new collection|recent/.test(msg)) {
-    return `🌟 *New Arrivals*\n\nFresh styles just dropped at Dezire More! Our new arrivals include:\n• New sarees & lehengas\n• Trending co-ord sets\n• Festive collection pieces\n\n👉 Visit the *New Arrivals* section to see what's new! We add new styles regularly ✨`;
-  }
-
-  // Bestsellers
-  if (/bestseller|best seller|popular|trending|top/.test(msg)) {
-    return `🔥 *Bestsellers*\n\nOur most loved pieces right now:\n• Silk & embroidered sarees\n• Bridal lehengas\n• Festive co-ord sets\n• Printed kurtas\n\n👉 Visit the *Bestsellers* section to shop our most popular styles! 💕`;
-  }
-
-  // Contact
-  if (/contact|help|support|query|question|problem|issue|reach/.test(msg)) {
-    return `📞 *Contact Us*\n\nWe're here to help! For any queries:\n• Visit our *Contact Us* page on the website\n• We respond within 24 hours\n• For order issues, keep your order ID handy\n\nYou can also find us on Instagram for quick replies! 💬`;
-  }
-
-  // Payment
-  if (/pay|payment|upi|card|cod|cash on delivery|online/.test(msg)) {
-    return `💳 *Payment Options*\n\nWe accept:\n• UPI (GPay, PhonePe, Paytm)\n• Credit & Debit Cards\n• Net Banking\n• Cash on Delivery (select areas)\n\nAll payments are 100% secure! 🔒`;
-  }
-
-  // Fabric questions
-  if (/fabric|material|silk|cotton|chiffon|georgette|organza/.test(msg)) {
-    return `🧵 *Fabric Guide*\n\n• *Silk* — Rich, heavy, perfect for weddings\n• *Chiffon* — Light, flowy, great for casual wear\n• *Organza* — Sheer & elegant, festive favourite\n• *Cotton* — Comfortable for daily wear\n• *Georgette* — Soft drape, versatile for any occasion\n\nNeed help picking the right fabric for your occasion? Tell me where you're going! 😊`;
-  }
-
-  // Colours
-  if (/color|colour|red|blue|green|pink|yellow|white|black|gold/.test(msg)) {
-    return `🎨 *Colour Collections*\n\nWe have a wide range of colours across all our products:\n• *Reds & Pinks* — Perfect for weddings & festivals\n• *Blues & Greens* — Great for casual & festive\n• *Whites & Creams* — Elegant everyday choices\n• *Blacks & Golds* — Stunning for parties\n\nTell me your favourite colour and occasion — I'll suggest the perfect category! 😊`;
-  }
-
-  // Thank you
-  if (/thank|thanks|thankyou|thank you|helpful/.test(msg)) {
-    return `You're so welcome! 😊🙏\n\nHappy shopping at *Dezire More*! May you find the perfect outfit that makes you feel like royalty 👑\n\nIs there anything else I can help you with?`;
-  }
-
-  // Bye
-  if (/bye|goodbye|see you|ok bye|cya/.test(msg)) {
-    return `Thank you for visiting *Dezire More*! 🙏\n\nHappy shopping — looking forward to seeing you in our collections! 👗✨`;
-  }
-
-  // Default fallback
-  return `I'm not sure I understood that 😊\n\nI can help you with:\n• 👗 *Outfit suggestions* for any occasion\n• 🥻 *Product categories* — Sarees, Lehengas, Kurtas & more\n• 🚚 *Shipping & delivery* info\n• 🔄 *Exchange policy*\n• 🏷️ *Offers & discounts*\n• 📏 *Size guidance*\n\nTry asking something like:\n*"What should I wear for a wedding?"* or *"Tell me about your sarees"* 😊`;
-};
+YOUR PERSONALITY:
+- Warm, friendly, like a personal stylist friend
+- Use emojis naturally but not excessively
+- Keep replies concise — 3 to 5 lines max
+- You can understand Hindi + English mixed messages
+- Always guide customers toward visiting the relevant section
+- Never make up prices — say check the website for latest prices`;
 
 const formatMessage = (text) => {
   return text
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
     .replace(/\*(.*?)\*/g, "<strong>$1</strong>")
     .replace(/\n/g, "<br/>");
 };
@@ -147,7 +52,7 @@ export default function Chatbot() {
   const [messages, setMessages] = useState([
     {
       from: "bot",
-      text: `Namaste! 🙏 Welcome to *Dezire More*!\n\nI'm your personal style assistant. Ask me anything — outfit suggestions, shipping info, exchange policy, or just browse our collections!\n\nHow can I help you today? 😊`,
+      text: `Namaste! 🙏 Welcome to Dezire More.\n\nI'm Priya, your personal style assistant. Ask me anything — outfit ideas, occasion help, fabric advice, or shipping info. I'm here to help! ✨`,
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     },
   ]);
@@ -155,17 +60,22 @@ export default function Chatbot() {
   const [isTyping, setIsTyping] = useState(false);
   const [unread, setUnread] = useState(1);
   const messagesEndRef = useRef(null);
+  const conversationHistory = useRef([]);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
       setUnread(0);
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        inputRef.current?.focus();
+      }, 150);
     }
   }, [isOpen, messages]);
 
-  const sendMessage = () => {
-    const trimmed = input.trim();
-    if (!trimmed) return;
+  const sendMessage = async (text) => {
+    const trimmed = (text || input).trim();
+    if (!trimmed || isTyping) return;
 
     const userMsg = {
       from: "user",
@@ -176,25 +86,41 @@ export default function Chatbot() {
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setIsTyping(true);
+    conversationHistory.current.push({ role: "user", content: trimmed });
 
-    setTimeout(() => {
-      const reply = getBotReply(trimmed);
-      setMessages((prev) => [
-        ...prev,
-        {
-          from: "bot",
-          text: reply,
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        },
-      ]);
+    try {
+      const response = await fetch("http://localhost:5000/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            ...conversationHistory.current,
+          ],
+        }),
+      });
+
+      const data = await response.json();
+      const reply = data.choices?.[0]?.message?.content || "I'm sorry, please try again! 😊";
+
+      conversationHistory.current.push({ role: "assistant", content: reply });
+      if (conversationHistory.current.length > 10) {
+        conversationHistory.current = conversationHistory.current.slice(-10);
+      }
+
+      setMessages((prev) => [...prev, {
+        from: "bot",
+        text: reply,
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      }]);
+    } catch {
+      setMessages((prev) => [...prev, {
+        from: "bot",
+        text: "Oops! Something went wrong. Please try again in a moment! 😊",
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      }]);
+    } finally {
       setIsTyping(false);
-    }, 900);
-  };
-
-  const handleKey = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
     }
   };
 
@@ -210,476 +136,583 @@ export default function Chatbot() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Jost:wght@300;400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Jost:wght@300;400;500;600&display=swap');
 
-        .dz-chat-bubble {
+        /* ── Root wrap ── */
+        .dz-wrap {
           position: fixed;
-          bottom: 28px;
-          right: 28px;
+          bottom: 30px;
+          right: 30px;
           z-index: 9999;
           display: flex;
           flex-direction: column;
           align-items: flex-end;
-          gap: 12px;
+          gap: 14px;
+          font-family: 'Jost', sans-serif;
         }
 
-        .dz-chat-toggle {
+        /* ── Toggle button ── */
+        .dz-toggle {
           width: 62px;
           height: 62px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #c9a84c, #e8c97a, #b8922e);
-          border: none;
+          background: #1f3d2e;
+          border: 2.5px solid #c9a84c;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 4px 20px rgba(201,168,76,0.5);
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
+          box-shadow: 0 6px 28px rgba(31,61,46,0.5), 0 0 0 5px rgba(201,168,76,0.12);
+          transition: all 0.3s cubic-bezier(0.34,1.3,0.64,1);
           position: relative;
         }
 
-        .dz-chat-toggle:hover {
-          transform: scale(1.07);
-          box-shadow: 0 6px 28px rgba(201,168,76,0.65);
+        .dz-toggle:hover {
+          transform: scale(1.08) translateY(-2px);
+          background: #2d5242;
+          box-shadow: 0 10px 36px rgba(31,61,46,0.6), 0 0 0 7px rgba(201,168,76,0.18);
         }
 
-        .dz-chat-toggle svg {
-          width: 28px;
-          height: 28px;
-          color: #fff;
+        .dz-toggle svg {
+          width: 26px;
+          height: 26px;
+          color: #e8c97a;
         }
 
-        .dz-greeting-bubble {
+        .dz-badge {
           position: absolute;
-          bottom: 74px;
-          right: 0;
-          background: #fff;
-          border: 1px solid #ede7d9;
-          border-radius: 16px;
-          border-bottom-right-radius: 4px;
-          padding: 10px 14px;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.12);
-          white-space: nowrap;
-          animation: dz-fadeIn 0.3s ease;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .dz-greeting-bubble::after {
-          content: '';
-          position: absolute;
-          bottom: -8px;
-          right: 18px;
-          width: 0;
-          height: 0;
-          border-left: 8px solid transparent;
-          border-right: 8px solid transparent;
-          border-top: 8px solid #fff;
-        }
-
-        .dz-greeting-bubble p {
-          font-family: 'Jost', sans-serif;
-          font-size: 13px;
-          color: #2c3a2e;
-          margin: 0;
-          font-weight: 500;
-        }
-
-        .dz-greeting-bubble span {
-          font-size: 18px;
-        }
-
-        .dz-greeting-close {
-          background: #f0ebe0;
-          border: none;
-          border-radius: 50%;
-          width: 18px;
-          height: 18px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          font-size: 10px;
-          color: #8a7a5a;
-          flex-shrink: 0;
-          margin-left: 4px;
-        }
-
-        @keyframes dz-fadeIn {
-          from { opacity: 0; transform: translateY(6px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-
-        .dz-unread-badge {
-          position: absolute;
-          top: -4px;
-          right: -4px;
-          background: #c9a84c;
+          top: -2px;
+          right: -2px;
+          background: #c0392b;
           color: #fff;
           border-radius: 50%;
           width: 20px;
           height: 20px;
-          font-size: 11px;
-          font-weight: 600;
+          font-size: 10px;
+          font-weight: 700;
           display: flex;
           align-items: center;
           justify-content: center;
+          border: 2.5px solid #fff;
           font-family: 'Jost', sans-serif;
-          border: 2px solid #fff;
+          box-shadow: 0 2px 8px rgba(192,57,43,0.4);
         }
 
-        .dz-chat-window {
-          width: 360px;
-          height: 520px;
-          background: #faf9f6;
-          border-radius: 20px;
-          box-shadow: 0 12px 48px rgba(0,0,0,0.15);
+        /* ── Greeting bubble ── */
+        .dz-greet {
+          position: absolute;
+          bottom: 76px;
+          right: 0;
+          background: #fff;
+          border: 1px solid #ddd0b3;
+          border-radius: 16px 16px 2px 16px;
+          padding: 14px 18px 14px 16px;
+          box-shadow: 0 12px 40px rgba(0,0,0,0.14);
+          width: 230px;
+          animation: dz-pop 0.35s cubic-bezier(0.34,1.4,0.64,1);
+        }
+
+        .dz-greet::after {
+          content: '';
+          position: absolute;
+          bottom: -8px;
+          right: 18px;
+          border: 8px solid transparent;
+          border-top-color: #fff;
+          border-bottom: none;
+        }
+
+        .dz-greet-close {
+          position: absolute;
+          top: 8px;
+          right: 10px;
+          background: #f5f0e8;
+          border: none;
+          cursor: pointer;
+          color: #999;
+          border-radius: 50%;
+          width: 20px;
+          height: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 11px;
+          transition: all 0.2s;
+        }
+
+        .dz-greet-close:hover { background: #ede5d0; color: #555; }
+
+        .dz-greet-label {
+          font-size: 9px;
+          letter-spacing: 2px;
+          text-transform: uppercase;
+          color: #1f3d2e;
+          font-weight: 600;
+          margin: 0 0 5px;
+        }
+
+        .dz-greet-name {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 15px;
+          font-weight: 600;
+          color: #1a2e22;
+          margin: 0 0 4px;
+        }
+
+        .dz-greet-text {
+          font-size: 12px;
+          color: #7a6a50;
+          margin: 0;
+          line-height: 1.55;
+        }
+
+        @keyframes dz-pop {
+          from { opacity: 0; transform: scale(0.8) translateY(10px); }
+          to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        /* ── Chat window ── */
+        .dz-window {
+          width: 380px;
+          height: 570px;
+          background: #f7f3ea;
+          border-radius: 22px;
           display: flex;
           flex-direction: column;
           overflow: hidden;
-          animation: dz-slideUp 0.25s ease;
-          border: 1px solid #e8e0d0;
+          animation: dz-rise 0.32s cubic-bezier(0.34,1.15,0.64,1);
+          box-shadow:
+            0 24px 64px rgba(0,0,0,0.2),
+            0 0 0 1px rgba(201,168,76,0.25),
+            inset 0 1px 0 rgba(255,255,255,0.8);
         }
 
-        @keyframes dz-slideUp {
-          from { opacity: 0; transform: translateY(16px) scale(0.97); }
+        @keyframes dz-rise {
+          from { opacity: 0; transform: translateY(24px) scale(0.94); }
           to   { opacity: 1; transform: translateY(0) scale(1); }
         }
 
-        .dz-chat-header {
-          background: linear-gradient(135deg, #2c4a3e, #3d6655);
+        /* ── Header ── */
+        .dz-header {
+          background: #1f3d2e;
           padding: 16px 18px;
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 13px;
+          flex-shrink: 0;
+          position: relative;
+        }
+
+        .dz-header::after {
+          content: '';
+          position: absolute;
+          bottom: 0; left: 0; right: 0;
+          height: 1.5px;
+          background: linear-gradient(90deg, transparent 0%, #c9a84c 30%, #e8c97a 50%, #c9a84c 70%, transparent 100%);
+        }
+
+        .dz-av-ring {
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          border: 2px solid rgba(201,168,76,0.6);
+          padding: 2px;
           flex-shrink: 0;
         }
 
-        .dz-chat-avatar {
-          width: 40px;
-          height: 40px;
+        .dz-av-inner {
+          width: 100%;
+          height: 100%;
           border-radius: 50%;
-          background: linear-gradient(135deg, #c9a84c, #e8c97a);
+          background: linear-gradient(135deg, #2d5242 0%, #1f3d2e 100%);
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 18px;
-          flex-shrink: 0;
-          border: 2px solid rgba(255,255,255,0.2);
+          border: 1px solid rgba(201,168,76,0.3);
         }
 
-        .dz-chat-header-info h4 {
+        .dz-av-inner svg {
+          width: 24px;
+          height: 24px;
+          color: #c9a84c;
+        }
+
+        .dz-hinfo { flex: 1; }
+
+        .dz-hname {
           font-family: 'Cormorant Garamond', serif;
-          font-size: 16px;
+          font-size: 17px;
           font-weight: 600;
           color: #fff;
-          margin: 0;
+          margin: 0 0 3px;
           letter-spacing: 0.3px;
         }
 
-        .dz-chat-header-info p {
-          font-family: 'Jost', sans-serif;
-          font-size: 11px;
-          color: rgba(255,255,255,0.7);
-          margin: 2px 0 0;
-          letter-spacing: 0.5px;
-        }
-
-        .dz-online-dot {
-          width: 8px;
-          height: 8px;
-          background: #7ddc9a;
-          border-radius: 50%;
-          display: inline-block;
-          margin-right: 5px;
-          animation: dz-pulse 2s infinite;
-        }
-
-        @keyframes dz-pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-
-        .dz-chat-close {
-          margin-left: auto;
-          background: rgba(255,255,255,0.15);
-          border: none;
-          cursor: pointer;
-          color: #fff;
-          border-radius: 50%;
-          width: 28px;
-          height: 28px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: background 0.2s;
-        }
-
-        .dz-chat-close:hover {
-          background: rgba(255,255,255,0.25);
-        }
-
-        .dz-messages {
-          flex: 1;
-          overflow-y: auto;
-          padding: 16px 14px;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          scroll-behavior: smooth;
-        }
-
-        .dz-messages::-webkit-scrollbar {
-          width: 4px;
-        }
-        .dz-messages::-webkit-scrollbar-track { background: transparent; }
-        .dz-messages::-webkit-scrollbar-thumb {
-          background: #d4c9b0;
-          border-radius: 4px;
-        }
-
-        .dz-msg {
-          display: flex;
-          gap: 8px;
-          max-width: 88%;
-        }
-
-        .dz-msg.bot { align-self: flex-start; }
-        .dz-msg.user { align-self: flex-end; flex-direction: row-reverse; }
-
-        .dz-msg-avatar {
-          width: 28px;
-          height: 28px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #c9a84c, #e8c97a);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 13px;
-          flex-shrink: 0;
-          align-self: flex-end;
-        }
-
-        .dz-msg-content {
-          display: flex;
-          flex-direction: column;
-          gap: 3px;
-        }
-
-        .dz-msg-bubble {
-          padding: 10px 14px;
-          border-radius: 16px;
-          font-family: 'Jost', sans-serif;
-          font-size: 13px;
-          line-height: 1.6;
-          word-break: break-word;
-        }
-
-        .dz-msg.bot .dz-msg-bubble {
-          background: #fff;
-          color: #2c3a2e;
-          border-bottom-left-radius: 4px;
-          border: 1px solid #ede7d9;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-        }
-
-        .dz-msg.user .dz-msg-bubble {
-          background: linear-gradient(135deg, #2c4a3e, #3d6655);
-          color: #fff;
-          border-bottom-right-radius: 4px;
-        }
-
-        .dz-msg-time {
-          font-family: 'Jost', sans-serif;
+        .dz-hsub {
           font-size: 10px;
-          color: #b0a890;
-          padding: 0 4px;
-        }
-
-        .dz-msg.user .dz-msg-time {
-          text-align: right;
-        }
-
-        .dz-typing {
+          color: rgba(201,168,76,0.8);
+          margin: 0;
+          letter-spacing: 1.2px;
+          text-transform: uppercase;
           display: flex;
-          gap: 8px;
-          align-self: flex-start;
           align-items: center;
+          gap: 5px;
         }
 
-        .dz-typing-bubble {
-          background: #fff;
-          border: 1px solid #ede7d9;
-          border-radius: 16px;
-          border-bottom-left-radius: 4px;
-          padding: 10px 14px;
+        .dz-live {
           display: flex;
+          align-items: center;
           gap: 4px;
-          align-items: center;
         }
 
-        .dz-typing-dot {
-          width: 7px;
-          height: 7px;
-          background: #c9a84c;
+        .dz-live-dot {
+          width: 6px;
+          height: 6px;
+          background: #5cd98a;
           border-radius: 50%;
-          animation: dz-bounce 1.2s infinite;
+          animation: dz-glow 2s infinite;
         }
 
-        .dz-typing-dot:nth-child(2) { animation-delay: 0.2s; }
-        .dz-typing-dot:nth-child(3) { animation-delay: 0.4s; }
-
-        @keyframes dz-bounce {
-          0%, 60%, 100% { transform: translateY(0); }
-          30% { transform: translateY(-5px); }
+        @keyframes dz-glow {
+          0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(92,217,138,0.4); }
+          50% { opacity: 0.7; box-shadow: 0 0 0 4px rgba(92,217,138,0); }
         }
 
-        .dz-quick-replies {
-          padding: 8px 14px;
-          display: flex;
-          gap: 6px;
-          overflow-x: auto;
-          flex-shrink: 0;
-          border-top: 1px solid #ede7d9;
-          background: #faf9f6;
-        }
-
-        .dz-quick-replies::-webkit-scrollbar { display: none; }
-
-        .dz-quick-btn {
-          white-space: nowrap;
-          padding: 5px 12px;
-          border-radius: 20px;
-          border: 1px solid #c9a84c;
-          background: transparent;
-          color: #8a6f2e;
-          font-family: 'Jost', sans-serif;
-          font-size: 11.5px;
+        .dz-hclose {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.15);
           cursor: pointer;
+          color: rgba(255,255,255,0.65);
+          display: flex;
+          align-items: center;
+          justify-content: center;
           transition: all 0.2s;
           flex-shrink: 0;
         }
 
-        .dz-quick-btn:hover {
-          background: #c9a84c;
-          color: #fff;
-        }
+        .dz-hclose:hover { background: rgba(255,255,255,0.18); color: #fff; }
+        .dz-hclose svg { width: 15px; height: 15px; }
 
-        .dz-chat-input-area {
-          padding: 10px 14px 14px;
+        /* ── Gold divider ── */
+        .dz-divider {
+          background: #fdf9f0;
+          border-bottom: 1px solid #e8dfc8;
+          padding: 7px 20px;
           display: flex;
-          gap: 8px;
-          border-top: 1px solid #ede7d9;
-          background: #fff;
+          align-items: center;
+          gap: 10px;
           flex-shrink: 0;
         }
 
-        .dz-chat-input {
+        .dz-div-line {
           flex: 1;
-          border: 1px solid #ddd6c8;
+          height: 0.5px;
+          background: linear-gradient(90deg, transparent, #c9a84c, transparent);
+        }
+
+        .dz-div-text {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 10px;
+          font-style: italic;
+          color: #b8922e;
+          letter-spacing: 1.8px;
+          white-space: nowrap;
+        }
+
+        /* ── Messages area ── */
+        .dz-msgs {
+          flex: 1 1 auto;
+          min-height: 0;
+          overflow-y: auto;
+          padding: 18px 16px 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 13px;
+        }
+
+        .dz-msgs::-webkit-scrollbar { width: 3px; }
+        .dz-msgs::-webkit-scrollbar-track { background: transparent; }
+        .dz-msgs::-webkit-scrollbar-thumb {
+          background: linear-gradient(#c9a84c, #8a6520);
+          border-radius: 3px;
+        }
+
+        .dz-msg { display: flex; gap: 9px; max-width: 85%; }
+        .dz-msg.bot { align-self: flex-start; }
+        .dz-msg.user { align-self: flex-end; flex-direction: row-reverse; }
+
+        .dz-mav {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: #1f3d2e;
+          border: 1.5px solid rgba(201,168,76,0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          align-self: flex-end;
+        }
+
+        .dz-mav svg { width: 17px; height: 17px; color: #c9a84c; }
+
+        .dz-mcol { display: flex; flex-direction: column; gap: 4px; }
+
+        .dz-bubble {
+          padding: 11px 15px;
+          font-size: 13.5px;
+          line-height: 1.65;
+          word-break: break-word;
+        }
+
+        .dz-msg.bot .dz-bubble {
+          background: #fff;
+          color: #2a3528;
+          border-radius: 18px 18px 18px 4px;
+          border: 1px solid #ede4cc;
+          box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .dz-msg.user .dz-bubble {
+          background: linear-gradient(135deg, #1f3d2e 0%, #2d5242 100%);
+          color: #f0e8d5;
+          border-radius: 18px 18px 4px 18px;
+          border: 1px solid rgba(201,168,76,0.25);
+          box-shadow: 0 2px 12px rgba(31,61,46,0.35);
+        }
+
+        .dz-mtime {
+          font-size: 10px;
+          color: #b0a480;
+          padding: 0 5px;
+          letter-spacing: 0.3px;
+        }
+
+        .dz-msg.user .dz-mtime { text-align: right; }
+
+        /* ── Typing indicator ── */
+        .dz-typing {
+          display: flex;
+          gap: 9px;
+          align-self: flex-start;
+          align-items: flex-end;
+        }
+
+        .dz-tybub {
+          background: #fff;
+          border: 1px solid #ede4cc;
+          border-radius: 18px 18px 18px 4px;
+          padding: 13px 18px;
+          display: flex;
+          gap: 5px;
+          align-items: center;
+          box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .dz-td {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          animation: dz-bounce 1.3s infinite ease-in-out;
+        }
+
+        .dz-td:nth-child(1) { background: #c9a84c; animation-delay: 0s; }
+        .dz-td:nth-child(2) { background: #a07830; animation-delay: 0.2s; }
+        .dz-td:nth-child(3) { background: #7a5a20; animation-delay: 0.4s; }
+
+        @keyframes dz-bounce {
+          0%, 60%, 100% { transform: translateY(0); }
+          30% { transform: translateY(-7px); }
+        }
+
+        /* ── Quick replies ── */
+        /* Fixed: wraps onto multiple lines instead of horizontal-scrolling
+           with a hidden scrollbar — nothing gets clipped/overlapped at the edge anymore. */
+        .dz-quick {
+          padding: 11px 16px 13px;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 7px 7px;
+          flex-shrink: 0;
+          border-top: 1px solid #e8dfc8;
+          background: #fdf9f0;
+        }
+
+        .dz-qbtn {
+          white-space: nowrap;
+          padding: 6px 13px;
+          border-radius: 20px;
+          border: 1px solid #c9a84c;
+          background: transparent;
+          color: #7a5a20;
+          font-family: 'Jost', sans-serif;
+          font-size: 11.5px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.22s ease;
+          letter-spacing: 0.3px;
+        }
+
+        .dz-qbtn:hover {
+          background: #1f3d2e;
+          color: #e8c97a;
+          border-color: #1f3d2e;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(31,61,46,0.3);
+        }
+
+        .dz-qbtn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* ── Input area ── */
+        .dz-inp-wrap {
+          padding: 10px 16px 12px;
+          display: flex;
+          gap: 9px;
+          border-top: 1px solid #e8dfc8;
+          background: #fff;
+          flex-shrink: 0;
+          align-items: center;
+        }
+
+        .dz-inp {
+          flex: 1;
+          border: 1.5px solid #ddd4b8;
           border-radius: 24px;
-          padding: 9px 16px;
+          padding: 10px 18px;
           font-family: 'Jost', sans-serif;
           font-size: 13px;
-          color: #2c3a2e;
-          background: #faf9f6;
+          color: #2a3528;
+          background: #faf8f3;
           outline: none;
-          transition: border-color 0.2s;
-          resize: none;
+          transition: all 0.22s ease;
         }
 
-        .dz-chat-input:focus {
+        .dz-inp:focus {
           border-color: #c9a84c;
+          background: #fff;
+          box-shadow: 0 0 0 3px rgba(201,168,76,0.12);
         }
 
-        .dz-chat-input::placeholder {
-          color: #b0a890;
-        }
+        .dz-inp::placeholder { color: #b5a880; }
+        .dz-inp:disabled { opacity: 0.5; }
 
-        .dz-send-btn {
-          width: 38px;
-          height: 38px;
+        .dz-send {
+          width: 42px;
+          height: 42px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #2c4a3e, #4a7c68);
-          border: none;
+          background: #1f3d2e;
+          border: 2px solid #c9a84c;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
-          transition: transform 0.2s, box-shadow 0.2s;
-          align-self: flex-end;
+          transition: all 0.22s ease;
+          box-shadow: 0 3px 12px rgba(31,61,46,0.3);
         }
 
-        .dz-send-btn:hover {
-          transform: scale(1.08);
-          box-shadow: 0 3px 12px rgba(44,74,62,0.3);
+        .dz-send:hover:not(:disabled) {
+          background: #c9a84c;
+          border-color: #a07830;
+          transform: scale(1.06) translateY(-1px);
+          box-shadow: 0 6px 18px rgba(201,168,76,0.4);
         }
 
-        .dz-send-btn svg {
-          width: 16px;
-          height: 16px;
-          color: #fff;
+        .dz-send:disabled { opacity: 0.35; cursor: not-allowed; transform: none; box-shadow: none; }
+        .dz-send svg { width: 17px; height: 17px; color: #c9a84c; }
+        .dz-send:hover:not(:disabled) svg { color: #fff; }
+
+        /* ── Footer ── */
+        .dz-foot {
+          background: #fff;
+          padding: 5px 0 8px;
+          text-align: center;
+          font-size: 10px;
+          color: #c9a84c;
+          letter-spacing: 1.5px;
+          font-family: 'Cormorant Garamond', serif;
+          font-style: italic;
+          flex-shrink: 0;
+          border-top: 1px solid #f0e8d5;
         }
 
-        @media (max-width: 420px) {
-          .dz-chat-window {
-            width: calc(100vw - 24px);
-            height: 70vh;
-            bottom: 90px;
-            right: 12px;
-          }
-          .dz-chat-bubble {
-            bottom: 16px;
-            right: 16px;
-          }
+        @media (max-width: 440px) {
+          .dz-window { width: calc(100vw - 20px); height: 74vh; border-radius: 18px; }
+          .dz-wrap { bottom: 14px; right: 10px; }
         }
       `}</style>
 
-      <div className="dz-chat-bubble">
+      <div className="dz-wrap">
+
+        {/* ── Chat Window ── */}
         {isOpen && (
-          <div className="dz-chat-window">
+          <div className="dz-window">
+
             {/* Header */}
-            <div className="dz-chat-header">
-              <div className="dz-chat-avatar">🥻</div>
-              <div className="dz-chat-header-info">
-                <h4>Dezire More</h4>
-                <p>
-                  <span className="dz-online-dot" />
-                  Style Assistant · Always here
+            <div className="dz-header">
+              <div className="dz-av-ring">
+                <div className="dz-av-inner">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zm0 2c-3.333 0-10 1.667-10 5v1h20v-1c0-3.333-6.667-5-10-5z"/>
+                  </svg>
+                </div>
+              </div>
+              <div className="dz-hinfo">
+                <p className="dz-hname">Priya — Style Assistant</p>
+                <p className="dz-hsub">
+                  <span className="dz-live">
+                    <span className="dz-live-dot" />
+                    Online
+                  </span>
+                  &nbsp;·&nbsp; Dezire More
                 </p>
               </div>
-              <button className="dz-chat-close" onClick={() => setIsOpen(false)}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 6L6 18M6 6l12 12" />
+              <button className="dz-hclose" onClick={() => setIsOpen(false)}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M18 6L6 18M6 6l12 12"/>
                 </svg>
               </button>
             </div>
 
+            {/* Gold divider */}
+            <div className="dz-divider">
+              <div className="dz-div-line" />
+              <span className="dz-div-text">✦ Ethnic Elegance. Modern You. ✦</span>
+              <div className="dz-div-line" />
+            </div>
+
             {/* Messages */}
-            <div className="dz-messages">
+            <div className="dz-msgs">
               {messages.map((msg, i) => (
                 <div key={i} className={`dz-msg ${msg.from}`}>
                   {msg.from === "bot" && (
-                    <div className="dz-msg-avatar">🥻</div>
+                    <div className="dz-mav">
+                      <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zm0 2c-3.333 0-10 1.667-10 5v1h20v-1c0-3.333-6.667-5-10-5z"/>
+                      </svg>
+                    </div>
                   )}
-                  <div className="dz-msg-content">
-                    <div
-                      className="dz-msg-bubble"
-                      dangerouslySetInnerHTML={{ __html: formatMessage(msg.text) }}
-                    />
-                    <span className="dz-msg-time">{msg.time}</span>
+                  <div className="dz-mcol">
+                    <div className="dz-bubble" dangerouslySetInnerHTML={{ __html: formatMessage(msg.text) }} />
+                    <span className="dz-mtime">{msg.time}</span>
                   </div>
                 </div>
               ))}
+
               {isTyping && (
                 <div className="dz-typing">
-                  <div className="dz-msg-avatar">🥻</div>
-                  <div className="dz-typing-bubble">
-                    <div className="dz-typing-dot" />
-                    <div className="dz-typing-dot" />
-                    <div className="dz-typing-dot" />
+                  <div className="dz-mav">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zm0 2c-3.333 0-10 1.667-10 5v1h20v-1c0-3.333-6.667-5-10-5z"/>
+                    </svg>
+                  </div>
+                  <div className="dz-tybub">
+                    <div className="dz-td" />
+                    <div className="dz-td" />
+                    <div className="dz-td" />
                   </div>
                 </div>
               )}
@@ -687,83 +720,59 @@ export default function Chatbot() {
             </div>
 
             {/* Quick Replies */}
-            <div className="dz-quick-replies">
+            <div className="dz-quick">
               {quickReplies.map((qr, i) => (
-                <button
-                  key={i}
-                  className="dz-quick-btn"
-                  onClick={() => {
-                    setInput(qr);
-                    setTimeout(() => {
-                      const userMsg = {
-                        from: "user",
-                        text: qr,
-                        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-                      };
-                      setMessages((prev) => [...prev, userMsg]);
-                      setInput("");
-                      setIsTyping(true);
-                      setTimeout(() => {
-                        const reply = getBotReply(qr);
-                        setMessages((prev) => [
-                          ...prev,
-                          {
-                            from: "bot",
-                            text: reply,
-                            time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-                          },
-                        ]);
-                        setIsTyping(false);
-                      }, 900);
-                    }, 0);
-                  }}
-                >
+                <button key={i} className="dz-qbtn" disabled={isTyping} onClick={() => sendMessage(qr)}>
                   {qr}
                 </button>
               ))}
             </div>
 
             {/* Input */}
-            <div className="dz-chat-input-area">
+            <div className="dz-inp-wrap">
               <input
-                className="dz-chat-input"
+                ref={inputRef}
+                className="dz-inp"
                 placeholder="Ask me anything..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKey}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+                disabled={isTyping}
               />
-              <button className="dz-send-btn" onClick={sendMessage}>
+              <button className="dz-send" onClick={() => sendMessage()} disabled={isTyping || !input.trim()}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" />
+                  <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/>
                 </svg>
               </button>
             </div>
+
+            {/* Footer */}
+            <div className="dz-foot">✦ Dezire More — Quintessential Queens ✦</div>
           </div>
         )}
 
-        {/* Greeting Bubble */}
+        {/* ── Greeting Bubble ── */}
         {!isOpen && showGreeting && (
-          <div className="dz-greeting-bubble">
-            <span>👗</span>
-            <p>Hi! I'm your style assistant.<br/>How can I help you?</p>
-            <button className="dz-greeting-close" onClick={(e) => { e.stopPropagation(); setShowGreeting(false); }}>✕</button>
+          <div className="dz-greet">
+            <button className="dz-greet-close" onClick={(e) => { e.stopPropagation(); setShowGreeting(false); }}>✕</button>
+            <p className="dz-greet-label">Style Assistant</p>
+            <p className="dz-greet-name">👋 Hi, I'm Priya!</p>
+            <p className="dz-greet-text">Your personal stylist at Dezire More. How can I help you today?</p>
           </div>
         )}
 
-        {/* Toggle Button */}
-        <button className="dz-chat-toggle" onClick={() => { setIsOpen(!isOpen); setShowGreeting(false); }}>
+        {/* ── Toggle Button ── */}
+        <button className="dz-toggle" onClick={() => { setIsOpen(!isOpen); setShowGreeting(false); }}>
           {isOpen ? (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M18 6L6 18M6 6l12 12"/>
             </svg>
           ) : (
             <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+              <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zm0 2c-3.333 0-10 1.667-10 5v1h20v-1c0-3.333-6.667-5-10-5z"/>
             </svg>
           )}
-          {!isOpen && unread > 0 && (
-            <span className="dz-unread-badge">{unread}</span>
-          )}
+          {!isOpen && unread > 0 && <span className="dz-badge">{unread}</span>}
         </button>
       </div>
     </>
