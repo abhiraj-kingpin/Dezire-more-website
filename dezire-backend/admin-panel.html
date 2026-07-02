@@ -228,11 +228,11 @@
 
       <div class="card">
         <strong>Product Photos</strong>
-        <p style="font-size:13px;color:var(--muted);margin-top:4px;margin-bottom:16px">Upload up to 5 photos. First photo is the main image.</p>
+        <p style="font-size:13px;color:var(--muted);margin-top:4px;margin-bottom:16px">Upload up to 10 photos. First photo is the main image.</p>
         <div class="upload-zone" onclick="document.getElementById('file-input').click()"
              ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" id="upload-zone">
           <strong>Click to upload or drag photos here</strong>
-          <p>JPG, PNG, WEBP · Max 5MB each · Up to 5 images</p>
+          <p>JPG, PNG, WEBP · Max 5MB each · Up to 10 images</p>
         </div>
         <input type="file" id="file-input" multiple accept="image/*" onchange="handleFiles(this.files)" />
         <div class="image-previews" id="image-previews"></div>
@@ -698,8 +698,8 @@ async function deleteProduct(id, name) {
 // ── Image upload ──────────────────────────────────────────────────────────────
 
 function handleFiles(files) {
-  const newFiles = Array.from(files).slice(0, 5 - selectedFiles.length);
-  selectedFiles = [...selectedFiles, ...newFiles].slice(0, 5);
+  const newFiles = Array.from(files).slice(0, 10 - selectedFiles.length);
+  selectedFiles = [...selectedFiles, ...newFiles].slice(0, 10);
   renderPreviews();
 }
 

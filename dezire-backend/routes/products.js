@@ -178,8 +178,8 @@ router.get('/:id', async (req, res) => {
 
 // ─── ADMIN ROUTES (protected) ─────────────────────────────────────────────────
 
-// POST /api/products — create product with images
-router.post('/', adminAuth, upload.array('images', 5), async (req, res) => {
+// POST /api/products — create product with images (max 10)
+router.post('/', adminAuth, upload.array('images', 10), async (req, res) => {
   try {
     const {
       name, category, subcategory, price, originalPrice,
@@ -241,8 +241,8 @@ router.patch('/:id', adminAuth, async (req, res) => {
   }
 });
 
-// POST /api/products/:id/images — add more images to existing product
-router.post('/:id/images', adminAuth, upload.array('images', 5), async (req, res) => {
+// POST /api/products/:id/images — add more images (max 10)
+router.post('/:id/images', adminAuth, upload.array('images', 10), async (req, res) => {
   try {
     const newImages = (req.files || []).map(file => ({
       url:      `http://localhost:5000/uploads/${file.filename}`,
