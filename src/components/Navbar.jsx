@@ -5,14 +5,13 @@ import { useCart } from '../context/CartContext';
 import { useSearch } from '../context/SearchContext';
 import { useAuth } from '../context/AuthContext';
 import UserMenu from './UserMenu';
-import { sarees } from '../data/products';
 import FlowingThreads from './FlowingThreads';
-
-const ALL_PRODUCTS = [...sarees];
+import { useSearch as useSearchAPI } from '../hooks/useProducts';
 
 function SearchResults({ query, onClose }) {
   const { addToCart } = useCart();
   const { toggleWishlist, isWishlisted } = useWishlist();
+  const { results, loading } = useSearchAPI(query);
 
   if (!query.trim()) {
     return (
@@ -27,11 +26,7 @@ function SearchResults({ query, onClose }) {
     );
   }
 
-  const results = ALL_PRODUCTS.filter(p =>
-    p.name.toLowerCase().includes(query.toLowerCase()) ||
-    (p.material && p.material.toLowerCase().includes(query.toLowerCase())) ||
-    (p.colour && p.colour.toLowerCase().includes(query.toLowerCase()))
-  );
+  if (loading) return <div className="search-suggestions"><p style={{padding:'20px',color:'#6b6b6b'}}>Searching…</p></div>;
 
   if (results.length === 0) {
     return (
@@ -47,15 +42,19 @@ function SearchResults({ query, onClose }) {
       <p className="search-results-count">{results.length} result{results.length !== 1 ? 's' : ''} for "{query}"</p>
       <div className="search-results-grid">
         {results.map(product => {
-          const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
-          const wishlisted = isWishlisted(product.id);
+          const img = product.images?.[0]?.url || product.image || '';
+          const discount = product.originalPrice > product.price
+            ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+            : 0;
+          const id = product._id || product.id;
+          const wishlisted = isWishlisted(id);
           return (
-            <div key={product.id} className="search-result-card">
+            <div key={id} className="search-result-card">
               <div className="search-result-img-wrap">
-                <img src={product.image} alt={product.name} className="search-result-img" />
+                <img src={img} alt={product.name} className="search-result-img" />
                 <button
                   className={`wishlist-btn ${wishlisted ? 'wishlisted' : ''}`}
-                  onClick={() => toggleWishlist(product)}
+                  onClick={() => toggleWishlist({ ...product, id, image: img })}
                 >
                   <svg viewBox="0 0 24 24">
                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
@@ -63,14 +62,14 @@ function SearchResults({ query, onClose }) {
                 </button>
               </div>
               <div className="search-result-info">
-                <p className="search-result-material">{product.material || 'Dezire More'}</p>
+                <p className="search-result-material">{product.fabric || 'Dezire More'}</p>
                 <p className="search-result-name">{product.name}</p>
                 <div className="search-result-price">
                   <span className="price-now">₹{product.price.toLocaleString('en-IN')}</span>
-                  <span className="price-was">₹{product.originalPrice.toLocaleString('en-IN')}</span>
+                  {product.originalPrice > 0 && <span className="price-was">₹{product.originalPrice.toLocaleString('en-IN')}</span>}
                   {discount > 0 && <span className="price-discount">{discount}% off</span>}
                 </div>
-                <button className="add-to-bag" onClick={() => { addToCart(product); onClose(); }}>
+                <button className="add-to-bag" onClick={() => { addToCart({ ...product, id, image: img }); onClose(); }}>
                   Add to Bag
                 </button>
               </div>
@@ -86,7 +85,6 @@ function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // UI state
   const [authOpen, setAuthOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
   const [wishlistOpen, setWishlistOpen] = useState(false);
@@ -95,14 +93,10 @@ function Navbar() {
   const [paymentMethod, setPaymentMethod] = useState('');
   const [categoriesOpen, setCategoriesOpen] = useState(false);
 
-  // Auth
   const { user, login, signup, loading, error, setError } = useAuth();
 
-  // Login form state
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-
-  // Signup form state
   const [signupFirstName, setSignupFirstName] = useState('');
   const [signupLastName, setSignupLastName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
@@ -110,12 +104,11 @@ function Navbar() {
   const [signupPassword, setSignupPassword] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
-  // Context
   const { wishlist, toggleWishlist } = useWishlist();
   const { cart, removeFromCart, updateQuantity, clearCart, cartTotal, cartCount } = useCart();
   const { searchOpen, setSearchOpen, searchQuery, setSearchQuery } = useSearch();
 
-  const DELIVERY_CHARGE = cartTotal >= 999 ? 0 : 99;
+  const DELIVERY_CHARGE = cartTotal >= 1899 ? 0 : 99;
   const finalTotal = cartTotal + DELIVERY_CHARGE;
 
   const goToNewArrivals = (e) => {
@@ -147,14 +140,12 @@ function Navbar() {
       return;
     }
     const result = await signup(signupFirstName, signupLastName, signupEmail, signupPhone, signupPassword);
-    if (result.success) {
-      setAuthOpen(false);
-    }
+    if (result.success) setAuthOpen(false);
   };
 
   return (
-   <nav style={{ position: 'relative' }}>
-  <FlowingThreads />
+    <nav style={{ position: 'relative' }}>
+      <FlowingThreads />
       <Link to="/" className="nav-logo" style={{ flexShrink: 0 }}>
         <div className="logo-img-stack">
           <img src="/assets/logo/logo.jpeg" alt="Dezire More" className="logo-emblem" />
@@ -171,7 +162,7 @@ function Navbar() {
           <circle cx="11" cy="11" r="8" />
           <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
-        <span>Search for sarees, kurtas, lehengas...</span>
+        <span>Search for sarees, dress materials, co-ords...</span>
       </div>
 
       <div className="nav-icons" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -219,16 +210,17 @@ function Navbar() {
           </a>
           <ul className="dropdown-menu">
             <li><Link to="/sarees" onClick={() => setCategoriesOpen(false)}>Sarees</Link></li>
-            <li><Link to="/kurtas" onClick={() => setCategoriesOpen(false)}>Kurtas</Link></li>
-            <li><Link to="/lehengas" onClick={() => setCategoriesOpen(false)}>Lehengas</Link></li>
-            <li><Link to="/co-ords" onClick={() => setCategoriesOpen(false)}>Co-ords</Link></li>
+            <li><Link to="/dress-materials" onClick={() => setCategoriesOpen(false)}>Dress Materials</Link></li>
+            <li><Link to="/ready-to-wear" onClick={() => setCategoriesOpen(false)}>Ready to Wear</Link></li>
+            <li><Link to="/western-apparels" onClick={() => setCategoriesOpen(false)}>Casual Western</Link></li>
+            <li><Link to="/jewelry-accessories" onClick={() => setCategoriesOpen(false)}>Jewelry / Accessories</Link></li>
           </ul>
         </li>
         <li><Link to="/dress-materials">Dress Materials</Link></li>
         <li><Link to="/ready-to-wear">Ready to Wear</Link></li>
-        <li><Link to="/western-apparels">Western Apparels</Link></li>
+        <li><Link to="/western-apparels">Casual Western</Link></li>
+        <li><Link to="/jewelry-accessories">Jewelry / Accessories</Link></li>
         <li><Link to="/bestsellers">Bestsellers</Link></li>
-        <li><Link to="/sale" className="sale">Sale</Link></li>
       </ul>
 
       {/* Search Overlay */}
@@ -244,7 +236,7 @@ function Navbar() {
                 <input
                   className="search-input"
                   type="text"
-                  placeholder="Search for sarees, kurtas, lehengas..."
+                  placeholder="Search for sarees, dress materials, co-ords..."
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   autoFocus
@@ -277,19 +269,21 @@ function Navbar() {
             ) : (
               <div className="wl-items">
                 {wishlist.map(product => {
-                  const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
+                  const discount = product.originalPrice > product.price
+                    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+                    : 0;
                   return (
                     <div key={product.id} className="wl-item">
                       <img src={product.image} alt={product.name} className="wl-item-img" />
                       <div className="wl-item-info">
-                        <p className="wl-item-material">{product.material || 'Dezire More'}</p>
+                        <p className="wl-item-material">{product.fabric || product.material || 'Dezire More'}</p>
                         <p className="wl-item-name">{product.name}</p>
                         <div className="wl-item-price">
                           <span className="wl-price-now">₹{product.price.toLocaleString('en-IN')}</span>
                           <span className="wl-price-was">₹{product.originalPrice.toLocaleString('en-IN')}</span>
                           {discount > 0 && <span className="wl-discount">{discount}% off</span>}
                         </div>
-                        <button className="wl-add-cart">Add to Bag</button>
+                        <button className="wl-add-cart" onClick={() => addToCart(product)}>Add to Bag</button>
                       </div>
                       <button className="wl-remove" onClick={() => toggleWishlist(product)}>✕</button>
                     </div>
@@ -324,7 +318,7 @@ function Navbar() {
                         <div key={product.id} className="wl-item">
                           <img src={product.image} alt={product.name} className="wl-item-img" />
                           <div className="wl-item-info">
-                            <p className="wl-item-material">{product.material || 'Dezire More'}</p>
+                            <p className="wl-item-material">{product.fabric || product.material || 'Dezire More'}</p>
                             <p className="wl-item-name">{product.name}</p>
                             <p className="wl-price-now">₹{product.price.toLocaleString('en-IN')}</p>
                             <div className="cart-qty-row">
@@ -349,7 +343,7 @@ function Navbar() {
                         </span>
                       </div>
                       {DELIVERY_CHARGE > 0 && (
-                        <p className="cart-free-msg">Add ₹{(999 - cartTotal).toLocaleString('en-IN')} more for free delivery!</p>
+                        <p className="cart-free-msg">Add ₹{(1899 - cartTotal).toLocaleString('en-IN')} more for free delivery!</p>
                       )}
                       <div className="cart-summary-row cart-total-row">
                         <span>Total</span>
@@ -388,7 +382,6 @@ function Navbar() {
                       <span>₹{finalTotal.toLocaleString('en-IN')}</span>
                     </div>
                   </div>
-
                   <div className="payment-section">
                     <h4 className="payment-section-title">Delivery Address</h4>
                     <input className="payment-input" type="text" placeholder="Full Name" />
@@ -400,20 +393,12 @@ function Navbar() {
                       <input className="payment-input" type="text" placeholder="PIN Code" />
                     </div>
                   </div>
-
                   <div className="payment-section">
                     <h4 className="payment-section-title">Payment Method</h4>
                     <div className="payment-methods">
                       {['COD', 'UPI', 'Online Banking', 'Credit / Debit Card'].map(method => (
                         <label key={method} className={`payment-method-card ${paymentMethod === method ? 'selected' : ''}`}>
-                          <input
-                            type="radio"
-                            name="payment"
-                            value={method}
-                            checked={paymentMethod === method}
-                            onChange={() => setPaymentMethod(method)}
-                            style={{ display: 'none' }}
-                          />
+                          <input type="radio" name="payment" value={method} checked={paymentMethod === method} onChange={() => setPaymentMethod(method)} style={{ display: 'none' }} />
                           <span className="payment-method-icon">
                             {method === 'COD' && '💵'}
                             {method === 'UPI' && '📱'}
@@ -438,7 +423,6 @@ function Navbar() {
                       </div>
                     )}
                   </div>
-
                   <button
                     className="cart-checkout-btn"
                     disabled={!paymentMethod}
@@ -468,39 +452,20 @@ function Navbar() {
               <button className={`auth-tab ${activeTab === 'login' ? 'active' : ''}`} onClick={() => { setActiveTab('login'); setError(''); }}>Sign In</button>
               <button className={`auth-tab ${activeTab === 'signup' ? 'active' : ''}`} onClick={() => { setActiveTab('signup'); setError(''); }}>Create Account</button>
             </div>
-
-            {error && (
-              <div className="auth-error">⚠ {error}</div>
-            )}
-
+            {error && <div className="auth-error">⚠ {error}</div>}
             {activeTab === 'login' ? (
               <div className="auth-panel">
                 <div className="auth-eyebrow">✦ Welcome back</div>
                 <div className="auth-heading">Sign into <em>your account</em></div>
                 <label className="auth-label">Email address</label>
-                <input
-                  className="auth-input"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={loginEmail}
-                  onChange={e => setLoginEmail(e.target.value)}
-                />
+                <input className="auth-input" type="email" placeholder="you@example.com" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} />
                 <label className="auth-label">Password</label>
-                <input
-                  className="auth-input"
-                  type="password"
-                  placeholder="••••••••"
-                  value={loginPassword}
-                  onChange={e => setLoginPassword(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleLogin(e)}
-                />
+                <input className="auth-input" type="password" placeholder="••••••••" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin(e)} />
                 <div className="auth-row">
                   <label className="auth-check"><input type="checkbox" /> Remember me</label>
                   <span className="auth-forgot">Forgot password?</span>
                 </div>
-                <button className="auth-submit" onClick={handleLogin} disabled={loading}>
-                  {loading ? 'Signing in...' : 'Sign In →'}
-                </button>
+                <button className="auth-submit" onClick={handleLogin} disabled={loading}>{loading ? 'Signing in...' : 'Sign In →'}</button>
                 <div className="auth-switch">New here? <span onClick={() => { setActiveTab('signup'); setError(''); }}>Create a free account</span></div>
               </div>
             ) : (
@@ -527,9 +492,7 @@ function Navbar() {
                   <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} />
                   I agree to the <span style={{ color: '#b8902d' }}>Terms & Privacy Policy</span>
                 </label>
-                <button className="auth-submit" style={{ marginTop: '14px' }} onClick={handleSignup} disabled={loading}>
-                  {loading ? 'Creating account...' : 'Create Account →'}
-                </button>
+                <button className="auth-submit" style={{ marginTop: '14px' }} onClick={handleSignup} disabled={loading}>{loading ? 'Creating account...' : 'Create Account →'}</button>
                 <div className="auth-switch">Already have an account? <span onClick={() => { setActiveTab('login'); setError(''); }}>Sign in</span></div>
               </div>
             )}

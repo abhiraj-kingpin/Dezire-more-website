@@ -5,16 +5,26 @@ function ProductSlider({ products }) {
   const sliderRef = useRef(null);
   const intervalRef = useRef(null);
   const resumeTimeoutRef = useRef(null);
+  const recenterTimeoutRef = useRef(null);
 
-  // Render the product list TWICE back-to-back.
-  // This is what makes the loop possible — once we scroll past
-  // the first full set, the second set looks identical, so we
-  // can snap back invisibly.
-  const loopProducts = [...products, ...products];
+  // Triple the list: buffer on both sides so manual clicks never
+  // run out of track to scroll into.
+  const loopProducts = [...products, ...products, ...products];
 
   const getSetWidth = () => {
     const slider = sliderRef.current;
-    return slider ? slider.scrollWidth / 2 : 0;
+    return slider ? slider.scrollWidth / 3 : 0;
+  };
+
+  const recenterIfNeeded = () => {
+    const slider = sliderRef.current;
+    const setWidth = getSetWidth();
+    if (!slider || !setWidth) return;
+    if (slider.scrollLeft >= setWidth * 2) {
+      slider.scrollLeft -= setWidth;
+    } else if (slider.scrollLeft <= 0) {
+      slider.scrollLeft += setWidth;
+    }
   };
 
   const startAutoScroll = () => {
@@ -26,17 +36,20 @@ function ProductSlider({ products }) {
       intervalRef.current = null;
     }
 
+    // Start centred in the middle copy so there's room to move either way
+    const setWidth = getSetWidth();
+    if (setWidth && slider.scrollLeft < setWidth * 0.5) {
+      slider.scrollLeft = setWidth;
+    }
+
     intervalRef.current = setInterval(() => {
-      const setWidth = getSetWidth();
-      if (!setWidth) return;
+      const width = getSetWidth();
+      if (!width) return;
 
       slider.scrollLeft += 1;
 
-      // Once we've scrolled past one full set, snap back by exactly
-      // one set-width. No animation here on purpose — this is the
-      // "invisible" jump that makes it feel like a continuous cycle.
-      if (slider.scrollLeft >= setWidth) {
-        slider.scrollLeft -= setWidth;
+      if (slider.scrollLeft >= width * 2) {
+        slider.scrollLeft -= width;
       }
     }, 20);
   };
@@ -53,6 +66,7 @@ function ProductSlider({ products }) {
     return () => {
       stopAutoScroll();
       if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
+      if (recenterTimeoutRef.current) clearTimeout(recenterTimeoutRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -66,6 +80,9 @@ function ProductSlider({ products }) {
     const card = slider.querySelector('.product-card');
     const cardWidth = card ? card.getBoundingClientRect().width + 16 : 296;
     slider.scrollBy({ left: direction * cardWidth, behavior: 'smooth' });
+
+    if (recenterTimeoutRef.current) clearTimeout(recenterTimeoutRef.current);
+    recenterTimeoutRef.current = setTimeout(recenterIfNeeded, 450);
 
     if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
     resumeTimeoutRef.current = setTimeout(() => {

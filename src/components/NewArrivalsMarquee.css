@@ -1,0 +1,432 @@
+/* ─── Google Fonts – load two royal typefaces ─────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Cinzel:wght@400;500;600&display=swap');
+
+/* ─── Palette (kept consistent with the rest of the site) ────────────────── */
+:root {
+  --dm-ivory:      #F9F2E8;
+  --dm-ivory-deep: #F3E8D4;
+  --dm-green:      #1F2D20;
+  --dm-green-deep: #14201A;
+  --dm-gold:       #C9973A;
+  --dm-gold-light: #E4C374;
+  --dm-gold-deep:  #A87C28;
+  --dm-hairline:   #DDD0B0;
+}
+
+/* ─── Section wrapper ─────────────────────────────────────────────────────── */
+.new-arrivals-marquee {
+  position: relative;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(201,151,58,0.06), transparent 40%),
+    radial-gradient(circle at 85% 80%, rgba(201,151,58,0.06), transparent 40%),
+    var(--dm-ivory);
+  padding: 68px 0 60px;
+  overflow: hidden;
+  border-top: 1px solid var(--dm-hairline);
+  border-bottom: 1px solid var(--dm-hairline);
+}
+
+.new-arrivals-marquee::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(201,151,58,0.035) 0 2px, transparent 2px 26px),
+    repeating-linear-gradient(-45deg, rgba(201,151,58,0.035) 0 2px, transparent 2px 26px);
+}
+
+.new-arrivals-marquee::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  z-index: 0;
+  pointer-events: none;
+  border: 1px solid rgba(201,151,58,0.25);
+}
+
+/* ─── Animated SVG background ─────────────────────────────────────────────── */
+.marquee-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.marquee-bg-svg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* NEW — drifting ambient glow, like slow-moving light over silk */
+.marquee-bg::before {
+  content: '';
+  position: absolute;
+  inset: -30%;
+  background: radial-gradient(circle, rgba(201,151,58,0.18), transparent 55%);
+  filter: blur(6px);
+  animation: auroraDrift 14s ease-in-out infinite alternate;
+  z-index: 0;
+}
+@keyframes auroraDrift {
+  0%   { transform: translate(-8%, -4%) scale(1); }
+  50%  { transform: translate(10%, 6%) scale(1.15); }
+  100% { transform: translate(-4%, 8%) scale(1.05); }
+}
+
+/* NEW — soft diagonal shimmer sweeping across the whole section */
+.marquee-bg::after {
+  content: '';
+  position: absolute;
+  top: -20%;
+  left: -60%;
+  width: 40%;
+  height: 140%;
+  background: linear-gradient(115deg, transparent 15%, rgba(255,255,255,0.5) 50%, transparent 85%);
+  transform: skewX(-18deg);
+  animation: shimmerSweep 8s ease-in-out infinite;
+  mix-blend-mode: overlay;
+  z-index: 1;
+}
+@keyframes shimmerSweep {
+  0%   { left: -60%; }
+  45%  { left: 130%; }
+  100% { left: 130%; }
+}
+
+/* Existing arcs — now with more visible movement and layered speeds */
+.bg-arcs path {
+  animation: arcDrift 12s ease-in-out infinite alternate;
+}
+.bg-arcs path:nth-child(1) { animation-duration: 11s; }
+.bg-arcs path:nth-child(2) { animation-duration: 15s; animation-direction: alternate-reverse; }
+.bg-arcs path:nth-child(3) { animation-duration: 13s; }
+.bg-arcs path:nth-child(4) { animation-duration: 17s; animation-direction: alternate-reverse; }
+.bg-arcs path:nth-child(5) { animation-duration: 10s; }
+@keyframes arcDrift {
+  from { transform: translateX(0px) translateY(0px); }
+  to   { transform: translateX(46px) translateY(16px); }
+}
+
+/* NEW — twinkling gold dots, staggered like distant stars catching light */
+.bg-dots circle {
+  animation: dotTwinkle 3.2s ease-in-out infinite;
+  transform-origin: center;
+}
+.bg-dots circle:nth-child(1) { animation-delay: 0s;    }
+.bg-dots circle:nth-child(2) { animation-delay: 0.35s; }
+.bg-dots circle:nth-child(3) { animation-delay: 0.7s;  }
+.bg-dots circle:nth-child(4) { animation-delay: 1.05s; }
+.bg-dots circle:nth-child(5) { animation-delay: 1.4s;  }
+.bg-dots circle:nth-child(6) { animation-delay: 1.75s; }
+.bg-dots circle:nth-child(7) { animation-delay: 2.1s;  }
+.bg-dots circle:nth-child(8) { animation-delay: 2.45s; }
+.bg-dots circle:nth-child(9) { animation-delay: 2.8s;  }
+@keyframes dotTwinkle {
+  0%, 100% { opacity: 0.15; transform: scale(0.8); }
+  50%      { opacity: 0.85; transform: scale(1.6); }
+}
+
+.bg-corners {
+  animation: cornerPulse 6s ease-in-out infinite;
+}
+@keyframes cornerPulse {
+  0%, 100% { opacity: 0.2; }
+  50%      { opacity: 0.4; }
+}
+
+/* ─── Header ──────────────────────────────────────────────────────────────── */
+.marquee-header {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  margin-bottom: 42px;
+  padding: 0 24px;
+}
+
+.marquee-ornament {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.marquee-ornament-bottom {
+  margin-top: 14px;
+  margin-bottom: 0;
+}
+.marquee-orn-line {
+  display: block;
+  width: 60px;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--dm-gold), transparent);
+}
+.marquee-orn-diamond {
+  font-size: 8px;
+  color: var(--dm-gold);
+  letter-spacing: 6px;
+  text-shadow: 0 0 6px rgba(201,151,58,0.5);
+}
+.marquee-orn-lotus {
+  font-size: 13px;
+  color: var(--dm-gold);
+  animation: lotusRotate 8s linear infinite;
+  text-shadow: 0 0 6px rgba(201,151,58,0.5);
+}
+@keyframes lotusRotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.marquee-eyebrow {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, var(--dm-gold-light), var(--dm-gold-deep));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin: 0 0 10px;
+}
+
+.marquee-title {
+  position: relative;
+  margin: 0;
+  line-height: 1;
+}
+.marquee-title::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 340px;
+  height: 140px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse, rgba(201,151,58,0.14), transparent 70%);
+  z-index: -1;
+}
+.marquee-title-new {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 52px;
+  font-weight: 300;
+  font-style: italic;
+  letter-spacing: 2px;
+  background: linear-gradient(180deg, var(--dm-gold-light) 20%, var(--dm-gold) 55%, var(--dm-gold-deep) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.marquee-title-arrivals {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 38px;
+  font-weight: 500;
+  color: var(--dm-green);
+  letter-spacing: 4px;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+}
+
+/* ─── Status text ─────────────────────────────────────────────────────────── */
+.marquee-status {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  color: #7A6E5E;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 16px;
+  padding: 24px 0;
+}
+
+/* ─── Row + track ─────────────────────────────────────────────────────────── */
+.marquee-row {
+  position: relative;
+  z-index: 2;
+  margin: 0 0 20px;
+}
+
+.marquee-row::before,
+.marquee-row::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 80px;
+  z-index: 3;
+  pointer-events: none;
+}
+.marquee-row::before {
+  left: 0;
+  background: linear-gradient(to right, var(--dm-ivory), transparent);
+}
+.marquee-row::after {
+  right: 0;
+  background: linear-gradient(to left, var(--dm-ivory), transparent);
+}
+
+.marquee-track {
+  display: flex;
+  gap: 18px;
+  overflow-x: scroll;
+  padding: 14px 16px 10px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.marquee-track::-webkit-scrollbar { display: none; }
+
+/* ─── Individual card frame ───────────────────────────────────────────────── */
+.marquee-card {
+  flex: 0 0 230px;
+  position: relative;
+  outline: 1px solid rgba(201,151,58,0.55);
+  outline-offset: 3px;
+  box-shadow: 0 2px 10px rgba(31,45,32,0.05);
+  transition: outline-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+.marquee-card:hover {
+  outline-color: var(--dm-gold);
+  transform: translateY(-4px);
+  box-shadow:
+    0 14px 28px rgba(31,45,32,0.14),
+    0 0 0 1px rgba(201,151,58,0.25),
+    0 0 24px rgba(201,151,58,0.28);
+}
+
+.marquee-card::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  background:
+    linear-gradient(var(--dm-gold), var(--dm-gold)) top    left  / 14px 1.5px no-repeat,
+    linear-gradient(var(--dm-gold), var(--dm-gold)) top    left  / 1.5px 14px no-repeat,
+    linear-gradient(var(--dm-gold), var(--dm-gold)) top    right / 14px 1.5px no-repeat,
+    linear-gradient(var(--dm-gold), var(--dm-gold)) top    right / 1.5px 14px no-repeat,
+    linear-gradient(var(--dm-gold), var(--dm-gold)) bottom left  / 14px 1.5px no-repeat,
+    linear-gradient(var(--dm-gold), var(--dm-gold)) bottom left  / 1.5px 14px no-repeat,
+    linear-gradient(var(--dm-gold), var(--dm-gold)) bottom right / 14px 1.5px no-repeat,
+    linear-gradient(var(--dm-gold), var(--dm-gold)) bottom right / 1.5px 14px no-repeat;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.45;
+  transition: opacity 0.25s ease;
+}
+.marquee-card:hover::before {
+  opacity: 1;
+}
+
+.marquee-card .product-card {
+  width: 100%;
+  background: #FFFFFF;
+}
+
+/* ─── Arrows ──────────────────────────────────────────────────────────────── */
+.marquee-arrows {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 18px;
+  position: relative;
+  z-index: 2;
+}
+.marquee-arrow {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid var(--dm-gold);
+  background: var(--dm-ivory);
+  color: var(--dm-gold-deep);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-style: normal;
+  box-shadow: 0 0 0 3px rgba(201,151,58,0.12);
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+.marquee-arrow:hover {
+  background: linear-gradient(180deg, var(--dm-gold-light), var(--dm-gold));
+  color: #fff;
+  transform: scale(1.08);
+  box-shadow: 0 0 0 3px rgba(201,151,58,0.28), 0 6px 14px rgba(201,151,58,0.3);
+}
+.marquee-arrow:active { transform: scale(0.95); }
+.marquee-arrow-filled {
+  background: linear-gradient(180deg, var(--dm-gold-light), var(--dm-gold));
+  color: #fff;
+}
+.marquee-arrow-filled:hover {
+  background: linear-gradient(180deg, var(--dm-gold), var(--dm-gold-deep));
+}
+
+/* ─── CTA ─────────────────────────────────────────────────────────────────── */
+.marquee-cta-wrap {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  margin-top: 38px;
+}
+.marquee-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--dm-green);
+  border: 1px solid var(--dm-gold);
+  padding: 13px 34px;
+  position: relative;
+  overflow: hidden;
+  transition: color 0.25s ease;
+}
+.marquee-cta::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px solid var(--dm-gold);
+  opacity: 0.35;
+  pointer-events: none;
+}
+.marquee-cta::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, var(--dm-green), var(--dm-green-deep));
+  transform: translateX(-101%);
+  transition: transform 0.35s ease;
+  z-index: -1;
+}
+.marquee-cta:hover {
+  color: var(--dm-ivory);
+}
+.marquee-cta:hover::after {
+  transform: translateX(0);
+}
+.marquee-cta-arrow {
+  font-size: 14px;
+  transition: transform 0.2s ease;
+}
+.marquee-cta:hover .marquee-cta-arrow {
+  transform: translateX(4px);
+}
+
+/* ─── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .marquee-card { flex: 0 0 180px; }
+  .marquee-title-new     { font-size: 38px; }
+  .marquee-title-arrivals { font-size: 28px; }
+  .marquee-row::before,
+  .marquee-row::after    { width: 32px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-arcs path, .marquee-orn-lotus, .marquee-bg::before, .marquee-bg::after,
+  .bg-dots circle, .bg-corners { animation: none; }
+}

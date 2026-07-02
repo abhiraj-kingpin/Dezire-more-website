@@ -234,15 +234,24 @@ nav {
 .section-header .divider .diamond { width: 6px; height: 6px; background: var(--gold); transform: rotate(45deg); }
 .section-header p { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 17px; color: var(--text-light); }
 .categories { padding: 70px 48px; background: var(--warm-white); }
-.categories-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.categories-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; }
 .cat-card { position: relative; aspect-ratio: 3/4; overflow: hidden; cursor: pointer; border-radius: 2px; }
 .cat-card img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s cubic-bezier(0.25,0.46,0.45,0.94); }
 .cat-card:hover img { transform: scale(1.06); }
 .cat-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(10,25,18,0.75) 0%, rgba(0,0,0,0.1) 50%, transparent 80%); display: flex; flex-direction: column; justify-content: flex-end; padding: 24px 20px; transition: background 0.3s; }
 .cat-card:hover .cat-overlay { background: linear-gradient(to top, rgba(10,25,18,0.85) 0%, rgba(0,0,0,0.2) 60%, transparent 85%); }
-.cat-overlay h3 { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 600; color: #fff; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 8px; }
+.cat-overlay h3 { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 600; color: #fff; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; line-height: 1.25; }
 .cat-overlay .explore-link { font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold-light); font-weight: 600; display: flex; align-items: center; gap: 6px; opacity: 0; transform: translateY(8px); transition: all 0.3s; }
 .cat-card:hover .explore-link { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 1024px) {
+  .categories-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .categories-grid { grid-template-columns: repeat(2, 1fr); }
+  .cat-overlay h3 { font-size: 18px; }
+}
 .wedding-banner { margin: 0 48px; background: linear-gradient(to right, var(--warm-white) 40%, transparent); position: relative; overflow: hidden; border-radius: 2px; min-height: 280px; display: flex; align-items: center; }
 .wedding-content { position: relative; z-index: 2; padding: 50px 52px; }
 .wedding-content .eyebrow { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); font-weight: 600; margin-bottom: 10px; }
@@ -293,10 +302,119 @@ nav {
 .price-was { font-size: 13px; color: var(--text-light); text-decoration: line-through; }
 .add-to-bag { width: 100%; background: var(--dark-green); color: #fff; border: 2px solid var(--dark-green); padding: 11px; font-size: 10px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s; border-radius: 1px; }
 .add-to-bag:hover { background: transparent; color: var(--dark-green); }
-.about-section { padding: 70px 48px; background: var(--warm-white); }
-.about-inner { max-width: 860px; margin: 0 auto; text-align: center; }
-.about-inner p { font-size: 14px; line-height: 2; color: var(--text-mid); font-weight: 300; margin-bottom: 0; }
-.about-inner .about-highlight { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-style: italic; color: var(--gold); display: block; margin-top: 20px; letter-spacing: 1px; }
+/* ===== About Us — Royal ===== */
+.about-section {
+  position: relative;
+  padding: 90px 48px 100px;
+  background: var(--cream);
+  overflow: hidden;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.about-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(184,150,78,0.035) 0 2px, transparent 2px 26px),
+    repeating-linear-gradient(-45deg, rgba(184,150,78,0.035) 0 2px, transparent 2px 26px);
+}
+
+.about-section::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  z-index: 0;
+  pointer-events: none;
+  border: 1px solid rgba(184,150,78,0.25);
+}
+
+.about-bg {
+  position: absolute;
+  inset: -30%;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(184,150,78,0.16), transparent 55%);
+  filter: blur(6px);
+  animation: aboutDrift 16s ease-in-out infinite alternate;
+}
+@keyframes aboutDrift {
+  0%   { transform: translate(-6%, -4%) scale(1); }
+  50%  { transform: translate(8%, 6%) scale(1.12); }
+  100% { transform: translate(-4%, 6%) scale(1.04); }
+}
+
+/* Scoped so it only affects About — Categories/Sale headers untouched */
+.about-section .section-header {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 44px;
+}
+.about-section .section-header h2 {
+  font-size: 42px;
+  letter-spacing: 6px;
+  background: linear-gradient(180deg, var(--dark-green), #14201a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+}
+.about-section .section-header .divider {
+  margin: 18px 0 12px;
+}
+.about-section .section-header .divider::before,
+.about-section .section-header .divider::after {
+  width: 70px;
+  background: linear-gradient(to right, transparent, var(--gold), transparent);
+}
+.about-section .section-header .diamond {
+  box-shadow: 0 0 6px rgba(184,150,78,0.5);
+}
+.about-section .section-header p {
+  font-size: 16px;
+}
+
+.about-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 780px;
+  margin: 0 auto;
+  text-align: center;
+}
+.about-inner p {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 19px;
+  line-height: 1.9;
+  color: var(--text-mid);
+  font-weight: 300;
+  margin-bottom: 32px;
+}
+.about-inner .about-highlight {
+  display: inline-block;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--gold);
+  padding: 12px 30px;
+  border-top: 1px solid rgba(184,150,78,0.4);
+  border-bottom: 1px solid rgba(184,150,78,0.4);
+}
+
+@media (max-width: 640px) {
+  .about-section { padding: 64px 20px 72px; }
+  .about-section .section-header h2 { font-size: 30px; letter-spacing: 4px; }
+  .about-inner p { font-size: 17px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-bg { animation: none; }
+}
 footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 60px 48px 32px; margin-top: 60px; }
 .footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 48px; }
 .footer-brand h3 { font-family: 'Cormorant Garamond', serif; font-size: 22px; letter-spacing: 3px; color: #fff; margin-bottom: 4px; text-transform: uppercase; }
@@ -3009,3 +3127,22 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 .page-loading { text-align: center; padding: 60px; color: #6b6b6b; }
 .page-error   { text-align: center; padding: 60px; color: #c0392b; }
 .page-empty   { text-align: center; padding: 60px; color: #6b6b6b; }
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 0;
+}
+.page-btn {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.page-btn:hover { border-color: #1a3c34; color: #1a3c34; }
+.page-btn.active { background: #1a3c34; color: #fff; border-color: #1a3c34; }
+.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
