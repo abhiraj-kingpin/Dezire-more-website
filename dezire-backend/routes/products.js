@@ -188,7 +188,7 @@ router.post('/', adminAuth, upload.array('images', 10), async (req, res) => {
     } = req.body;
 
     const images = (req.files || []).map(file => ({
-      url:      `http://localhost:5000/uploads/${file.filename}`,
+      url: `${req.protocol}://${req.get('host')}/uploads/${file.filename}`,
       publicId: file.filename,
     }));
 
