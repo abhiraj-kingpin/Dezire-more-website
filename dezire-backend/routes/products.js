@@ -188,7 +188,7 @@ router.post('/', adminAuth, upload.array('images', 10), async (req, res) => {
     } = req.body;
 
     const images = (req.files || []).map(file => ({
-      url: `${req.protocol}://${req.get('host')}/uploads/${file.filename}`,
+      url:      file.path,
       publicId: file.filename,
     }));
 
@@ -245,7 +245,7 @@ router.patch('/:id', adminAuth, async (req, res) => {
 router.post('/:id/images', adminAuth, upload.array('images', 10), async (req, res) => {
   try {
     const newImages = (req.files || []).map(file => ({
-     url:      `${req.protocol}://${req.get('host')}/uploads/${file.filename}`,
+      url:      file.path,
       publicId: file.filename,
     }));
 
