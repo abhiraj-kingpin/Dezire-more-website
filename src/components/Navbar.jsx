@@ -212,12 +212,14 @@ function Navbar() {
             <li><Link to="/sarees" onClick={() => setCategoriesOpen(false)}>Sarees</Link></li>
             <li><Link to="/dress-materials" onClick={() => setCategoriesOpen(false)}>Dress Materials</Link></li>
             <li><Link to="/ready-to-wear" onClick={() => setCategoriesOpen(false)}>Ready to Wear</Link></li>
+            <li><Link to="/co-ords" onClick={() => setCategoriesOpen(false)}>Co-ords</Link></li>
             <li><Link to="/western-apparels" onClick={() => setCategoriesOpen(false)}>Casual Western</Link></li>
             <li><Link to="/jewelry-accessories" onClick={() => setCategoriesOpen(false)}>Jewelry / Accessories</Link></li>
           </ul>
         </li>
         <li><Link to="/dress-materials">Dress Materials</Link></li>
         <li><Link to="/ready-to-wear">Ready to Wear</Link></li>
+        <li><Link to="/co-ords">Co-ords</Link></li>
         <li><Link to="/western-apparels">Casual Western</Link></li>
         <li><Link to="/jewelry-accessories">Jewelry / Accessories</Link></li>
         <li><Link to="/bestsellers">Bestsellers</Link></li>
