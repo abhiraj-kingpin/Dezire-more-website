@@ -245,7 +245,7 @@ router.patch('/:id', adminAuth, async (req, res) => {
 router.post('/:id/images', adminAuth, upload.array('images', 10), async (req, res) => {
   try {
     const newImages = (req.files || []).map(file => ({
-      url:      `http://localhost:5000/uploads/${file.filename}`,
+     url:      `${req.protocol}://${req.get('host')}/uploads/${file.filename}`,
       publicId: file.filename,
     }));
 
