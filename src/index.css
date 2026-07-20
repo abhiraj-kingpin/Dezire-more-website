@@ -3146,3 +3146,141 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 .page-btn:hover { border-color: #1a3c34; color: #1a3c34; }
 .page-btn.active { background: #1a3c34; color: #fff; border-color: #1a3c34; }
 .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.product-card {
+  width: 280px;
+  min-width: 280px;
+  flex-shrink: 0;
+}
+
+.product-card img {
+  width: 100%;
+  height: 350px;
+  object-fit: cover;
+  object-position: center top;
+}
+/* ===== PREMIUM PRODUCT GRID FIX + ROYAL POLISH ===== */
+
+/* 1) FIX: scope the fixed-width card rule to the slider only,
+   so it stops breaking the grid on Sarees/Co-ords/etc pages */
+.products-slider .product-card {
+  width: 280px;
+  min-width: 280px;
+  flex-shrink: 0;
+}
+.products-slider .product-card img {
+  width: 100%;
+  height: 350px;
+  object-fit: cover;
+  object-position: center top;
+}
+
+/* 2) Grid pages (Sarees, Co-ords, Dress Materials etc.) get their
+   own clean, evenly-filled premium grid */
+.products-grid,
+.products-grid-3col {
+  display: grid;
+  gap: 32px;
+}
+.products-grid { grid-template-columns: repeat(4, 1fr); }
+.products-grid-3col { grid-template-columns: repeat(3, 1fr); }
+
+.products-grid .product-card,
+.products-grid-3col .product-card {
+  width: 100%;
+  min-width: 0;
+}
+.products-grid .product-card img,
+.products-grid-3col .product-card img {
+  height: auto;
+}
+
+.products-grid .product-card,
+.products-grid-3col .product-card {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(30, 58, 47, 0.05);
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 0.3s ease;
+}
+.products-grid .product-card:hover,
+.products-grid-3col .product-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 22px 45px rgba(30, 58, 47, 0.16);
+  border-color: rgba(184, 150, 78, 0.5);
+}
+
+.products-grid .product-img-wrap,
+.products-grid-3col .product-img-wrap {
+  position: relative;
+  overflow: hidden;
+}
+.products-grid .product-img-wrap::after,
+.products-grid-3col .product-img-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 60%, rgba(184,150,78,0.10) 100%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.products-grid .product-card:hover .product-img-wrap::after,
+.products-grid-3col .product-card:hover .product-img-wrap::after {
+  opacity: 1;
+}
+.products-grid .product-img-wrap img,
+.products-grid-3col .product-img-wrap img {
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.products-grid .product-card:hover .product-img-wrap img,
+.products-grid-3col .product-card:hover .product-img-wrap img {
+  transform: scale(1.08);
+}
+
+@keyframes cardRiseIn {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.products-grid .product-card,
+.products-grid-3col .product-card {
+  animation: cardRiseIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.products-grid .product-card:nth-child(1),  .products-grid-3col .product-card:nth-child(1)  { animation-delay: 0.02s; }
+.products-grid .product-card:nth-child(2),  .products-grid-3col .product-card:nth-child(2)  { animation-delay: 0.08s; }
+.products-grid .product-card:nth-child(3),  .products-grid-3col .product-card:nth-child(3)  { animation-delay: 0.14s; }
+.products-grid .product-card:nth-child(4),  .products-grid-3col .product-card:nth-child(4)  { animation-delay: 0.20s; }
+.products-grid .product-card:nth-child(5),  .products-grid-3col .product-card:nth-child(5)  { animation-delay: 0.26s; }
+.products-grid .product-card:nth-child(6),  .products-grid-3col .product-card:nth-child(6)  { animation-delay: 0.32s; }
+.products-grid .product-card:nth-child(n+7),.products-grid-3col .product-card:nth-child(n+7){ animation-delay: 0.36s; }
+
+.products-grid .add-to-bag,
+.products-grid-3col .add-to-bag {
+  letter-spacing: 2px;
+  transition: all 0.35s ease;
+}
+.products-grid .add-to-bag:hover,
+.products-grid-3col .add-to-bag:hover {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #fff;
+}
+
+.products-grid .wishlist-btn,
+.products-grid-3col .wishlist-btn {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s;
+}
+.products-grid .wishlist-btn:hover,
+.products-grid-3col .wishlist-btn:hover {
+  transform: scale(1.15) rotate(-4deg);
+}
+
+/* Responsive: keep grid tidy on smaller screens */
+@media (max-width: 1024px) {
+  .products-grid,
+  .products-grid-3col {
+    gap: 22px;
+  }
+}
