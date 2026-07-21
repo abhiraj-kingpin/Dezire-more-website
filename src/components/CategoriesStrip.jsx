@@ -30,6 +30,15 @@ const categories = [
     ],
   },
   {
+    name: 'Co-ords',
+    link: '/co-ords',
+    images: [
+      '/assets/coords/coords1.jpeg',
+      '/assets/coords/coords2.jpeg',
+      '/assets/coords/coords3.jpeg',
+    ],
+  },
+  {
     name: 'Casual Western',
     link: '/western',
     images: [

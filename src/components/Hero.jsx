@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+
 const heroSlides = [
   {
     image: "/assets/hero/hero1.jpeg",
@@ -92,6 +93,22 @@ function Hero() {
             </div>
           ))}
         </div>
+
+        {/* signature gold jaali frame — decorative only, stays fixed while cards swap beneath it */}
+        <svg className="hero-frame" viewBox="0 0 420 525" preserveAspectRatio="none" aria-hidden="true">
+          <rect x="5" y="5" width="410" height="515" />
+          <path className="corner" d="M5,42 L42,42 L42,5" />
+          <path className="corner" d="M378,5 L378,42 L415,42" />
+          <path className="corner" d="M415,483 L378,483 L378,520" />
+          <path className="corner" d="M42,520 L42,483 L5,483" />
+          <circle cx="210" cy="14" r="7" />
+          <circle cx="210" cy="511" r="7" />
+        </svg>
+
+        <span className="hero-sparkle s1"></span>
+        <span className="hero-sparkle s2"></span>
+        <span className="hero-sparkle s3"></span>
+
         <div className="hero-dots">
           {heroSlides.map((_, i) => (
             <div
