@@ -89,7 +89,7 @@ export default function Chatbot() {
     conversationHistory.current.push({ role: "user", content: trimmed });
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/chat`, {
+      const response = await fetch("http://localhost:5000/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -640,8 +640,25 @@ export default function Chatbot() {
         }
 
         @media (max-width: 440px) {
+          /* Chat window — full width, taller */
           .dz-window { width: calc(100vw - 20px); height: 74vh; border-radius: 18px; }
+
+          /* Wrap — tighter to corner */
           .dz-wrap { bottom: 14px; right: 10px; }
+
+          /* Toggle button — slightly smaller */
+          .dz-toggle { width: 52px; height: 52px; }
+          .dz-toggle svg { width: 22px; height: 22px; }
+
+          /* Greeting bubble — compact so it doesn't block content */
+          .dz-greet {
+            width: 200px;
+            padding: 11px 14px 11px 13px;
+            bottom: 66px;
+          }
+          .dz-greet-name { font-size: 13px; }
+          .dz-greet-text { font-size: 11px; }
+          .dz-greet-label { font-size: 8px; }
         }
       `}</style>
 
