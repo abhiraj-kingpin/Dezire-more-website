@@ -19,6 +19,7 @@ import ContactUs from './components/ContactUs';
 import WelcomePopup from './components/WelcomePopup';
 import ScrollToTop from './components/ScrollToTop';
 import Chatbot from './components/Chatbot';
+import HelplineWidget from './components/HelplineWidget';
 
 function App() {
   return (
@@ -48,12 +49,13 @@ function App() {
                   </Route>
                 </Routes>
               </BrowserRouter>
-           </SearchProvider>
-      </WishlistProvider>
-    </CartProvider>
-  </AuthProvider>
-  <Chatbot />
-</>
+            </SearchProvider>
+          </WishlistProvider>
+        </CartProvider>
+      </AuthProvider>
+      <Chatbot />
+      <HelplineWidget />
+    </>
   );
 }
 

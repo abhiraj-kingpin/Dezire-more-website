@@ -20,7 +20,7 @@ export default function HelplineWidget() {
     <>
       <style>{`
         .dm-help-fab {
-          position: fixed; bottom: 24px; right: 24px;
+          position: fixed; bottom: 24px; left: 24px;
           width: 60px; height: 60px; border-radius: 50%;
           background: #1a3c34; border: 2px solid #b8963e;
           display: flex; align-items: center; justify-content: center;
@@ -31,7 +31,7 @@ export default function HelplineWidget() {
         .dm-help-fab svg { width: 32px; height: 32px; }
 
         .dm-help-panel {
-          position: fixed; bottom: 96px; right: 24px;
+          position: fixed; bottom: 96px; left: 24px;
           width: 340px; max-height: 70vh;
           background: #fff; border: 1px solid #e0dcd4; border-radius: 14px;
           box-shadow: 0 10px 40px rgba(0,0,0,0.2);
