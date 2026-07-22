@@ -21,6 +21,13 @@ const heroSlides = [
   },
 ];
 
+// Fallback images used automatically if a slide's own image fails to load
+const FALLBACK_IMAGES = [
+  "https://images.unsplash.com/photo-1610030181087-540c8ccc4d3b?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1583391733956-6c78276477e2?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1595341888016-a392ef81b7de?auto=format&fit=crop&w=800&q=80",
+];
+
 function Hero() {
   const [current, setCurrent] = useState(0);
   const [animating, setAnimating] = useState(false);
@@ -31,18 +38,14 @@ function Hero() {
   const goTo = (next) => {
     if (animating || next === current) return;
     setAnimating(true);
-
-    // Step 1 — fade text out + card exits together
     setTextVisible(false);
     setExitIdx(current);
 
-    // Step 2 — halfway through, swap the slide
     setTimeout(() => {
       setCurrent(next);
       setExitIdx(null);
     }, 220);
 
-    // Step 3 — fade text back in
     setTimeout(() => {
       setTextVisible(true);
       setAnimating(false);
@@ -72,6 +75,8 @@ function Hero() {
 
   return (
     <section className="hero">
+      <div className="hero-royal-glow"></div>
+
       <div className={`hero-text ${textVisible ? "hero-text-in" : "hero-text-out"}`}>
         <p className="hero-eyebrow">{slide.eyebrow}</p>
         <h2 className="hero-title">
@@ -89,12 +94,19 @@ function Hero() {
         <div className="hero-deck">
           {heroSlides.map((s, i) => (
             <div key={i} className={getCardClass(i)}>
-              <img src={s.image} alt={s.title.join(' ')} />
+              <img
+                src={s.image}
+                alt={s.title.join(' ')}
+                onError={(e) => {
+                  console.error("Failed to load hero image:", s.image);
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = FALLBACK_IMAGES[i % FALLBACK_IMAGES.length];
+                }}
+              />
             </div>
           ))}
         </div>
 
-        {/* signature gold jaali frame — decorative only, stays fixed while cards swap beneath it */}
         <svg className="hero-frame" viewBox="0 0 420 525" preserveAspectRatio="none" aria-hidden="true">
           <rect x="5" y="5" width="410" height="515" />
           <path className="corner" d="M5,42 L42,42 L42,5" />
