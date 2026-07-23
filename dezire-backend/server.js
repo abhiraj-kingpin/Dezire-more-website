@@ -14,6 +14,8 @@ const app = express();
 app.use(cors({
   origin: [
     process.env.FRONTEND_URL,
+    'https://www.deziremore.com',
+    'https://deziremore.com',
     'https://dezire-more-website-q2gf.vercel.app',
     'http://localhost:5173',
     'http://localhost:5174',
