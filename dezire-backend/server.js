@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 
 const productRoutes = require('./routes/products');
 const adminRoutes   = require('./routes/admin');
+const orderRoutes   = require('./routes/orders');
 
 const app = express();
 
@@ -47,6 +48,7 @@ mongoose
 const chatRoute = require('./routes/chat');  
 
 app.use('/api/products', productRoutes);
+app.use('/api/orders',   orderRoutes);
 app.use('/api/admin',    adminRoutes);
 app.use('/api/chat',     chatRoute);        
 

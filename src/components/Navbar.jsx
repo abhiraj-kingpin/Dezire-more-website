@@ -9,7 +9,7 @@ import UserMenu from './UserMenu';
 import FlowingThreads from './FlowingThreads';
 import SettingsDrawer from './SettingsDrawer';
 import { READY_TO_WEAR_SUBCATEGORIES } from './CategoryPages';
-import { useSearch as useSearchAPI } from '../hooks/useProducts';
+import { useSearch as useSearchAPI, BASE } from '../hooks/useProducts';
 import useLockBodyScroll from '../hooks/useLockBodyScroll';
 import { flyToCart, ripple } from './ProductCard';
 
@@ -216,19 +216,21 @@ function Navbar() {
 
   // Checkout delivery address (controlled, pre-filled from account if available)
   const [checkoutName, setCheckoutName] = useState('');
+  const [checkoutEmail, setCheckoutEmail] = useState('');
   const [checkoutPhone, setCheckoutPhone] = useState('');
   const [checkoutAddress, setCheckoutAddress] = useState('');
   const [checkoutCity, setCheckoutCity] = useState('');
   const [checkoutState, setCheckoutState] = useState('');
   const [checkoutPin, setCheckoutPin] = useState('');
   const [upiIdInput, setUpiIdInput] = useState('');
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvv, setCardCvv] = useState('');
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [orderError, setOrderError] = useState('');
+  const [placedOrder, setPlacedOrder] = useState(null);
 
   useEffect(() => {
     if (user) {
       setCheckoutName(`${user.firstName || ''} ${user.lastName || ''}`.trim());
+      setCheckoutEmail(user.email || '');
       setCheckoutPhone(user.phone || '');
       setCheckoutAddress(user.address?.line1 || '');
       setCheckoutCity(user.address?.city || '');
@@ -272,6 +274,67 @@ function Navbar() {
       line1: signupAddress, city: signupCity, state: signupState, pin: signupPin,
     });
     if (result.success) setAuthOpen(false);
+  };
+
+  const handlePlaceOrder = async () => {
+    if (isPlacingOrder) return; // guards against double-click / duplicate orders
+
+    setOrderError('');
+    if (!checkoutName.trim() || !checkoutPhone.trim() || !checkoutAddress.trim() || !checkoutCity.trim() || !checkoutState.trim() || !checkoutPin.trim()) {
+      setOrderError('Please fill in your full name, phone, and delivery address.');
+      return;
+    }
+    if (!/^\d{10}$/.test(checkoutPhone.trim())) {
+      setOrderError('Please enter a valid 10-digit phone number.');
+      return;
+    }
+    if (!checkoutEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(checkoutEmail.trim())) {
+      setOrderError('Please enter a valid email address for your order confirmation.');
+      return;
+    }
+
+    setIsPlacingOrder(true);
+    try {
+      const res = await fetch(`${BASE}/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerEmail: checkoutEmail.trim(),
+          customerName: checkoutName.trim(),
+          customerPhone: checkoutPhone.trim(),
+          items: cart.map(p => ({
+            productId: p.id,
+            name: p.name,
+            image: p.image,
+            price: p.price,
+            quantity: p.quantity,
+            size: p.selectedSize || undefined,
+          })),
+          address: {
+            line1: checkoutAddress.trim(),
+            city: checkoutCity.trim(),
+            state: checkoutState.trim(),
+            pin: checkoutPin.trim(),
+          },
+          subtotal: cartTotal,
+          deliveryCharge: DELIVERY_CHARGE,
+          total: finalTotal,
+          paymentMethod,
+          paymentStatus: paymentMethod === 'COD' ? 'pending' : 'paid',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not place your order. Please try again.');
+
+      setPlacedOrder(data.order);
+      setLastOrderId(data.order.orderNumber);
+      setOrderPlaced(true);
+      clearCart();
+    } catch (err) {
+      setOrderError(err.message);
+    } finally {
+      setIsPlacingOrder(false);
+    }
   };
 
   return (
@@ -674,6 +737,7 @@ function Navbar() {
               <div className="payment-section">
                 <h4 className="payment-section-title">Delivery Address</h4>
                 <input className="payment-input" type="text" placeholder="Full Name" value={checkoutName} onChange={e => setCheckoutName(e.target.value)} />
+                <input className="payment-input" type="email" placeholder="Email (for order confirmation)" value={checkoutEmail} onChange={e => setCheckoutEmail(e.target.value)} />
                 <input className="payment-input" type="tel" placeholder="Phone Number" value={checkoutPhone} onChange={e => setCheckoutPhone(e.target.value)} />
                 <input className="payment-input" type="text" placeholder="Address Line 1" value={checkoutAddress} onChange={e => setCheckoutAddress(e.target.value)} />
                 <input className="payment-input" type="text" placeholder="City" value={checkoutCity} onChange={e => setCheckoutCity(e.target.value)} />
@@ -688,7 +752,6 @@ function Navbar() {
                   {[
                     { key: 'Pay Online (QR)', label: 'Pay Online (QR)', icon: 'qr' },
                     { key: 'UPI', label: 'UPI', icon: 'upi' },
-                    { key: 'Credit / Debit Card', label: 'Credit / Debit Card', icon: 'card' },
                     { key: 'Online Banking', label: 'Online Banking', icon: 'bank' },
                     { key: 'COD', label: 'Cash on Delivery', icon: 'cod' },
                   ].map(({ key, label, icon }) => (
@@ -700,9 +763,6 @@ function Navbar() {
                         )}
                         {icon === 'upi' && (
                           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="5" y1="18" x2="19" y2="18"/></svg>
-                        )}
-                        {icon === 'card' && (
-                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
                         )}
                         {icon === 'bank' && (
                           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 21h18M4 21V10M20 21V10M2 10l10-6 10 6M6 10v6M12 10v6M18 10v6"/></svg>
@@ -732,27 +792,16 @@ function Navbar() {
                 {paymentMethod === 'UPI' && (
                   <input className="payment-input payment-input-spaced" type="text" placeholder="Enter UPI ID (e.g. name@upi)" value={upiIdInput} onChange={e => setUpiIdInput(e.target.value)} />
                 )}
-                {paymentMethod === 'Credit / Debit Card' && (
-                  <div className="payment-input-spaced">
-                    <input className="payment-input" type="text" placeholder="Card Number" value={cardNumber} onChange={e => setCardNumber(e.target.value)} />
-                    <div className="payment-input-row">
-                      <input className="payment-input" type="text" placeholder="MM/YY" value={cardExpiry} onChange={e => setCardExpiry(e.target.value)} />
-                      <input className="payment-input" type="text" placeholder="CVV" value={cardCvv} onChange={e => setCardCvv(e.target.value)} />
-                    </div>
-                  </div>
-                )}
               </div>
+              {orderError && <p className="payment-error">{orderError}</p>}
               <button
                 className="cart-checkout-btn"
-                disabled={!paymentMethod}
-                onClick={() => {
-                  const orderId = 'DZM' + Math.floor(100000 + Math.random() * 900000);
-                  setLastOrderId(orderId);
-                  setOrderPlaced(true);
-                  clearCart();
-                }}
+                disabled={!paymentMethod || isPlacingOrder}
+                onClick={handlePlaceOrder}
               >
-                {paymentMethod === 'Pay Online (QR)'
+                {isPlacingOrder
+                  ? 'Placing Order…'
+                  : paymentMethod === 'Pay Online (QR)'
                   ? "I've Completed the Payment →"
                   : `Place Order — ₹${finalTotal.toLocaleString('en-IN')}`}
               </button>
@@ -762,25 +811,59 @@ function Navbar() {
       )}
 
       {/* Order Confirmation — centered modal */}
-      {cartOpen && orderPlaced && (
+      {cartOpen && orderPlaced && placedOrder && (
         <div className="checkout-overlay" onClick={() => {
           setOrderPlaced(false);
           setCartOpen(false);
           setPaymentStep(false);
           setPaymentMethod('');
+          setPlacedOrder(null);
         }}>
           <div className="checkout-modal checkout-modal-narrow" onClick={e => e.stopPropagation()}>
             <div className="order-success">
               <div className="order-success-icon">✓</div>
-              <h3 className="order-success-title">Order Placed!</h3>
-              <p className="order-success-sub">We're preparing your order for dispatch.</p>
+              <h3 className="order-success-title">Order Placed Successfully!</h3>
+              <p className="order-success-sub">Thank you, {placedOrder.customerName.split(' ')[0]} — we're preparing your order.</p>
+
               <div className="order-success-card">
-                <div className="order-success-row"><span>Order ID</span><span>{lastOrderId}</span></div>
-                <div className="order-success-row"><span>Payment</span><span>{paymentMethod}</span></div>
-                <div className="order-success-row"><span>Amount Paid</span><span>₹{finalTotal.toLocaleString('en-IN')}</span></div>
-                <div className="order-success-status">📦 Status: Dispatching Soon</div>
+                <div className="order-success-row"><span>Order ID</span><span>{placedOrder.orderNumber}</span></div>
+                <div className="order-success-row"><span>Payment Method</span><span>{placedOrder.paymentMethod}</span></div>
+                <div className="order-success-row">
+                  <span>Payment Status</span>
+                  <span className={placedOrder.paymentStatus === 'paid' ? 'order-status-paid' : 'order-status-pending'}>
+                    {placedOrder.paymentStatus === 'paid' ? 'Paid' : 'Pending (Pay on Delivery)'}
+                  </span>
+                </div>
+                <div className="order-success-row"><span>Amount</span><span>₹{placedOrder.total.toLocaleString('en-IN')}</span></div>
+                {placedOrder.estimatedDelivery && (
+                  <div className="order-success-row">
+                    <span>Estimated Delivery</span>
+                    <span>{new Date(placedOrder.estimatedDelivery).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                  </div>
+                )}
+                <div className="order-success-status">📦 Status: {placedOrder.orderStatus}</div>
               </div>
-              <p className="order-success-note">A confirmation will be sent to your phone/email shortly.</p>
+
+              <div className="order-success-summary">
+                <h4>Order Summary</h4>
+                {placedOrder.items.map((item, i) => (
+                  <div key={i} className="order-success-row">
+                    <span>{item.name}{item.size ? ` (${item.size})` : ''} × {item.quantity}</span>
+                    <span>₹{(item.price * item.quantity).toLocaleString('en-IN')}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="order-success-summary">
+                <h4>Delivery Address</h4>
+                <p className="order-success-address">
+                  {placedOrder.customerName}<br />
+                  {placedOrder.address.line1}, {placedOrder.address.city}, {placedOrder.address.state} - {placedOrder.address.pin}<br />
+                  {placedOrder.customerPhone}
+                </p>
+              </div>
+
+              <p className="order-success-note">A confirmation email has been sent to {placedOrder.customerEmail}.</p>
               <button
                 className="cart-checkout-btn"
                 onClick={() => {
@@ -788,6 +871,7 @@ function Navbar() {
                   setCartOpen(false);
                   setPaymentStep(false);
                   setPaymentMethod('');
+                  setPlacedOrder(null);
                 }}
               >
                 Continue Shopping

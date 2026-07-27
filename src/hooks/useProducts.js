@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-const BASE = import.meta.env.VITE_API_URL || 'https://dezire-more-website-1.onrender.com/api';
+export const BASE = import.meta.env.VITE_API_URL || 'https://dezire-more-website-1.onrender.com/api';
 
 // ─── Core fetcher ─────────────────────────────────────────────────────────────
 async function fetcher(endpoint, signal) {

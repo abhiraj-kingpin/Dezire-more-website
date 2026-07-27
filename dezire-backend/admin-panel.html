@@ -173,6 +173,7 @@
   <nav class="sidebar">
     <div class="sidebar-logo">DEZIRE MORE <span>ADMIN PANEL</span></div>
     <button class="nav-item active" onclick="showPage('dashboard')">Dashboard</button>
+    <button class="nav-item" onclick="showPage('orders')">Orders</button>
     <button class="nav-item" onclick="showPage('products')">All Products</button>
     <button class="nav-item" onclick="showPage('add')">Add Product</button>
     <button class="nav-item" onclick="showPage('bulk')">Bulk Import</button>
@@ -194,6 +195,15 @@
       <div class="card">
         <strong>Recent Products</strong>
         <div id="recent-products" style="margin-top:16px"><p class="loading">Loading…</p></div>
+      </div>
+    </div>
+
+    <!-- Orders -->
+    <div class="page" id="page-orders">
+      <h2>Orders</h2>
+      <p class="subtitle">Every order placed on the store, newest first</p>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="orders-list"><p class="loading" style="padding:40px">Loading…</p></div>
       </div>
     </div>
 
@@ -474,6 +484,7 @@ function showPage(name) {
 
   if (name === 'products') loadProductsList();
   if (name === 'dashboard') loadDashboard();
+  if (name === 'orders') loadOrdersList();
   if (name === 'add' && !document.getElementById('edit-product-id').value) resetForm();
 }
 
@@ -508,6 +519,91 @@ async function loadDashboard() {
   } catch (err) {
     console.error(err);
   }
+}
+
+// ── Orders ────────────────────────────────────────────────────────────────────
+
+const ORDER_STATUSES = [
+  'Order Placed', 'Payment Confirmed', 'Processing', 'Packed',
+  'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled',
+];
+let allOrders = [];
+let expandedOrderId = null;
+
+async function loadOrdersList() {
+  try {
+    const res = await fetch(`${API}/orders/admin/all`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    allOrders = data.data || [];
+    renderOrdersTable();
+  } catch (err) {
+    document.getElementById('orders-list').innerHTML = `<p class="empty">Failed to load orders: ${err.message}</p>`;
+  }
+}
+
+function toggleOrderDetail(id) {
+  expandedOrderId = expandedOrderId === id ? null : id;
+  renderOrdersTable();
+}
+
+async function updateOrderStatus(id, orderStatus) {
+  try {
+    const res = await fetch(`${API}/orders/${id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ orderStatus }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const idx = allOrders.findIndex(o => o._id === id);
+    if (idx > -1) allOrders[idx] = data.order;
+    renderOrdersTable();
+    toast('Order status updated', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+function renderOrdersTable() {
+  const el = document.getElementById('orders-list');
+  if (!allOrders.length) {
+    el.innerHTML = '<p class="empty">No orders yet</p>';
+    return;
+  }
+  el.innerHTML = `
+    <table class="products-table">
+      <thead><tr>
+        <th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${allOrders.map(o => `
+          <tr style="cursor:pointer" onclick="toggleOrderDetail('${o._id}')">
+            <td><strong>${o.orderNumber}</strong><br/><span style="font-size:11px;color:var(--muted)">${new Date(o.createdAt).toLocaleDateString('en-IN')}</span></td>
+            <td>${o.customerName}<br/><span style="font-size:11px;color:var(--muted)">${o.customerPhone}</span></td>
+            <td>${o.items.length} item${o.items.length !== 1 ? 's' : ''}</td>
+            <td>₹${o.total.toLocaleString('en-IN')}</td>
+            <td>${o.paymentMethod}<br/><span class="badge ${o.paymentStatus === 'paid' ? 'badge-active' : 'badge-inactive'}">${o.paymentStatus}</span></td>
+            <td onclick="event.stopPropagation()">
+              <select onchange="updateOrderStatus('${o._id}', this.value)" style="width:auto;padding:6px 8px;font-size:12px">
+                ${ORDER_STATUSES.map(s => `<option value="${s}" ${s === o.orderStatus ? 'selected' : ''}>${s}</option>`).join('')}
+              </select>
+            </td>
+            <td>${expandedOrderId === o._id ? '▲' : '▼'}</td>
+          </tr>
+          ${expandedOrderId === o._id ? `
+            <tr><td colspan="7" style="background:var(--bg);padding:16px 20px">
+              <strong style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Items</strong>
+              ${o.items.map(item => `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px">
+                <span>${item.name}${item.size ? ` (${item.size})` : ''} × ${item.quantity}</span>
+                <span>₹${(item.price * item.quantity).toLocaleString('en-IN')}</span>
+              </div>`).join('')}
+              <strong style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);display:block;margin-top:12px">Delivery Address</strong>
+              <p style="font-size:13px;margin-top:4px">${o.customerEmail}<br/>${o.address.line1}, ${o.address.city}, ${o.address.state} - ${o.address.pin}</p>
+            </td></tr>
+          ` : ''}
+        `).join('')}
+      </tbody>
+    </table>`;
 }
 
 // ── Products List ─────────────────────────────────────────────────────────────
