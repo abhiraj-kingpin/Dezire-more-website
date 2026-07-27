@@ -36,6 +36,13 @@ const REVIEWS = [
     text: "A brand that actually understands Indian body types and Indian occasions. My co-ord set got so many compliments at the Sangeet — will definitely be shopping again.",
     photo: '/assets/testimonials/customer5.jpg',
   },
+  {
+    name: 'Priya Mal',
+    location: 'Jalandhar',
+    rating: 5,
+    text: "Love your all collection, I'm buying beautiful suits and sarees from last 6 years. Every month I buy — na na karke bhi, I order. Seriously, I desire more, can't resist after seeing such elegant, beautiful pieces. Looking forward to shop more and more.",
+    photo: '/assets/testimonials/customer6.jpg',
+  },
 ];
 
 function getInitials(name) {
