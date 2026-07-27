@@ -5194,7 +5194,7 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 }
 @media (max-width: 768px) {
   nav {
-    grid-template-columns: auto auto 1fr auto;
+    grid-template-columns: auto 1fr auto;
     grid-template-rows: auto auto;
     align-items: center;
     column-gap: 10px;
@@ -5208,20 +5208,29 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   .nav-logo {
     grid-column: 2;
     grid-row: 1;
-    gap: 8px;
+    justify-self: center;
+    gap: 10px;
   }
-  /* Icon + text wordmark dropped on mobile — logo image only, like a
-     typical shopping app's compact header. */
+  /* Company wordmark shown next to the emblem, centered in the header. */
   .logo-text {
-    display: none;
+    display: flex;
+  }
+  .logo-text h1 {
+    font-size: 16px;
+    letter-spacing: 1px;
+  }
+  .logo-text p {
+    font-size: 7.5px;
+    letter-spacing: 1px;
+    margin-top: 2px;
   }
   .logo-emblem {
-    width: 56px;
-    height: 56px;
+    width: 68px;
+    height: 68px;
     top: 0;
   }
   .nav-icons {
-    grid-column: 4;
+    grid-column: 3;
     grid-row: 1;
     display: flex;
     align-items: center;
@@ -5250,5 +5259,70 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   }
   .nav-links-settings {
     display: block !important;
+  }
+
+  /* ── Premium hamburger drawer ── */
+  .nav-links {
+    background: var(--cream) !important;
+    padding: 0 0 24px !important;
+  }
+  .nav-links::before {
+    content: "Dezire More";
+    display: block;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 23px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold-light);
+    background: var(--dark-green);
+    padding: 30px 24px 18px;
+    margin-bottom: 6px;
+  }
+  .nav-links a {
+    position: relative;
+    padding-left: 42px !important;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.2s, color 0.2s;
+  }
+  .nav-links a::before {
+    content: '◆';
+    position: absolute;
+    left: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gold);
+    font-size: 7px;
+  }
+  .nav-links a:active {
+    background: var(--warm-white);
+    color: var(--gold);
+  }
+  .dropdown-menu {
+    background: var(--surface-alt) !important;
+  }
+  .dropdown-menu li a {
+    border-bottom: 1px solid var(--border);
+    border-left: 3px solid var(--gold);
+  }
+  .dropdown-menu li a::before {
+    display: none;
+  }
+
+  /* ── Search modal: portalled overlay, compact 2-col results ── */
+  .search-overlay {
+    padding-top: 60px;
+  }
+  .search-box {
+    max-height: 85vh;
+  }
+  .search-suggestions,
+  .search-results {
+    flex: 1;
+    min-height: 0;
+  }
+  .search-results-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px;
   }
 }

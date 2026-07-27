@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
@@ -12,7 +13,7 @@ import { useSearch as useSearchAPI } from '../hooks/useProducts';
 import useLockBodyScroll from '../hooks/useLockBodyScroll';
 import { flyToCart, ripple } from './ProductCard';
 
-function SearchResults({ query, onClose }) {
+function SearchResults({ query, onClose, onSelectTag }) {
   const { addToCart } = useCart();
   const { toggleWishlist, isWishlisted } = useWishlist();
   const { results, loading } = useSearchAPI(query);
@@ -23,7 +24,7 @@ function SearchResults({ query, onClose }) {
         <p className="search-suggestions-title">Popular Searches</p>
         <div className="search-tags">
           {['Banarasi Silk', 'Bridal Saree', 'Embroidered', 'Organza', 'Chiffon'].map(tag => (
-            <span key={tag} className="search-tag">{tag}</span>
+            <span key={tag} className="search-tag" onClick={() => onSelectTag(tag)}>{tag}</span>
           ))}
         </div>
       </div>
@@ -403,8 +404,9 @@ function Navbar() {
         </li>
       </ul>
 
-      {/* Search Overlay */}
-      {searchOpen && (
+      {/* Search Overlay — portalled to document.body so it always covers the
+          true viewport, regardless of any transformed/stacked ancestor. */}
+      {searchOpen && createPortal(
         <div className="search-overlay" onClick={() => { setSearchOpen(false); setSearchQuery(''); }}>
           <div className="search-box" onClick={e => e.stopPropagation()}>
             <div className="search-header">
@@ -427,9 +429,10 @@ function Navbar() {
               </div>
               <button className="search-close" onClick={() => { setSearchOpen(false); setSearchQuery(''); }}>Cancel</button>
             </div>
-            <SearchResults query={searchQuery} onClose={() => { setSearchOpen(false); setSearchQuery(''); }} />
+            <SearchResults query={searchQuery} onClose={() => { setSearchOpen(false); setSearchQuery(''); }} onSelectTag={setSearchQuery} />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Wishlist Drawer */}
