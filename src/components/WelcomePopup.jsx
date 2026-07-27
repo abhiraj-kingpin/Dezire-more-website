@@ -32,7 +32,7 @@ function WelcomePopup() {
           <span className="welcome-popup-code">USE CODE: DEZIRE10</span>
         </div>
 
-        <Link to="/sale" className="welcome-popup-btn" onClick={close}>
+        <Link to="/new-arrivals" className="welcome-popup-btn" onClick={close}>
           Shop Now for Trending Deals
         </Link>
       </div>

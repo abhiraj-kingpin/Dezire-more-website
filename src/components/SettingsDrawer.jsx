@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useTheme } from '../context/ThemeContext';
 
 const FONT_KEY = 'dm-font-scale';
 
 function SettingsDrawer({ open, onClose }) {
-  const { theme, toggleTheme } = useTheme();
   const [fontScale, setFontScale] = useState(() => localStorage.getItem(FONT_KEY) || 'normal');
   const [reduceMotion, setReduceMotion] = useState(() => localStorage.getItem('dm-reduce-motion') === 'true');
 
@@ -29,24 +27,6 @@ function SettingsDrawer({ open, onClose }) {
         </div>
 
         <div className="settings-body">
-          <div className="settings-section">
-            <div className="settings-row">
-              <div>
-                <p className="settings-row-title">Dark Mode</p>
-                <p className="settings-row-desc">Easier on the eyes in low light</p>
-              </div>
-              <button
-                className={`settings-toggle ${theme === 'dark' ? 'on' : ''}`}
-                onClick={toggleTheme}
-                aria-label="Toggle dark mode"
-                role="switch"
-                aria-checked={theme === 'dark'}
-              >
-                <span className="settings-toggle-knob" />
-              </button>
-            </div>
-          </div>
-
           <div className="settings-section">
             <p className="settings-section-title">Text Size</p>
             <div className="settings-pill-row">

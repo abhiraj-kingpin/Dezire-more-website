@@ -5189,6 +5189,9 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 
 /* ===== COMPACT SINGLE-ROW MOBILE HEADER (final, authoritative — wins over
    earlier scattered mobile rules since it's the last block in the file) ===== */
+.nav-links-settings {
+  display: none;
+}
 @media (max-width: 768px) {
   nav {
     grid-template-columns: auto auto 1fr auto;
@@ -5213,8 +5216,8 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     display: none;
   }
   .logo-emblem {
-    width: 40px;
-    height: 40px;
+    width: 56px;
+    height: 56px;
     top: 0;
   }
   .nav-icons {
@@ -5246,9 +5249,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     grid-row: 2;
   }
   .nav-links-settings {
-    display: block;
+    display: block !important;
   }
-}
-.nav-links-settings {
-  display: none;
 }

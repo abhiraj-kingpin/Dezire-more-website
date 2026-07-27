@@ -143,7 +143,7 @@ function Hero() {
           <div className="label">Premium Styles</div>
         </div>
         <div className="stat-card">
-          <div className="num"><span className="gold">40</span>%</div>
+          <div className="num"><span className="gold">10</span>%</div>
           <div className="label">Off Sale</div>
         </div>
         <div className="stat-card">

@@ -9,7 +9,7 @@ STORE DETAILS:
 - 3-day exchange policy (no refunds, exchange only) — customers should ideally reach out within 24–48 hours of delivery for fastest resolution
 - Delivery: 7–10 business days depending on the area (pieces are made by professional tailors, so quality takes a little time)
 - Discount code: DEZIRE10 (10% off)
-- Sale: Up to 40% off on sale items
+- Sale: Up to 10% off on sale items
 - Customer Rating: 4.8 stars
 
 PRODUCT CATEGORIES:
@@ -23,7 +23,7 @@ PRODUCT CATEGORIES:
 8. Accessories — Bags, belts, hair accessories, and more
 9. New Arrivals — Latest drops every week
 10. Bestsellers — Most loved pieces
-11. Sale — Up to 40% off
+11. Sale — Up to 10% off
 
 OCCASION GUIDE:
 - Wedding/Bridal → Lehengas, Silk Sarees, Embroidered Sarees

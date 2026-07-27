@@ -72,4 +72,3 @@ function TagPage({ title, tag, defaultSort }) {
 
 export function NewArrivals() { return <TagPage title="New Arrivals" tag="new-arrival" defaultSort="newest" />; }
 export function Bestsellers() { return <TagPage title="Bestsellers"  tag="bestseller"  defaultSort="rating" />; }
-export function Sale()        { return <TagPage title="Sale"         tag="sale"         defaultSort="newest" />; }

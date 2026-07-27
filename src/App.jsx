@@ -15,7 +15,6 @@ import Jewelry from './components/Jewelry';
 import Accessories from './components/Accessories';
 import Bestsellers from './components/Bestsellers';
 import NewArrivals from './components/NewArrivals';
-import Sale from './components/Sale';
 import OurStory from './components/OurStory';
 import Account from './components/Account';
 import MyOrders from './components/MyOrders';
@@ -51,7 +50,6 @@ function App() {
                     <Route path="accessories" element={<Accessories />} />
                     <Route path="bestsellers" element={<Bestsellers />} />
                     <Route path="new-arrivals" element={<NewArrivals />} />
-                    <Route path="sale" element={<Sale />} />
                     <Route path="our-story" element={<OurStory />} />
                     <Route path="account" element={<Account />} />
                     <Route path="orders" element={<MyOrders />} />
