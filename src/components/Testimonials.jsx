@@ -41,7 +41,7 @@ const REVIEWS = [
     location: 'Jalandhar',
     rating: 5,
     text: "Love your all collection, I'm buying beautiful suits and sarees from last 6 years. Every month I buy — na na karke bhi, I order. Seriously, I desire more, can't resist after seeing such elegant, beautiful pieces. Looking forward to shop more and more.",
-    photo: '/assets/testimonials/customer6.jpg',
+    photo: '/assets/testimonials/customer6.png',
   },
 ];
 
