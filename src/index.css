@@ -5193,25 +5193,29 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   display: none;
 }
 @media (max-width: 768px) {
+  /* Row 1: logo + name  ...........  wishlist / cart / settings / account
+     Row 2: hamburger  +  search bar */
   nav {
-    grid-template-columns: auto 1fr auto;
+    /* Column 1 is a fixed narrow track sized only for the hamburger button —
+       logo and icons span the full row and self-align to opposite edges, so
+       neither one forces column 1 wider (which used to starve the search bar
+       on row 2 of space). */
+    grid-template-columns: 40px 1fr;
     grid-template-rows: auto auto;
     align-items: center;
     column-gap: 10px;
     row-gap: 10px;
     padding: 10px 14px 14px;
   }
-  .nav-hamburger {
-    grid-column: 1;
-    grid-row: 1;
-  }
   .nav-logo {
-    grid-column: 2;
+    grid-column: 1 / -1;
     grid-row: 1;
-    justify-self: center;
+    justify-self: start;
     gap: 10px;
+    max-width: 68%;
   }
-  /* Company wordmark shown next to the emblem, centered in the header. */
+  /* Company name shown next to the emblem; tagline dropped on mobile —
+     it was wide enough to collide with the wishlist icon. */
   .logo-text {
     display: flex;
   }
@@ -5220,45 +5224,43 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     letter-spacing: 1px;
   }
   .logo-text p {
-    font-size: 7.5px;
-    letter-spacing: 1px;
-    margin-top: 2px;
+    display: none;
   }
   .logo-emblem {
-    width: 68px;
-    height: 68px;
+    width: 60px;
+    height: 60px;
     top: 0;
   }
   .nav-icons {
-    grid-column: 3;
+    grid-column: 1 / -1;
     grid-row: 1;
+    justify-self: end;
     display: flex;
     align-items: center;
     justify-content: flex-end;
     gap: 10px;
   }
   /* The search bar row below already covers search — no need for a
-     redundant search icon here. Settings moves out of the compact row;
-     still reachable from the hamburger menu. */
-  .mobile-search-btn,
-  .nav-icons button[aria-label="Settings"] {
+     redundant search icon here. */
+  .mobile-search-btn {
     display: none !important;
   }
   .nav-icons button,
   .auth-trigger-btn {
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
   }
   .nav-icons button svg {
-    width: 17px;
-    height: 17px;
+    width: 16px;
+    height: 16px;
   }
-  .nav-search-bar {
-    grid-column: 1 / -1;
+  .nav-hamburger {
+    grid-column: 1;
     grid-row: 2;
   }
-  .nav-links-settings {
-    display: block !important;
+  .nav-search-bar {
+    grid-column: 2;
+    grid-row: 2;
   }
 
   /* ── Premium hamburger drawer ── */
@@ -5298,15 +5300,44 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     background: var(--warm-white);
     color: var(--gold);
   }
+  /* Touch devices can get "stuck" simulating :hover after a tap, which fought
+     the .open class toggle and made submenus impossible to close. The old
+     hover rule only ever touched `display`, and display is forced to block
+     unconditionally below — so it's inert now. Visibility is driven purely
+     by max-height off the .open class instead. */
   .dropdown-menu {
-    background: var(--surface-alt) !important;
+    display: block !important;
+    position: static !important;
+    max-height: 0;
+    overflow: hidden;
+    background: linear-gradient(180deg, var(--surface-alt), var(--cream)) !important;
+    border: none !important;
+    box-shadow: inset 0 6px 10px -8px rgba(0,0,0,0.25) !important;
+    padding: 0 !important;
+    margin: 0;
+    transition: max-height 0.35s ease;
+  }
+  .dropdown.open .dropdown-menu {
+    max-height: 640px;
+    padding: 6px 0 !important;
   }
   .dropdown-menu li a {
-    border-bottom: 1px solid var(--border);
-    border-left: 3px solid var(--gold);
+    position: relative;
+    padding: 12px 24px 12px 44px !important;
+    font-size: 11px;
+    letter-spacing: 1.3px;
+    color: var(--text-mid);
+    border-bottom: 1px solid rgba(184,150,78,0.18);
   }
   .dropdown-menu li a::before {
-    display: none;
+    content: '—';
+    position: absolute;
+    left: 24px;
+    color: var(--gold);
+  }
+  .dropdown-menu li a:active {
+    color: var(--gold);
+    background: rgba(184,150,78,0.08);
   }
 
   /* ── Search modal: portalled overlay, compact 2-col results ── */

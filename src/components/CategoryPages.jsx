@@ -15,7 +15,6 @@ export const READY_TO_WEAR_SUBCATEGORIES = [
   { label: 'Blouses',        value: 'blouses' },
   { label: 'Dresses',        value: 'dresses' },
   { label: 'Ethnic Skirts',  value: 'ethnic-skirts' },
-  { label: 'Casual Western', value: 'casual-western' },
 ];
 
 const SORT_OPTIONS = [
