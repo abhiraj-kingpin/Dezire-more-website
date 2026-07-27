@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 const heroSlides = [
   {
-    image: "/assets/hero/hero1.jpeg",
+    image: "/assets/hero/hero1.png",
     eyebrow: "✦ Summer Luxury Edit 2026",
     title: ["Wear Your", "Culture", "With Grace"],
     subtitle: "Elegant ethnic silhouettes designed for the modern Indian woman who loves timeless fashion.",
