@@ -64,11 +64,7 @@ function ReviewAvatar({ review }) {
 function ReviewCard({ review }) {
   return (
     <div className="testimonial-card">
-      <span className="testimonial-quote-icon" aria-hidden="true">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M9.5 7C6.5 7 4 9.5 4 12.7c0 2.6 1.7 4.6 4 5.1l.6-1.6c-1.4-.4-2.3-1.5-2.3-3 .1 0 .3.1.5.1 1.5 0 2.7-1.2 2.7-2.8S11 7 9.5 7zm9 0c-3 0-5.5 2.5-5.5 5.7 0 2.6 1.7 4.6 4 5.1l.6-1.6c-1.4-.4-2.3-1.5-2.3-3 .1 0 .3.1.5.1 1.5 0 2.7-1.2 2.7-2.8S20 7 18.5 7z"/>
-        </svg>
-      </span>
+      <span className="testimonial-quote-mark" aria-hidden="true">&rdquo;</span>
       <ReviewAvatar review={review} />
       <div className="testimonial-stars">{'★'.repeat(review.rating)}</div>
       <p className="testimonial-text">{review.text}</p>

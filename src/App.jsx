@@ -27,10 +27,12 @@ import WelcomePopup from './components/WelcomePopup';
 import ScrollToTop from './components/ScrollToTop';
 import Chatbot from './components/Chatbot';
 import HelplineWidget from './components/HelplineWidget';
+import IntroAnimation from './components/IntroAnimation';
 
 function App() {
   return (
     <ThemeProvider>
+      <IntroAnimation />
       <ToastProvider>
       <AuthProvider>
         <CartProvider>

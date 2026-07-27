@@ -816,9 +816,9 @@ nav {
 .testimonials-section {
   position: relative;
   padding: 100px 0;
-  background: linear-gradient(160deg, #1c3a2c 0%, #123324 45%, #0a1f16 100%);
+  background: linear-gradient(160deg, #fbf8f2 0%, #f5efe2 100%);
   overflow: hidden;
-  color: #fff;
+  color: var(--text-dark);
 }
 .testimonials-section::before {
   content: '';
@@ -826,23 +826,22 @@ nav {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.5;
+  opacity: 0.6;
   background-image:
-    repeating-linear-gradient(45deg, rgba(212,174,110,0.05) 0 2px, transparent 2px 30px),
-    repeating-linear-gradient(-45deg, rgba(212,174,110,0.05) 0 2px, transparent 2px 30px);
+    repeating-linear-gradient(45deg, rgba(184,150,78,0.05) 0 2px, transparent 2px 30px),
+    repeating-linear-gradient(-45deg, rgba(184,150,78,0.05) 0 2px, transparent 2px 30px);
 }
 .testimonials-bg {
   position: absolute;
   inset: -20%;
   z-index: 0;
   pointer-events: none;
-  background: radial-gradient(circle at 25% 25%, rgba(212,174,110,0.22), transparent 55%),
-              radial-gradient(circle at 78% 75%, rgba(212,174,110,0.16), transparent 50%);
+  background: radial-gradient(circle at 25% 25%, rgba(184,150,78,0.14), transparent 55%),
+              radial-gradient(circle at 78% 75%, rgba(184,150,78,0.10), transparent 50%);
   animation: aboutDrift 20s ease-in-out infinite alternate;
 }
 .testimonials-header { position: relative; z-index: 1; padding: 0 48px; }
-.testimonials-header h2 { color: #fff; background: none; -webkit-text-fill-color: unset; }
-.testimonials-header p { color: rgba(255,255,255,0.6); }
+.testimonials-header p { color: var(--text-mid); }
 
 .testimonials-marquee {
   position: relative;
@@ -874,51 +873,56 @@ nav {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(212,174,110,0.28);
-  border-radius: 4px;
-  padding: 48px 30px 32px;
-  backdrop-filter: blur(6px);
-  box-shadow: 0 20px 44px rgba(0,0,0,0.28);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--gold);
+  border-radius: 6px;
+  padding: 40px 30px 32px;
+  box-shadow: 0 20px 44px rgba(30,58,47,0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
-.testimonial-quote-icon {
+.testimonial-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 26px 54px rgba(30,58,47,0.13);
+}
+/* Large, subtle watermark quote mark — sits behind the copy instead of
+   crowding the customer's photo like the old circular badge did. */
+.testimonial-quote-mark {
   position: absolute;
-  top: -18px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: #123324;
-  border: 1px solid var(--gold);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  top: 4px;
+  right: 22px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 88px;
+  line-height: 1;
   color: var(--gold);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+  opacity: 0.16;
+  z-index: 0;
+  pointer-events: none;
 }
 .testimonial-avatar {
+  position: relative;
+  z-index: 1;
   width: 68px;
   height: 68px;
   border-radius: 50%;
   overflow: hidden;
   border: 2px solid var(--gold);
-  outline: 1px solid rgba(212,174,110,0.3);
+  outline: 1px solid rgba(184,150,78,0.3);
   outline-offset: 3px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(212,174,110,0.15);
+  background: rgba(184,150,78,0.12);
   margin-bottom: 18px;
   flex-shrink: 0;
 }
 .testimonial-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.testimonial-avatar span { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600; color: var(--gold-light); }
-.testimonial-stars { color: var(--gold); letter-spacing: 4px; font-size: 13px; margin-bottom: 16px; }
-.testimonial-text { font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 400; font-size: 17px; line-height: 1.7; color: rgba(255,255,255,0.92); }
-.testimonial-divider { width: 32px; height: 1px; background: var(--gold); opacity: 0.5; margin: 22px 0 14px; }
-.testimonial-name { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #fff; }
-.testimonial-location { font-size: 10px; color: var(--gold-light); margin-top: 4px; letter-spacing: 1px; }
+.testimonial-avatar span { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600; color: var(--gold); }
+.testimonial-stars { position: relative; z-index: 1; color: var(--gold); letter-spacing: 4px; font-size: 13px; margin-bottom: 16px; }
+.testimonial-text { position: relative; z-index: 1; font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 400; font-size: 17px; line-height: 1.7; color: var(--text-mid); }
+.testimonial-divider { width: 32px; height: 1px; background: var(--gold); opacity: 0.6; margin: 22px 0 14px; }
+.testimonial-name { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dark); }
+.testimonial-location { font-size: 10px; color: var(--gold); margin-top: 4px; letter-spacing: 1px; }
 
 @media (max-width: 640px) {
   .testimonials-section { padding: 72px 0; }
@@ -5376,5 +5380,84 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   .search-results-grid {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 10px;
+  }
+}
+
+/* ===== INTRO ANIMATION (app/site launch splash) ===== */
+.intro-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, #0a1f16 0%, #123324 55%, #1e3a2f 100%);
+  transition: opacity 0.6s ease;
+}
+.intro-overlay.intro-fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+.intro-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.intro-logo {
+  width: 110px;
+  height: 110px;
+  object-fit: contain;
+  border-radius: 50%;
+  opacity: 0;
+  transform: scale(0.6);
+  animation: introLogoIn 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  box-shadow: 0 0 40px rgba(184,150,78,0.35);
+}
+@keyframes introLogoIn {
+  to { opacity: 1; transform: scale(1); }
+}
+.intro-wordmark {
+  margin-top: 22px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  color: #fff;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: introTextIn 0.7s ease forwards;
+  animation-delay: 0.5s;
+}
+.intro-wordmark .intro-gold { color: var(--gold-light); }
+@keyframes introTextIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+.intro-tagline {
+  margin-top: 8px;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.55);
+  opacity: 0;
+  transform: translateY(10px);
+  animation: introTextIn 0.7s ease forwards;
+  animation-delay: 0.8s;
+}
+.intro-shimmer-line {
+  margin-top: 24px;
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold-light), transparent);
+  opacity: 0;
+  animation: introTextIn 0.7s ease forwards;
+  animation-delay: 1.1s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .intro-logo, .intro-wordmark, .intro-tagline, .intro-shimmer-line {
+    animation: none;
+    opacity: 1;
+    transform: none;
   }
 }
