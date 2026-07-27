@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dezire More — Admin</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green:  #1a3c34;
+      --gold:   #b8963e;
+      --bg:     #f7f5f0;
+      --card:   #ffffff;
+      --border: #e0dcd4;
+      --text:   #1a1a1a;
+      --muted:  #6b6b6b;
+      --danger: #c0392b;
+      --success:#0f6e56;
+    }
+
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ── Login ── */
+    #login-screen {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .login-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 40px; width: 360px;
+    }
+    .login-card h1 { font-size: 20px; margin-bottom: 4px; }
+    .login-card p  { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
+
+    /* ── Layout ── */
+    #app { display: none; }
+    .sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0; width: 220px;
+      background: var(--green); padding: 24px 0; z-index: 10;
+    }
+    .sidebar-logo { color: #fff; font-size: 15px; font-weight: 600; padding: 0 20px 24px; border-bottom: 1px solid rgba(255,255,255,.15); }
+    .sidebar-logo span { display: block; color: var(--gold); font-size: 10px; font-weight: 400; letter-spacing: .1em; margin-top: 2px; }
+    .nav-item {
+      display: block; padding: 11px 20px; color: rgba(255,255,255,.7);
+      font-size: 13px; cursor: pointer; transition: all .15s; border: none;
+      background: none; width: 100%; text-align: left;
+    }
+    .nav-item:hover, .nav-item.active { color: #fff; background: rgba(255,255,255,.1); }
+    .nav-item.active { border-left: 3px solid var(--gold); }
+
+    .main { margin-left: 220px; padding: 32px; }
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── Shared UI ── */
+    h2 { font-size: 22px; margin-bottom: 6px; }
+    .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
+
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 24px; margin-bottom: 20px; }
+
+    label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; margin-top: 16px; }
+    label:first-child { margin-top: 0; }
+
+    input, select, textarea {
+      width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+      border-radius: 7px; font-size: 14px; background: var(--bg);
+      transition: border .15s; color: var(--text);
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none; border-color: var(--green); background: #fff;
+    }
+    textarea { resize: vertical; min-height: 80px; }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+    .btn {
+      padding: 10px 20px; border-radius: 7px; font-size: 14px;
+      font-weight: 600; cursor: pointer; border: none; transition: all .15s;
+    }
+    .btn-primary { background: var(--green); color: #fff; }
+    .btn-primary:hover { background: #0f2920; }
+    .btn-gold { background: var(--gold); color: #fff; }
+    .btn-gold:hover { opacity: .9; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Image upload zone ── */
+    .upload-zone {
+      border: 2px dashed var(--border); border-radius: 10px;
+      padding: 32px; text-align: center; cursor: pointer; transition: all .2s;
+      background: var(--bg);
+    }
+    .upload-zone:hover, .upload-zone.drag-over { border-color: var(--green); background: #f0f5f3; }
+    .upload-zone p { color: var(--muted); font-size: 13px; margin-top: 8px; }
+    .upload-zone strong { font-size: 15px; }
+    #file-input { display: none; }
+
+    .image-previews { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+    .preview-item { position: relative; width: 90px; height: 110px; }
+    .preview-item img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
+    .preview-item .remove-img {
+      position: absolute; top: -6px; right: -6px; width: 20px; height: 20px;
+      border-radius: 50%; background: var(--danger); color: #fff;
+      border: none; cursor: pointer; font-size: 12px; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 28px; right: 28px; padding: 14px 20px;
+      border-radius: 8px; color: #fff; font-size: 14px; font-weight: 500;
+      transform: translateY(80px); opacity: 0; transition: all .3s; z-index: 999;
+      max-width: 320px;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+    #toast.success { background: var(--success); }
+    #toast.error   { background: var(--danger); }
+
+    /* ── Products table ── */
+    .products-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .products-table th { text-align: left; padding: 10px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); border-bottom: 1px solid var(--border); }
+    .products-table td { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .products-table tr:hover td { background: var(--bg); }
+    .product-thumb { width: 44px; height: 54px; object-fit: cover; border-radius: 4px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .badge-active   { background: #dcf5ec; color: #0a5c3a; }
+    .badge-inactive { background: #fde8e8; color: #8b1a1a; }
+    .badge-tag { background: #f0ecff; color: #4a3ab0; margin-right: 3px; }
+
+    .actions { display: flex; gap: 8px; }
+    .search-bar { display: flex; gap: 10px; margin-bottom: 16px; }
+    .search-bar input { flex: 1; }
+
+    /* ── Stats row ── */
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+    .stat-box { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+    .stat-box .num { font-size: 28px; font-weight: 700; color: var(--green); }
+    .stat-box .lbl { font-size: 12px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .05em; }
+
+    /* ── Tags checkboxes ── */
+    .tags-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag-check { display: flex; align-items: center; gap: 6px; }
+    .tag-check input { width: auto; }
+    .tag-check label { font-size: 13px; text-transform: none; letter-spacing: 0; color: var(--text); margin: 0; font-weight: 400; }
+
+    .form-actions { display: flex; gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+
+    .loading { text-align: center; padding: 40px; color: var(--muted); }
+    .empty { text-align: center; padding: 60px; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<!-- ── Login Screen ── -->
+<div id="login-screen">
+  <div class="login-card">
+    <h1>Dezire More</h1>
+    <p>Admin Panel — sign in to continue</p>
+    <label>Email</label>
+    <input type="email" id="login-email" placeholder="admin@deziremore.com" />
+    <label>Password</label>
+    <input type="password" id="login-password" placeholder="••••••••" />
+    <div id="login-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:20px" onclick="login()">Sign In</button>
+  </div>
+</div>
+
+<!-- ── Main App ── -->
+<div id="app">
+  <nav class="sidebar">
+    <div class="sidebar-logo">DEZIRE MORE <span>ADMIN PANEL</span></div>
+    <button class="nav-item active" onclick="showPage('dashboard')">Dashboard</button>
+    <button class="nav-item" onclick="showPage('products')">All Products</button>
+    <button class="nav-item" onclick="showPage('add')">Add Product</button>
+    <button class="nav-item" style="margin-top:auto;position:absolute;bottom:20px;left:0;width:100%;color:rgba(255,255,255,.5)" onclick="logout()">Sign Out</button>
+  </nav>
+
+  <main class="main">
+
+    <!-- Dashboard -->
+    <div class="page active" id="page-dashboard">
+      <h2>Dashboard</h2>
+      <p class="subtitle">Live overview of your store</p>
+      <div class="stats-row" id="stats-row">
+        <div class="stat-box"><div class="num" id="stat-total">—</div><div class="lbl">Total Products</div></div>
+        <div class="stat-box"><div class="num" id="stat-instock">—</div><div class="lbl">In Stock</div></div>
+        <div class="stat-box"><div class="num" id="stat-sale">—</div><div class="lbl">On Sale</div></div>
+        <div class="stat-box"><div class="num" id="stat-new">—</div><div class="lbl">New Arrivals</div></div>
+      </div>
+      <div class="card">
+        <strong>Recent Products</strong>
+        <div id="recent-products" style="margin-top:16px"><p class="loading">Loading…</p></div>
+      </div>
+    </div>
+
+    <!-- All Products -->
+    <div class="page" id="page-products">
+      <h2>All Products</h2>
+      <p class="subtitle">Click edit to update details or manage images</p>
+      <div class="search-bar">
+        <input type="text" id="search-input" placeholder="Search by name, category…" oninput="searchProducts()" />
+        <select id="cat-filter" onchange="searchProducts()" style="width:180px">
+          <option value="">All categories</option>
+          <option value="sarees">Sarees</option>
+          <option value="blouses">Blouses</option>
+          <option value="jewelry">Jewelry</option>
+          <option value="accessories">Accessories</option>
+          <option value="dress-materials">Dress Materials</option>
+          <option value="ready-to-wear">Ready to Wear</option>
+          <option value="western">Western</option>
+        </select>
+        <button class="btn btn-gold" onclick="showPage('add')">+ Add Product</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="products-list"><p class="loading" style="padding:40px">Loading…</p></div>
+      </div>
+    </div>
+
+    <!-- Add / Edit Product -->
+    <div class="page" id="page-add">
+      <h2 id="form-title">Add New Product</h2>
+      <p class="subtitle">Fill in the details and upload photos — product goes live instantly</p>
+
+      <input type="hidden" id="edit-product-id" />
+
+      <div class="card">
+        <strong>Product Photos</strong>
+        <p style="font-size:13px;color:var(--muted);margin-top:4px;margin-bottom:16px">Upload up to 10 photos. First photo is the main image.</p>
+        <div class="upload-zone" onclick="document.getElementById('file-input').click()"
+             ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" id="upload-zone">
+          <strong>Click to upload or drag photos here</strong>
+          <p>JPG, PNG, WEBP · Max 5MB each · Up to 10 images</p>
+        </div>
+        <input type="file" id="file-input" multiple accept="image/*" onchange="handleFiles(this.files)" />
+        <div class="image-previews" id="image-previews"></div>
+      </div>
+
+      <div class="card">
+        <strong>Basic Details</strong>
+        <label>Product Name *</label>
+        <input type="text" id="f-name" placeholder="e.g. Kanjivaram Silk Saree" />
+
+        <div class="row" style="margin-top:16px">
+          <div>
+            <label>Category *</label>
+            <select id="f-category">
+              <option value="">Select category</option>
+              <option value="sarees">Sarees</option>
+              <option value="blouses">Blouses</option>
+              <option value="jewelry">Jewelry</option>
+              <option value="accessories">Accessories</option>
+              <option value="dress-materials">Dress Materials</option>
+              <option value="ready-to-wear">Ready to Wear</option>
+              <option value="western">Western</option>
+            </select>
+          </div>
+          <div>
+            <label>Subcategory</label>
+            <input type="text" id="f-subcategory" placeholder="See hint below for exact values" />
+            <p style="font-size:11px;color:var(--muted);margin-top:4px">
+              For Sarees use: printed-chiffon, hand-embroidered-chiffon-georgette, hand-embroidered-crepe, mul-cotton, handloom, persian, kashmiri.<br/>
+              For Ready to Wear use: suits, coords, blouses, dresses, ethnic-skirts, casual-western.<br/>
+              Type it exactly as shown (lowercase, hyphens) so it matches the website's dropdown menus.
+            </p>
+          </div>
+        </div>
+
+        <label>Description</label>
+        <textarea id="f-description" placeholder="Describe the product — fabric, look, occasion…"></textarea>
+      </div>
+
+      <div class="card">
+        <strong>Pricing</strong>
+        <div class="row">
+          <div>
+            <label>Selling Price (₹) *</label>
+            <input type="number" id="f-price" placeholder="4999" min="0" />
+          </div>
+          <div>
+            <label>Original / MRP (₹) — for strikethrough</label>
+            <input type="number" id="f-original-price" placeholder="6999" min="0" />
+          </div>
+        </div>
+        <p id="discount-preview" style="font-size:13px;color:var(--success);margin-top:8px"></p>
+      </div>
+
+      <div class="card">
+        <strong>Details</strong>
+        <div class="row">
+          <div>
+            <label>Fabric</label>
+            <input type="text" id="f-fabric" placeholder="e.g. Pure Silk, Georgette, Cotton" />
+          </div>
+          <div>
+            <label>SKU (optional)</label>
+            <input type="text" id="f-sku" placeholder="e.g. KNJ-001" />
+          </div>
+        </div>
+
+        <label>Colors (comma separated)</label>
+        <input type="text" id="f-colors" placeholder="Red, Gold, Green" />
+
+        <label>Sizes (comma separated)</label>
+        <input type="text" id="f-sizes" placeholder="Free Size   OR   S, M, L, XL, XXL" />
+
+        <label>Occasions (comma separated)</label>
+        <input type="text" id="f-occasion" placeholder="Wedding, Festival, Party" />
+      </div>
+
+      <div class="card">
+        <strong>Tags</strong>
+        <p style="font-size:13px;color:var(--muted);margin:6px 0 14px">These control which sections the product appears in</p>
+        <div class="tags-grid">
+          <div class="tag-check"><input type="checkbox" id="tag-bestseller" value="bestseller"><label for="tag-bestseller">Bestseller</label></div>
+          <div class="tag-check"><input type="checkbox" id="tag-new-arrival" value="new-arrival"><label for="tag-new-arrival">New Arrival</label></div>
+          <div class="tag-check"><input type="checkbox" id="tag-sale" value="sale"><label for="tag-sale">Sale</label></div>
+          <div class="tag-check"><input type="checkbox" id="tag-premium" value="premium"><label for="tag-premium">Premium</label></div>
+          <div class="tag-check"><input type="checkbox" id="tag-everyday" value="everyday"><label for="tag-everyday">Everyday</label></div>
+        </div>
+
+        <div class="row" style="margin-top:20px">
+          <div>
+            <label>In Stock</label>
+            <select id="f-instock">
+              <option value="true">Yes — available to buy</option>
+              <option value="false">No — out of stock</option>
+            </select>
+          </div>
+          <div>
+            <label>Stock Count</label>
+            <input type="number" id="f-stock-count" value="100" min="0" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="saveProduct()" id="save-btn">Save Product</button>
+        <button class="btn btn-outline" onclick="resetForm()">Clear Form</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+const API = '/api';
+let token = localStorage.getItem('dm_admin_token');
+let selectedFiles = [];
+let allProducts = [];
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+async function login() {
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl    = document.getElementById('login-error');
+  errEl.style.display = 'none';
+
+  try {
+    const res  = await fetch(`${API}/admin/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    token = data.token;
+    localStorage.setItem('dm_admin_token', token);
+    showApp();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+  }
+}
+
+function logout() {
+  localStorage.removeItem('dm_admin_token');
+  token = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+async function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  loadDashboard();
+  loadProductsList();
+}
+
+// Check token on page load
+window.addEventListener('load', async () => {
+  if (!token) return;
+  try {
+    const res = await fetch(`${API}/admin/verify`, { headers: { Authorization: `Bearer ${token}` } });
+    if (res.ok) showApp();
+    else logout();
+  } catch { logout(); }
+});
+
+document.getElementById('login-password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') login();
+});
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`page-${name}`).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.textContent.toLowerCase().includes(name === 'add' ? 'add' : name)) n.classList.add('active');
+  });
+
+  if (name === 'products') loadProductsList();
+  if (name === 'dashboard') loadDashboard();
+  if (name === 'add' && !document.getElementById('edit-product-id').value) resetForm();
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+
+async function loadDashboard() {
+  try {
+    const res  = await fetch(`${API}/products/home`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    document.getElementById('stat-total').textContent = data.stats?.totalProducts || 0;
+
+    const allRes  = await fetch(`${API}/products?limit=200`, { headers: { Authorization: `Bearer ${token}` } });
+    const allData = await allRes.json();
+    const prods   = allData.data || [];
+
+    document.getElementById('stat-instock').textContent = prods.filter(p => p.inStock).length;
+    document.getElementById('stat-sale').textContent    = prods.filter(p => p.tags?.includes('sale')).length;
+    document.getElementById('stat-new').textContent     = prods.filter(p => p.tags?.includes('new-arrival')).length;
+
+    const recent = prods.slice(0, 5);
+    document.getElementById('recent-products').innerHTML = recent.length
+      ? recent.map(p => `
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+            <img src="${p.images?.[0]?.url || ''}" class="product-thumb" onerror="this.style.display='none'" />
+            <div style="flex:1">
+              <div style="font-weight:600;font-size:14px">${p.name}</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:2px">${p.category} · ₹${p.price.toLocaleString('en-IN')}</div>
+            </div>
+            <span class="badge ${p.inStock ? 'badge-active' : 'badge-inactive'}">${p.inStock ? 'In stock' : 'Out of stock'}</span>
+          </div>`).join('')
+      : '<p class="empty">No products yet — <a href="#" onclick="showPage(\'add\')">add your first one</a></p>';
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// ── Products List ─────────────────────────────────────────────────────────────
+
+async function loadProductsList() {
+  const search = document.getElementById('search-input')?.value || '';
+  const cat    = document.getElementById('cat-filter')?.value   || '';
+  let url = `${API}/products?limit=100`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  if (cat)    url += `&category=${cat}`;
+
+  try {
+    const res  = await fetch(url);
+    const data = await res.json();
+    allProducts = data.data || [];
+    renderProductsTable(allProducts);
+  } catch (err) {
+    document.getElementById('products-list').innerHTML = `<p class="empty">Failed to load: ${err.message}</p>`;
+  }
+}
+
+function searchProducts() {
+  clearTimeout(window._searchTimer);
+  window._searchTimer = setTimeout(loadProductsList, 350);
+}
+
+function renderProductsTable(products) {
+  const el = document.getElementById('products-list');
+  if (!products.length) {
+    el.innerHTML = '<p class="empty">No products found</p>';
+    return;
+  }
+  el.innerHTML = `
+    <table class="products-table">
+      <thead><tr>
+        <th>Photo</th><th>Name</th><th>Category</th>
+        <th>Price</th><th>Tags</th><th>Status</th><th>Actions</th>
+      </tr></thead>
+      <tbody>
+        ${products.map(p => `
+          <tr>
+            <td><img src="${p.images?.[0]?.url || ''}" class="product-thumb" onerror="this.style.display='none'" /></td>
+            <td><strong>${p.name}</strong></td>
+            <td style="text-transform:capitalize">${p.category}</td>
+            <td>
+              ₹${p.price.toLocaleString('en-IN')}
+              ${p.originalPrice ? `<br><span style="text-decoration:line-through;color:var(--muted);font-size:12px">₹${p.originalPrice.toLocaleString('en-IN')}</span>` : ''}
+            </td>
+            <td>${(p.tags||[]).map(t => `<span class="badge badge-tag">${t}</span>`).join('')}</td>
+            <td><span class="badge ${p.isActive !== false ? 'badge-active' : 'badge-inactive'}">${p.isActive !== false ? 'Active' : 'Hidden'}</span></td>
+            <td>
+              <div class="actions">
+                <button class="btn btn-outline" style="padding:6px 12px;font-size:12px" onclick="editProduct('${p._id}')">Edit</button>
+                <button class="btn btn-danger" style="padding:6px 12px;font-size:12px" onclick="deleteProduct('${p._id}','${p.name.replace(/'/g,"\\'")}')">Delete</button>
+              </div>
+            </td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ── Add / Edit Product ────────────────────────────────────────────────────────
+
+function resetForm() {
+  document.getElementById('edit-product-id').value = '';
+  document.getElementById('form-title').textContent = 'Add New Product';
+  document.getElementById('save-btn').textContent = 'Save Product';
+  ['f-name','f-category','f-subcategory','f-description','f-price','f-original-price',
+   'f-fabric','f-sku','f-colors','f-sizes','f-occasion'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('f-instock').value = 'true';
+  document.getElementById('f-stock-count').value = '100';
+  ['tag-bestseller','tag-new-arrival','tag-sale','tag-premium','tag-everyday'].forEach(id => {
+    document.getElementById(id).checked = false;
+  });
+  selectedFiles = [];
+  document.getElementById('image-previews').innerHTML = '';
+  document.getElementById('discount-preview').textContent = '';
+}
+
+function editProduct(id) {
+  const p = allProducts.find(x => x._id === id);
+  if (!p) return;
+
+  document.getElementById('edit-product-id').value = id;
+  document.getElementById('form-title').textContent = 'Edit Product';
+  document.getElementById('save-btn').textContent = 'Save Changes';
+
+  document.getElementById('f-name').value          = p.name || '';
+  document.getElementById('f-category').value      = p.category || '';
+  document.getElementById('f-subcategory').value   = p.subcategory || '';
+  document.getElementById('f-description').value   = p.description || '';
+  document.getElementById('f-price').value         = p.price || '';
+  document.getElementById('f-original-price').value = p.originalPrice || '';
+  document.getElementById('f-fabric').value        = p.fabric || '';
+  document.getElementById('f-sku').value           = p.sku || '';
+  document.getElementById('f-colors').value        = (p.colors||[]).join(', ');
+  document.getElementById('f-sizes').value         = (p.sizes||[]).join(', ');
+  document.getElementById('f-occasion').value      = (p.occasion||[]).join(', ');
+  document.getElementById('f-instock').value       = p.inStock ? 'true' : 'false';
+  document.getElementById('f-stock-count').value   = p.stockCount || 100;
+
+  ['bestseller','new-arrival','sale','premium','everyday'].forEach(tag => {
+    document.getElementById(`tag-${tag}`).checked = (p.tags||[]).includes(tag);
+  });
+
+  // Show existing images
+  document.getElementById('image-previews').innerHTML = (p.images||[]).map(img => `
+    <div class="preview-item">
+      <img src="${img.url}" />
+      <button class="remove-img" onclick="deleteExistingImage('${id}','${img.publicId}',this.parentElement)">×</button>
+    </div>`).join('');
+
+  selectedFiles = [];
+  showPage('add');
+  updateDiscountPreview();
+}
+
+async function deleteExistingImage(productId, publicId, el) {
+  if (!confirm('Remove this image?')) return;
+  try {
+    await fetch(`${API}/products/${productId}/images/${encodeURIComponent(publicId)}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    el.remove();
+    toast('Image removed', 'success');
+  } catch {
+    toast('Failed to remove image', 'error');
+  }
+}
+
+async function saveProduct() {
+  const editId = document.getElementById('edit-product-id').value;
+  const name   = document.getElementById('f-name').value.trim();
+  const cat    = document.getElementById('f-category').value;
+  const price  = document.getElementById('f-price').value;
+
+  if (!name || !cat || !price) {
+    toast('Name, category and price are required', 'error');
+    return;
+  }
+
+  const tags = ['bestseller','new-arrival','sale','premium','everyday']
+    .filter(t => document.getElementById(`tag-${t}`).checked);
+
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  btn.textContent = editId ? 'Saving…' : 'Uploading & saving…';
+
+  try {
+    let res;
+
+    if (editId) {
+      // PATCH — update details (no image re-upload here)
+      res = await fetch(`${API}/products/${editId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name,
+          category:      cat,
+          subcategory:   document.getElementById('f-subcategory').value,
+          price:         Number(price),
+          originalPrice: Number(document.getElementById('f-original-price').value) || undefined,
+          fabric:        document.getElementById('f-fabric').value,
+          sku:           document.getElementById('f-sku').value,
+          colors:        document.getElementById('f-colors').value.split(',').map(s=>s.trim()).filter(Boolean),
+          sizes:         document.getElementById('f-sizes').value.split(',').map(s=>s.trim()).filter(Boolean),
+          occasion:      document.getElementById('f-occasion').value.split(',').map(s=>s.trim()).filter(Boolean),
+          description:   document.getElementById('f-description').value,
+          inStock:       document.getElementById('f-instock').value === 'true',
+          stockCount:    Number(document.getElementById('f-stock-count').value),
+          tags,
+        }),
+      });
+
+      // Upload new images if any were selected
+      if (selectedFiles.length) {
+        const fd = new FormData();
+        selectedFiles.forEach(f => fd.append('images', f));
+        fd.append('category', cat);
+        await fetch(`${API}/products/${editId}/images`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd,
+        });
+      }
+    } else {
+      // POST — create new product with images
+      const fd = new FormData();
+      fd.append('name', name);
+      fd.append('category', cat);
+      fd.append('subcategory', document.getElementById('f-subcategory').value);
+      fd.append('price', price);
+      fd.append('originalPrice', document.getElementById('f-original-price').value);
+      fd.append('fabric', document.getElementById('f-fabric').value);
+      fd.append('sku', document.getElementById('f-sku').value);
+      fd.append('colors', document.getElementById('f-colors').value);
+      fd.append('sizes', document.getElementById('f-sizes').value);
+      fd.append('occasion', document.getElementById('f-occasion').value);
+      fd.append('description', document.getElementById('f-description').value);
+      fd.append('inStock', document.getElementById('f-instock').value);
+      fd.append('stockCount', document.getElementById('f-stock-count').value);
+      tags.forEach(t => fd.append('tags', t));
+      selectedFiles.forEach(f => fd.append('images', f));
+
+      res = await fetch(`${API}/products`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+    }
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    toast(editId ? 'Product updated!' : 'Product added — live on your store!', 'success');
+    resetForm();
+    showPage('products');
+  } catch (err) {
+    toast(err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = editId ? 'Save Changes' : 'Save Product';
+  }
+}
+
+async function deleteProduct(id, name) {
+  if (!confirm(`Delete "${name}"? It will be hidden from the store.`)) return;
+  try {
+    await fetch(`${API}/products/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    toast('Product removed from store', 'success');
+    loadProductsList();
+  } catch {
+    toast('Failed to delete', 'error');
+  }
+}
+
+// ── Image upload ──────────────────────────────────────────────────────────────
+
+function handleFiles(files) {
+  const newFiles = Array.from(files).slice(0, 10 - selectedFiles.length);
+  selectedFiles = [...selectedFiles, ...newFiles].slice(0, 10);
+  renderPreviews();
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag-over');
+  handleFiles(e.dataTransfer.files);
+}
+function handleDragOver(e)  { e.preventDefault(); document.getElementById('upload-zone').classList.add('drag-over'); }
+function handleDragLeave()  { document.getElementById('upload-zone').classList.remove('drag-over'); }
+
+function renderPreviews() {
+  const el = document.getElementById('image-previews');
+  const newPreviews = selectedFiles.map((file, i) => {
+    const url = URL.createObjectURL(file);
+    return `<div class="preview-item">
+      <img src="${url}" />
+      <button class="remove-img" onclick="removeFile(${i})">×</button>
+    </div>`;
+  }).join('');
+  // Keep existing image previews + append new ones
+  const existing = el.querySelectorAll('.preview-item:not([data-new])');
+  el.innerHTML = Array.from(existing).map(el => el.outerHTML).join('') + newPreviews;
+}
+
+function removeFile(index) {
+  selectedFiles.splice(index, 1);
+  renderPreviews();
+}
+
+// ── Discount preview ──────────────────────────────────────────────────────────
+
+document.addEventListener('input', e => {
+  if (e.target.id === 'f-price' || e.target.id === 'f-original-price') updateDiscountPreview();
+});
+
+function updateDiscountPreview() {
+  const price    = Number(document.getElementById('f-price')?.value);
+  const original = Number(document.getElementById('f-original-price')?.value);
+  const el = document.getElementById('discount-preview');
+  if (el && price && original && original > price) {
+    const pct = Math.round((original - price) / original * 100);
+    el.textContent = `${pct}% off will show on this product`;
+  } else if (el) {
+    el.textContent = '';
+  }
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `show ${type}`;
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => el.className = '', 3500);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "appId": "com.deziremore.app",
+  "appName": "Dezire More",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "backgroundColor": "#FAF6EE"
+}

@@ -1,0 +1,4 @@
+node_modules
+.env
+dezire-backend/.env
+dezire-backend/node_modules
