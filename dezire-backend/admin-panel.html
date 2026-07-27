@@ -175,6 +175,7 @@
     <button class="nav-item active" onclick="showPage('dashboard')">Dashboard</button>
     <button class="nav-item" onclick="showPage('products')">All Products</button>
     <button class="nav-item" onclick="showPage('add')">Add Product</button>
+    <button class="nav-item" onclick="showPage('bulk')">Bulk Import</button>
     <button class="nav-item" style="margin-top:auto;position:absolute;bottom:20px;left:0;width:100%;color:rgba(255,255,255,.5)" onclick="logout()">Sign Out</button>
   </nav>
 
@@ -342,12 +343,52 @@
       </div>
     </div>
 
+    <!-- Bulk Import -->
+    <div class="page" id="page-bulk">
+      <h2>Bulk Import</h2>
+      <p class="subtitle">Add many products at once with a spreadsheet + all your photos</p>
+
+      <div class="card">
+        <strong>Step 1 — Get the template</strong>
+        <p style="font-size:13px;color:var(--muted);margin-top:6px">
+          Download the template, fill in one row per product using Excel or Google Sheets, then save/export as CSV.
+        </p>
+        <button class="btn btn-outline" style="margin-top:14px" onclick="downloadBulkTemplate()">Download CSV Template</button>
+        <p style="font-size:12px;color:var(--muted);margin-top:14px;line-height:1.6">
+          <strong>Columns:</strong> name, category, subcategory, price, originalPrice, fabric, sku, colors, sizes, occasion, description, tags, inStock, stockCount, images<br/>
+          <strong>category</strong> must be one of: sarees, blouses, jewelry, accessories, dress-materials, ready-to-wear, western<br/>
+          <strong>colors / sizes / occasion / tags</strong> — separate multiple values with a semicolon, e.g. <code>Red;Gold</code><br/>
+          <strong>images</strong> — the exact photo filenames for that product, separated by a semicolon, e.g. <code>saree1.jpg;saree2.jpg</code> (must match the files you select in Step 3 exactly)
+        </p>
+      </div>
+
+      <div class="card">
+        <strong>Step 2 — Upload your filled-in CSV</strong>
+        <input type="file" id="bulk-csv-input" accept=".csv" style="margin-top:14px" onchange="handleBulkCSV(this.files)" />
+        <p id="bulk-csv-status" style="font-size:13px;color:var(--muted);margin-top:8px"></p>
+      </div>
+
+      <div class="card">
+        <strong>Step 3 — Select all product photos at once</strong>
+        <p style="font-size:13px;color:var(--muted);margin-top:6px">Select every photo for every product in one go — they get matched to products by filename.</p>
+        <input type="file" id="bulk-images-input" accept="image/*" multiple style="margin-top:14px" onchange="handleBulkImages(this.files)" />
+        <p id="bulk-images-status" style="font-size:13px;color:var(--muted);margin-top:8px"></p>
+      </div>
+
+      <div class="card">
+        <strong>Step 4 — Import</strong>
+        <button class="btn btn-primary" style="margin-top:10px" onclick="runBulkImport()" id="bulk-run-btn">Start Import</button>
+        <div id="bulk-progress" style="margin-top:18px"></div>
+      </div>
+    </div>
+
   </main>
 </div>
 
 <!-- Toast -->
 <div id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script>
 const API = '/api';
 let token = localStorage.getItem('dm_admin_token');
@@ -751,6 +792,142 @@ function updateDiscountPreview() {
   } else if (el) {
     el.textContent = '';
   }
+}
+
+// ── Bulk Import ───────────────────────────────────────────────────────────────
+
+const BULK_TEMPLATE_HEADERS = [
+  'name','category','subcategory','price','originalPrice','fabric','sku',
+  'colors','sizes','occasion','description','tags','inStock','stockCount','images',
+];
+const BULK_TEMPLATE_EXAMPLE = [
+  'Kanjivaram Silk Saree','sarees','handloom','4999','6999','Pure Silk','KNJ-001',
+  'Red;Gold','Free Size','Wedding;Festival','Rich handwoven silk saree with zari border.',
+  'bestseller;new-arrival','true','100','saree1.jpg;saree2.jpg',
+];
+
+let bulkRows = [];
+let bulkImageMap = {}; // filename -> File
+
+function downloadBulkTemplate() {
+  const csv = Papa.unparse({ fields: BULK_TEMPLATE_HEADERS, data: [BULK_TEMPLATE_EXAMPLE] });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'dezire-more-bulk-import-template.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function handleBulkCSV(files) {
+  const file = files[0];
+  const statusEl = document.getElementById('bulk-csv-status');
+  if (!file) { statusEl.textContent = ''; bulkRows = []; return; }
+
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    complete: (results) => {
+      bulkRows = results.data.filter(r => (r.name || '').trim());
+      statusEl.textContent = `${bulkRows.length} product${bulkRows.length !== 1 ? 's' : ''} loaded from CSV.`;
+      statusEl.style.color = 'var(--success)';
+    },
+    error: (err) => {
+      bulkRows = [];
+      statusEl.textContent = `Failed to read CSV: ${err.message}`;
+      statusEl.style.color = 'var(--danger)';
+    },
+  });
+}
+
+function handleBulkImages(files) {
+  bulkImageMap = {};
+  Array.from(files).forEach(f => { bulkImageMap[f.name] = f; });
+  const statusEl = document.getElementById('bulk-images-status');
+  statusEl.textContent = `${files.length} photo${files.length !== 1 ? 's' : ''} ready.`;
+  statusEl.style.color = 'var(--success)';
+}
+
+function splitField(value) {
+  return (value || '').split(';').map(s => s.trim()).filter(Boolean);
+}
+
+async function runBulkImport() {
+  const progressEl = document.getElementById('bulk-progress');
+  const btn = document.getElementById('bulk-run-btn');
+
+  if (!bulkRows.length) {
+    toast('Upload a CSV with at least one product first', 'error');
+    return;
+  }
+
+  btn.disabled = true;
+  progressEl.innerHTML = '';
+  let successCount = 0;
+  let failCount = 0;
+
+  for (let i = 0; i < bulkRows.length; i++) {
+    const row = bulkRows[i];
+    const line = document.createElement('div');
+    line.style.cssText = 'padding:8px 0;border-bottom:1px solid var(--border);font-size:13px';
+    line.textContent = `${i + 1}/${bulkRows.length} — ${row.name} — uploading…`;
+    progressEl.appendChild(line);
+
+    try {
+      if (!row.name || !row.category || !row.price) {
+        throw new Error('Missing required field (name, category, or price)');
+      }
+
+      const imageNames = splitField(row.images);
+      const missing = imageNames.filter(n => !bulkImageMap[n]);
+      if (imageNames.length && missing.length) {
+        throw new Error(`Photo not found: ${missing.join(', ')}`);
+      }
+
+      const fd = new FormData();
+      fd.append('name', row.name);
+      fd.append('category', row.category);
+      fd.append('subcategory', row.subcategory || '');
+      fd.append('price', row.price);
+      fd.append('originalPrice', row.originalPrice || '');
+      fd.append('fabric', row.fabric || '');
+      fd.append('sku', row.sku || '');
+      fd.append('colors', splitField(row.colors).join(','));
+      fd.append('sizes', splitField(row.sizes).join(','));
+      fd.append('occasion', splitField(row.occasion).join(','));
+      fd.append('description', row.description || '');
+      fd.append('inStock', row.inStock || 'true');
+      fd.append('stockCount', row.stockCount || '100');
+      splitField(row.tags).forEach(t => fd.append('tags', t));
+      imageNames.forEach(n => fd.append('images', bulkImageMap[n]));
+
+      const res = await fetch(`${API}/products`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Server error');
+
+      successCount++;
+      line.textContent = `${i + 1}/${bulkRows.length} — ${row.name} — added ✓`;
+      line.style.color = 'var(--success)';
+    } catch (err) {
+      failCount++;
+      line.textContent = `${i + 1}/${bulkRows.length} — ${row.name || '(no name)'} — failed: ${err.message}`;
+      line.style.color = 'var(--danger)';
+    }
+  }
+
+  const summary = document.createElement('div');
+  summary.style.cssText = 'margin-top:12px;font-weight:600';
+  summary.textContent = `Done — ${successCount} added, ${failCount} failed.`;
+  progressEl.appendChild(summary);
+
+  btn.disabled = false;
+  toast(`Bulk import finished: ${successCount} added, ${failCount} failed`, failCount ? 'error' : 'success');
+  loadDashboard();
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
