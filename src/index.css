@@ -558,7 +558,16 @@ nav {
 .wishlist-btn svg { width: 14px; height: 14px; stroke: #888; fill: none; }
 .product-info { padding: 14px 16px 18px; }
 .brand-tag { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-light); font-weight: 600; margin-bottom: 4px; }
-.product-name { font-size: 13px; font-weight: 500; color: var(--text-dark); margin-bottom: 8px; line-height: 1.4; }
+.product-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+  line-height: 1.4;
+  word-break: normal;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
 .price-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
 .price-now { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 700; color: var(--text-dark); }
 .price-was { font-size: 13px; color: var(--text-light); text-decoration: line-through; }
@@ -1666,6 +1675,9 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   color: var(--text-dark);
   line-height: 1.2;
   margin-bottom: 6px;
+  word-break: normal;
+  overflow-wrap: break-word;
+  white-space: normal;
 }
 
 .pd-material {
@@ -3099,6 +3111,9 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   color: var(--text-dark);
   margin-bottom: 6px;
   line-height: 1.4;
+  word-break: normal;
+  overflow-wrap: break-word;
+  white-space: normal;
 }
 
 .search-result-card .search-result-price {
@@ -5460,4 +5475,46 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     opacity: 1;
     transform: none;
   }
+}
+
+/* ===== TOUCH DEVICES: kill hover-triggered transforms ==========================
+   Touch browsers simulate a lingering ":hover" the moment you tap or swipe
+   across a card. On cards with a hover transform this caused visible
+   shaking/jitter while scrolling the New Arrivals carousel, and — far worse —
+   could turn the card's own :hover transform into a CSS containing block for
+   any position:fixed modal rendered inside it, crushing that modal down to
+   the card's width. The modals are now portalled (see ProductCard.jsx) which
+   fixes the crushing; this removes the transforms themselves so touch never
+   triggers the shake in the first place. */
+@media (hover: none), (pointer: coarse) {
+  .product-card:hover,
+  .marquee-card:hover,
+  .testimonial-card:hover,
+  .search-result-card:hover,
+  .wishlist-btn:hover {
+    transform: none !important;
+  }
+  .product-card:hover .product-img-wrap img,
+  .search-result-card:hover .search-result-img,
+  .marquee-card:hover::before {
+    transform: none !important;
+    opacity: inherit;
+  }
+}
+
+/* ===== NEW ARRIVALS: more compact cards + search results matched to the
+   home page card scale (final, authoritative) ===== */
+@media (max-width: 640px) {
+  .marquee-card { flex: 0 0 148px; }
+  .marquee-card .product-info { padding: 10px 12px 14px; }
+  .marquee-card .product-name { font-size: 11.5px; margin-bottom: 6px; }
+  .marquee-card .price-now { font-size: 15px; }
+  .marquee-card .price-was { font-size: 11px; }
+  .marquee-card .price-row { margin-bottom: 10px; }
+  .marquee-card .add-to-bag { padding: 8px; font-size: 9px; }
+  .marquee-card .brand-tag { font-size: 8px; margin-bottom: 2px; }
+}
+
+@media (max-width: 768px) {
+  .search-result-img-wrap { aspect-ratio: auto; height: 220px; }
 }

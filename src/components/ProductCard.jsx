@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
@@ -351,7 +352,11 @@ function ProductCard({ product: rawProduct }) {
       </div>
 
       {/* ── Product Detail Modal ── */}
-      {modalOpen && (
+      {/* Portalled to document.body: this card can sit inside a marquee/
+          carousel wrapper whose :hover transform (which can get "stuck" on
+          touch) would otherwise become the containing block for this
+          position:fixed overlay, crushing it down to the card's own width. */}
+      {modalOpen && createPortal(
         <div className="pd-overlay" onClick={closeModal}>
           <div className="pd-modal" onClick={e => e.stopPropagation()}>
             <button className="pd-close" onClick={closeModal} aria-label="Close">✕</button>
@@ -567,11 +572,12 @@ function ProductCard({ product: rawProduct }) {
               </p>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ── Full-screen Lightbox: zoom / pan / navigate ── */}
-      {modalOpen && lightboxOpen && (
+      {modalOpen && lightboxOpen && createPortal(
         <div className="lightbox-overlay" onClick={() => setLightboxOpen(false)}>
           <button className="lightbox-close" onClick={() => setLightboxOpen(false)} aria-label="Close zoom view">✕</button>
 
@@ -613,11 +619,12 @@ function ProductCard({ product: rawProduct }) {
               }}
             />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ── Size Chart Modal ── */}
-      {sizeChartOpen && (
+      {sizeChartOpen && createPortal(
         <div className="size-chart-overlay" onClick={() => setSizeChartOpen(false)}>
           <div className="size-chart-modal" onClick={e => e.stopPropagation()}>
             <div className="size-chart-header">
@@ -648,7 +655,8 @@ function ProductCard({ product: rawProduct }) {
               Dupatta lengths: 2.35–2.5 mts.
             </p>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
