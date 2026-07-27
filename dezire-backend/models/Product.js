@@ -33,6 +33,11 @@ const productSchema = new mongoose.Schema(
         publicId: { type: String, required: true }, // Cloudinary public_id (for deletion)
       },
     ],
+    // Optional single showcase video (e.g. the outfit being worn/draped)
+    video: {
+      url: { type: String },
+      publicId: { type: String },
+    },
     colors: [{ type: String, trim: true }],
     sizes: [{ type: String, trim: true }],
     fabric: { type: String, trim: true },

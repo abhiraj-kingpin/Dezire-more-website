@@ -139,6 +139,9 @@ function ProductCard({ product: rawProduct }) {
       : 0;
 
   const galleryImages = product.images.length > 0 ? product.images : (product.image ? [product.image] : []);
+  const hasVideo   = !!product.video?.url;
+  const mediaCount = galleryImages.length + (hasVideo ? 1 : 0);
+  const isVideoActive = hasVideo && activeImg === galleryImages.length;
 
   const openModal = () => { setActiveImg(0); setQuantity(1); setSelectedSize(null); setModalOpen(true); };
   const closeModal = () => { setModalOpen(false); setLightboxOpen(false); };
@@ -160,12 +163,28 @@ function ProductCard({ product: rawProduct }) {
 
   const showPrev = useCallback((e) => {
     e?.stopPropagation();
+    setActiveImg(i => (i - 1 + mediaCount) % mediaCount);
+    setZoom(1); setPan({ x: 0, y: 0 });
+  }, [mediaCount]);
+
+  const showNext = useCallback((e) => {
+    e?.stopPropagation();
+    setActiveImg(i => (i + 1) % mediaCount);
+    setZoom(1); setPan({ x: 0, y: 0 });
+  }, [mediaCount]);
+
+  // The lightbox only ever shows images (video plays inline in the main
+  // gallery instead), so it navigates within image bounds only.
+  const showPrevImage = useCallback((e) => {
+    e?.stopPropagation();
+    if (galleryImages.length < 2) return;
     setActiveImg(i => (i - 1 + galleryImages.length) % galleryImages.length);
     setZoom(1); setPan({ x: 0, y: 0 });
   }, [galleryImages.length]);
 
-  const showNext = useCallback((e) => {
+  const showNextImage = useCallback((e) => {
     e?.stopPropagation();
+    if (galleryImages.length < 2) return;
     setActiveImg(i => (i + 1) % galleryImages.length);
     setZoom(1); setPan({ x: 0, y: 0 });
   }, [galleryImages.length]);
@@ -174,13 +193,18 @@ function ProductCard({ product: rawProduct }) {
   useEffect(() => {
     if (!modalOpen) return;
     const onKeyDown = (e) => {
-      if (galleryImages.length < 2) return;
+      if (lightboxOpen) {
+        if (e.key === 'ArrowLeft') showPrevImage();
+        if (e.key === 'ArrowRight') showNextImage();
+        return;
+      }
+      if (mediaCount < 2) return;
       if (e.key === 'ArrowLeft') showPrev();
       if (e.key === 'ArrowRight') showNext();
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [modalOpen, galleryImages.length, showPrev, showNext]);
+  }, [modalOpen, lightboxOpen, mediaCount, showPrev, showNext, showPrevImage, showNextImage]);
 
   const handleCardWishlist = (e) => {
     e.stopPropagation();
@@ -335,7 +359,7 @@ function ProductCard({ product: rawProduct }) {
             {/* Left — Images: vertical thumbnail rail + large main image */}
             <div className="pd-left">
               <div className="pd-gallery">
-                {galleryImages.length > 1 && (
+                {mediaCount > 1 && (
                   <div className="pd-thumbs-vertical">
                     {galleryImages.map((img, i) => (
                       <button
@@ -346,31 +370,54 @@ function ProductCard({ product: rawProduct }) {
                         <img src={img} alt={`${product.name} view ${i + 1}`} />
                       </button>
                     ))}
+                    {hasVideo && (
+                      <button
+                        className={`pd-thumb pd-thumb-video ${isVideoActive ? 'active' : ''}`}
+                        onClick={() => { setActiveImg(galleryImages.length); setZoom(1); setPan({ x: 0, y: 0 }); }}
+                      >
+                        <video src={product.video.url} muted />
+                        <span className="pd-thumb-play">▶</span>
+                      </button>
+                    )}
                   </div>
                 )}
 
-                <div className="pd-main-img-wrap" onClick={openLightbox}>
-                  <img
-                    ref={modalImgRef}
-                    src={galleryImages[activeImg] || product.image}
-                    alt={product.name}
-                    className="pd-main-img"
-                  />
-                  <div className="pd-zoom-hint">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-                    Click to Zoom
-                  </div>
-
-                  {galleryImages.length > 1 && (
+                <div className="pd-main-img-wrap" onClick={isVideoActive ? undefined : openLightbox}>
+                  {isVideoActive ? (
+                    <video
+                      src={product.video.url}
+                      className="pd-main-img"
+                      controls
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                    />
+                  ) : (
                     <>
-                      <button className="pd-nav-arrow pd-nav-prev" onClick={showPrev} aria-label="Previous image">‹</button>
-                      <button className="pd-nav-arrow pd-nav-next" onClick={showNext} aria-label="Next image">›</button>
+                      <img
+                        ref={modalImgRef}
+                        src={galleryImages[activeImg] || product.image}
+                        alt={product.name}
+                        className="pd-main-img"
+                      />
+                      <div className="pd-zoom-hint">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                        Click to Zoom
+                      </div>
+                    </>
+                  )}
+
+                  {mediaCount > 1 && (
+                    <>
+                      <button className="pd-nav-arrow pd-nav-prev" onClick={showPrev} aria-label="Previous">‹</button>
+                      <button className="pd-nav-arrow pd-nav-next" onClick={showNext} aria-label="Next">›</button>
                     </>
                   )}
                 </div>
               </div>
 
-              {galleryImages.length > 1 && (
+              {mediaCount > 1 && (
                 <div className="pd-thumbs-mobile">
                   {galleryImages.map((img, i) => (
                     <button
@@ -381,6 +428,15 @@ function ProductCard({ product: rawProduct }) {
                       <img src={img} alt={`${product.name} view ${i + 1}`} />
                     </button>
                   ))}
+                  {hasVideo && (
+                    <button
+                      className={`pd-thumb pd-thumb-video ${isVideoActive ? 'active' : ''}`}
+                      onClick={() => { setActiveImg(galleryImages.length); setZoom(1); setPan({ x: 0, y: 0 }); }}
+                    >
+                      <video src={product.video.url} muted />
+                      <span className="pd-thumb-play">▶</span>
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -521,8 +577,8 @@ function ProductCard({ product: rawProduct }) {
 
           {galleryImages.length > 1 && (
             <>
-              <button className="lightbox-nav lightbox-nav-prev" onClick={showPrev} aria-label="Previous image">‹</button>
-              <button className="lightbox-nav lightbox-nav-next" onClick={showNext} aria-label="Next image">›</button>
+              <button className="lightbox-nav lightbox-nav-prev" onClick={showPrevImage} aria-label="Previous image">‹</button>
+              <button className="lightbox-nav lightbox-nav-next" onClick={showNextImage} aria-label="Next image">›</button>
             </>
           )}
 

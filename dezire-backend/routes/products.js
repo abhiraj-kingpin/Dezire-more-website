@@ -179,8 +179,11 @@ router.get('/:id', async (req, res) => {
 
 // ─── ADMIN ROUTES (protected) ─────────────────────────────────────────────────
 
-// POST /api/products — create product with images (max 10)
-router.post('/', adminAuth, upload.array('images', 10), async (req, res) => {
+// POST /api/products — create product with images (max 10) + optional video
+router.post('/', adminAuth, upload.fields([
+  { name: 'images', maxCount: 10 },
+  { name: 'video', maxCount: 1 },
+]), async (req, res) => {
   try {
     const {
       name, category, subcategory, price, originalPrice,
@@ -188,10 +191,13 @@ router.post('/', adminAuth, upload.array('images', 10), async (req, res) => {
       inStock, stockCount, tags, sku,
     } = req.body;
 
-    const images = (req.files || []).map(file => ({
+    const images = (req.files?.images || []).map(file => ({
       url:      file.path,
       publicId: file.filename,
     }));
+
+    const videoFile = req.files?.video?.[0];
+    const video = videoFile ? { url: videoFile.path, publicId: videoFile.filename } : undefined;
 
     const product = await Product.create({
       name,
@@ -200,6 +206,7 @@ router.post('/', adminAuth, upload.array('images', 10), async (req, res) => {
       price:         Number(price),
       originalPrice: originalPrice ? Number(originalPrice) : undefined,
       images,
+      video,
       colors:   Array.isArray(colors)   ? colors   : colors?.split(',').map(s => s.trim())   || [],
       sizes:    Array.isArray(sizes)    ? sizes    : sizes?.split(',').map(s => s.trim())    || [],
       occasion: Array.isArray(occasion) ? occasion : occasion?.split(',').map(s => s.trim()) || [],
@@ -270,6 +277,43 @@ router.delete('/:id/images/:publicId', adminAuth, async (req, res) => {
     await Product.findByIdAndUpdate(req.params.id, {
       $pull: { images: { publicId: req.params.publicId } },
     });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// POST /api/products/:id/video — set/replace the showcase video
+router.post('/:id/video', adminAuth, upload.fields([{ name: 'video', maxCount: 1 }]), async (req, res) => {
+  try {
+    const videoFile = req.files?.video?.[0];
+    if (!videoFile) return res.status(400).json({ error: 'No video file uploaded' });
+
+    const existing = await Product.findById(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Product not found' });
+    if (existing.video?.publicId) {
+      await cloudinary.uploader.destroy(existing.video.publicId, { resource_type: 'video' });
+    }
+
+    existing.video = { url: videoFile.path, publicId: videoFile.filename };
+    await existing.save();
+
+    res.json({ success: true, video: existing.video });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// DELETE /api/products/:id/video — remove the showcase video
+router.delete('/:id/video', adminAuth, async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+    if (product.video?.publicId) {
+      await cloudinary.uploader.destroy(product.video.publicId, { resource_type: 'video' });
+    }
+    product.video = undefined;
+    await product.save();
     res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: err.message });

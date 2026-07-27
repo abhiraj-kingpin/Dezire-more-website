@@ -96,7 +96,7 @@
     .upload-zone:hover, .upload-zone.drag-over { border-color: var(--green); background: #f0f5f3; }
     .upload-zone p { color: var(--muted); font-size: 13px; margin-top: 8px; }
     .upload-zone strong { font-size: 15px; }
-    #file-input { display: none; }
+    #file-input, #video-input { display: none; }
 
     .image-previews { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
     .preview-item { position: relative; width: 90px; height: 110px; }
@@ -240,6 +240,17 @@
       </div>
 
       <div class="card">
+        <strong>Product Video (optional)</strong>
+        <p style="font-size:13px;color:var(--muted);margin-top:4px;margin-bottom:16px">Show the saree/outfit being worn or draped — e.g. a short try-on or styling clip.</p>
+        <div class="upload-zone" onclick="document.getElementById('video-input').click()" id="video-upload-zone">
+          <strong>Click to upload a video</strong>
+          <p>MP4, MOV, WEBM · Max 50MB · One video per product</p>
+        </div>
+        <input type="file" id="video-input" accept="video/*" onchange="handleVideoFile(this.files)" />
+        <div id="video-preview" style="margin-top:12px"></div>
+      </div>
+
+      <div class="card">
         <strong>Basic Details</strong>
         <label>Product Name *</label>
         <input type="text" id="f-name" placeholder="e.g. Kanjivaram Silk Saree" />
@@ -355,10 +366,11 @@
         </p>
         <button class="btn btn-outline" style="margin-top:14px" onclick="downloadBulkTemplate()">Download CSV Template</button>
         <p style="font-size:12px;color:var(--muted);margin-top:14px;line-height:1.6">
-          <strong>Columns:</strong> name, category, subcategory, price, originalPrice, fabric, sku, colors, sizes, occasion, description, tags, inStock, stockCount, images<br/>
+          <strong>Columns:</strong> name, category, subcategory, price, originalPrice, fabric, sku, colors, sizes, occasion, description, tags, inStock, stockCount, images, video<br/>
           <strong>category</strong> must be one of: sarees, blouses, jewelry, accessories, dress-materials, ready-to-wear, western<br/>
           <strong>colors / sizes / occasion / tags</strong> — separate multiple values with a semicolon, e.g. <code>Red;Gold</code><br/>
-          <strong>images</strong> — the exact photo filenames for that product, separated by a semicolon, e.g. <code>saree1.jpg;saree2.jpg</code> (must match the files you select in Step 3 exactly)
+          <strong>images</strong> — the exact photo filenames for that product, separated by a semicolon, e.g. <code>saree1.jpg;saree2.jpg</code> (must match the files you select in Step 3 exactly)<br/>
+          <strong>video</strong> — optional, one filename for a showcase clip of the outfit, e.g. <code>saree1-video.mp4</code> (also selected in Step 3)
         </p>
       </div>
 
@@ -369,9 +381,9 @@
       </div>
 
       <div class="card">
-        <strong>Step 3 — Select all product photos at once</strong>
-        <p style="font-size:13px;color:var(--muted);margin-top:6px">Select every photo for every product in one go — they get matched to products by filename.</p>
-        <input type="file" id="bulk-images-input" accept="image/*" multiple style="margin-top:14px" onchange="handleBulkImages(this.files)" />
+        <strong>Step 3 — Select all product photos and videos at once</strong>
+        <p style="font-size:13px;color:var(--muted);margin-top:6px">Select every photo and video for every product in one go — they get matched to products by filename.</p>
+        <input type="file" id="bulk-images-input" accept="image/*,video/*" multiple style="margin-top:14px" onchange="handleBulkImages(this.files)" />
         <p id="bulk-images-status" style="font-size:13px;color:var(--muted);margin-top:8px"></p>
       </div>
 
@@ -393,6 +405,7 @@
 const API = '/api';
 let token = localStorage.getItem('dm_admin_token');
 let selectedFiles = [];
+let selectedVideoFile = null;
 let allProducts = [];
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -537,7 +550,7 @@ function renderProductsTable(products) {
         ${products.map(p => `
           <tr>
             <td><img src="${p.images?.[0]?.url || ''}" class="product-thumb" onerror="this.style.display='none'" /></td>
-            <td><strong>${p.name}</strong></td>
+            <td><strong>${p.name}</strong>${p.video?.url ? ' <span title="Has video">🎥</span>' : ''}</td>
             <td style="text-transform:capitalize">${p.category}</td>
             <td>
               ₹${p.price.toLocaleString('en-IN')}
@@ -573,7 +586,10 @@ function resetForm() {
     document.getElementById(id).checked = false;
   });
   selectedFiles = [];
+  selectedVideoFile = null;
   document.getElementById('image-previews').innerHTML = '';
+  document.getElementById('video-preview').innerHTML = '';
+  document.getElementById('video-input').value = '';
   document.getElementById('discount-preview').textContent = '';
 }
 
@@ -610,9 +626,37 @@ function editProduct(id) {
       <button class="remove-img" onclick="deleteExistingImage('${id}','${img.publicId}',this.parentElement)">×</button>
     </div>`).join('');
 
+  // Show existing video
+  const videoPreviewEl = document.getElementById('video-preview');
+  if (p.video?.url) {
+    videoPreviewEl.innerHTML = `
+      <div style="position:relative;width:200px">
+        <video src="${p.video.url}" controls style="width:100%;border-radius:8px;border:1px solid var(--border)"></video>
+        <button class="btn btn-danger" style="margin-top:8px;padding:6px 12px;font-size:12px" onclick="deleteExistingVideo('${id}')">Remove Video</button>
+      </div>`;
+  } else {
+    videoPreviewEl.innerHTML = '';
+  }
+
   selectedFiles = [];
+  selectedVideoFile = null;
+  document.getElementById('video-input').value = '';
   showPage('add');
   updateDiscountPreview();
+}
+
+async function deleteExistingVideo(productId) {
+  if (!confirm('Remove this product video?')) return;
+  try {
+    await fetch(`${API}/products/${productId}/video`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    document.getElementById('video-preview').innerHTML = '';
+    toast('Video removed', 'success');
+  } catch {
+    toast('Failed to remove video', 'error');
+  }
 }
 
 async function deleteExistingImage(productId, publicId, el) {
@@ -687,6 +731,17 @@ async function saveProduct() {
           body: fd,
         });
       }
+
+      // Upload a new/replacement video if one was selected
+      if (selectedVideoFile) {
+        const vfd = new FormData();
+        vfd.append('video', selectedVideoFile);
+        await fetch(`${API}/products/${editId}/video`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: vfd,
+        });
+      }
     } else {
       // POST — create new product with images
       const fd = new FormData();
@@ -705,6 +760,7 @@ async function saveProduct() {
       fd.append('stockCount', document.getElementById('f-stock-count').value);
       tags.forEach(t => fd.append('tags', t));
       selectedFiles.forEach(f => fd.append('images', f));
+      if (selectedVideoFile) fd.append('video', selectedVideoFile);
 
       res = await fetch(`${API}/products`, {
         method: 'POST',
@@ -776,6 +832,18 @@ function removeFile(index) {
   renderPreviews();
 }
 
+function handleVideoFile(files) {
+  const file = files[0];
+  if (!file) return;
+  selectedVideoFile = file;
+  const url = URL.createObjectURL(file);
+  document.getElementById('video-preview').innerHTML = `
+    <div style="position:relative;width:200px">
+      <video src="${url}" controls style="width:100%;border-radius:8px;border:1px solid var(--border)"></video>
+      <button class="btn btn-outline" style="margin-top:8px;padding:6px 12px;font-size:12px" onclick="selectedVideoFile=null;document.getElementById('video-preview').innerHTML='';document.getElementById('video-input').value=''">Cancel</button>
+    </div>`;
+}
+
 // ── Discount preview ──────────────────────────────────────────────────────────
 
 document.addEventListener('input', e => {
@@ -798,12 +866,12 @@ function updateDiscountPreview() {
 
 const BULK_TEMPLATE_HEADERS = [
   'name','category','subcategory','price','originalPrice','fabric','sku',
-  'colors','sizes','occasion','description','tags','inStock','stockCount','images',
+  'colors','sizes','occasion','description','tags','inStock','stockCount','images','video',
 ];
 const BULK_TEMPLATE_EXAMPLE = [
   'Kanjivaram Silk Saree','sarees','handloom','4999','6999','Pure Silk','KNJ-001',
   'Red;Gold','Free Size','Wedding;Festival','Rich handwoven silk saree with zari border.',
-  'bestseller;new-arrival','true','100','saree1.jpg;saree2.jpg',
+  'bestseller;new-arrival','true','100','saree1.jpg;saree2.jpg','saree1-video.mp4',
 ];
 
 let bulkRows = [];
@@ -885,6 +953,11 @@ async function runBulkImport() {
         throw new Error(`Photo not found: ${missing.join(', ')}`);
       }
 
+      const videoName = (row.video || '').trim();
+      if (videoName && !bulkImageMap[videoName]) {
+        throw new Error(`Video not found: ${videoName}`);
+      }
+
       const fd = new FormData();
       fd.append('name', row.name);
       fd.append('category', row.category);
@@ -901,6 +974,7 @@ async function runBulkImport() {
       fd.append('stockCount', row.stockCount || '100');
       splitField(row.tags).forEach(t => fd.append('tags', t));
       imageNames.forEach(n => fd.append('images', bulkImageMap[n]));
+      if (videoName) fd.append('video', bulkImageMap[videoName]);
 
       const res = await fetch(`${API}/products`, {
         method: 'POST',

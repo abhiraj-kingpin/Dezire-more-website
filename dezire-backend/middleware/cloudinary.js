@@ -10,15 +10,24 @@ cloudinary.config({
 
 const storage = new CloudinaryStorage({
   cloudinary,
-  params: {
-    folder: 'dezire-more-products',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+  params: (req, file) => {
+    if (file.fieldname === 'video') {
+      return {
+        folder: 'dezire-more-products/videos',
+        resource_type: 'video',
+        allowed_formats: ['mp4', 'mov', 'webm'],
+      };
+    }
+    return {
+      folder: 'dezire-more-products',
+      allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    };
   },
 });
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB — accommodates product videos
 });
 
 module.exports = { upload, cloudinary };
