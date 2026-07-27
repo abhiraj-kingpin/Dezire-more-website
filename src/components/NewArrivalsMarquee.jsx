@@ -6,140 +6,77 @@ import './NewArrivalsMarquee.css';
 const TEASER_LIMIT = 50;
 
 function MarqueeRow({ products, reverse, secondary }) {
-  const trackRef      = useRef(null);
-  const posRef        = useRef(null);
-  const rafRef        = useRef(null);
-  const pausedRef     = useRef(false);
-  const resumeTimeout = useRef(null);
-  const recenterTimeout = useRef(null);
+  const trackRef        = useRef(null);
+  const intervalRef     = useRef(null);
+  const interactingRef  = useRef(false);
+  const idleTimeoutRef  = useRef(null);
 
   const loopProducts = useMemo(() => [...products, ...products, ...products], [products]);
 
-  const SPEED = 0.6;
+  const SPEED = reverse ? -0.6 : 0.6;
 
-  const tick = useCallback(() => {
-    const track = trackRef.current;
-    if (!track || pausedRef.current) {
-      rafRef.current = requestAnimationFrame(tick);
-      return;
-    }
-
-    const width = track.scrollWidth / 3;
-
-    if (posRef.current === null) {
-      posRef.current = width;
-      track.scrollLeft = width;
-    }
-
-    posRef.current += reverse ? -SPEED : SPEED;
-
-    if (posRef.current >= width * 2) posRef.current -= width;
-    if (posRef.current <= 0)         posRef.current += width;
-
-    track.scrollLeft = posRef.current;
-    rafRef.current = requestAnimationFrame(tick);
-  }, [reverse]);
-
-  useEffect(() => {
-    rafRef.current = requestAnimationFrame(tick);
-    return () => {
-      cancelAnimationFrame(rafRef.current);
-      clearTimeout(resumeTimeout.current);
-      clearTimeout(recenterTimeout.current);
-    };
-  }, [tick]);
-
-  const pause = () => { pausedRef.current = true; };
-  const resume = () => { pausedRef.current = false; };
-
-  const recenterIfNeeded = () => {
-    const track = trackRef.current;
-    if (!track || posRef.current === null) return;
-    const width = track.scrollWidth / 3;
-    if (posRef.current >= width * 2) {
-      posRef.current -= width;
-      track.scrollLeft = posRef.current;
-    } else if (posRef.current <= 0) {
-      posRef.current += width;
-      track.scrollLeft = posRef.current;
-    }
-  };
-
-  // ── Touch handling ──────────────────────────────────────────────────────
-  // The rAF loop above forcibly sets `track.scrollLeft` every frame. On
-  // mobile there's no hover/mouseenter to pause it, so the loop fights the
-  // user's native touch-scroll every frame, producing a visible jitter.
-  // Fix: pause the loop the moment a touch starts, let native momentum
-  // scrolling run completely untouched, and only resync `posRef` (from the
-  // real `scrollLeft` the browser landed on) once the touch — and any
-  // resulting momentum — has settled.
-  const touchActiveRef = useRef(false);
-  const settleCheckRef = useRef(null);
-
-  const syncPosFromScroll = () => {
+  // Keep the track sitting on the middle copy of the list so it can drift
+  // infinitely in either direction without ever hitting a real edge.
+  const recenterIfNeeded = useCallback(() => {
     const track = trackRef.current;
     if (!track) return;
-    posRef.current = track.scrollLeft;
-    recenterIfNeeded();
-  };
+    const width = track.scrollWidth / 3;
+    if (width <= 0) return;
+    if (track.scrollLeft >= width * 2) track.scrollLeft -= width;
+    else if (track.scrollLeft <= 0)    track.scrollLeft += width;
+  }, []);
 
-  const waitForMomentumToSettle = () => {
-    clearInterval(settleCheckRef.current);
-    let lastLeft = trackRef.current ? trackRef.current.scrollLeft : 0;
-    let stableFrames = 0;
-    settleCheckRef.current = setInterval(() => {
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    track.scrollLeft = track.scrollWidth / 3;
+  }, [loopProducts]);
+
+  // Ambient auto-drift. Runs on a plain interval (not rAF fighting the
+  // browser's own scroll handling) and — critically — does nothing at all
+  // while `interactingRef` is true, so it never competes with a user's
+  // touch-scroll or the arrow buttons' smooth-scroll animation.
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
       const track = trackRef.current;
-      if (!track) return;
-      if (track.scrollLeft === lastLeft) {
-        stableFrames += 1;
-      } else {
-        stableFrames = 0;
-        lastLeft = track.scrollLeft;
-      }
-      // Two consecutive stable checks (~200ms) means momentum has stopped.
-      if (stableFrames >= 2) {
-        clearInterval(settleCheckRef.current);
-        syncPosFromScroll();
-        clearTimeout(resumeTimeout.current);
-        resumeTimeout.current = setTimeout(resume, 1200);
-      }
-    }, 100);
+      if (!track || interactingRef.current) return;
+      track.scrollLeft += SPEED;
+      recenterIfNeeded();
+    }, 16);
+    return () => clearInterval(intervalRef.current);
+  }, [SPEED, recenterIfNeeded]);
+
+  // Pauses ambient drift immediately and keeps it paused until the user has
+  // been idle for a bit, then resyncs the loop position and resumes.
+  const markInteracting = () => {
+    interactingRef.current = true;
+    clearTimeout(idleTimeoutRef.current);
+  };
+  const scheduleResume = (delay) => {
+    clearTimeout(idleTimeoutRef.current);
+    idleTimeoutRef.current = setTimeout(() => {
+      recenterIfNeeded();
+      interactingRef.current = false;
+    }, delay);
   };
 
-  const handleTouchStart = () => {
-    touchActiveRef.current = true;
-    pause();
-    clearTimeout(resumeTimeout.current);
-    clearInterval(settleCheckRef.current);
-  };
-
-  const handleTouchEnd = () => {
-    touchActiveRef.current = false;
-    // Momentum scrolling continues after touchend, so wait for it to
-    // finish before resyncing and resuming the auto-scroll animation.
-    waitForMomentumToSettle();
-  };
+  const handleTouchStart = () => markInteracting();
+  const handleTouchEnd   = () => scheduleResume(1000);
 
   const nudge = (dir) => {
     const track = trackRef.current;
     if (!track) return;
-    pause();
+    markInteracting();
 
     const card      = track.querySelector('.marquee-card');
-    const cardWidth = card ? card.getBoundingClientRect().width + 16 : 212;
+    const cardWidth = card ? card.getBoundingClientRect().width + 18 : 166;
+    track.scrollBy({ left: dir * cardWidth, behavior: 'smooth' });
 
-    posRef.current = (posRef.current ?? track.scrollLeft) + dir * cardWidth;
-    track.scrollTo({ left: posRef.current, behavior: 'smooth' });
-
-    clearTimeout(recenterTimeout.current);
-    recenterTimeout.current = setTimeout(recenterIfNeeded, 450);
-
-    clearTimeout(resumeTimeout.current);
-    resumeTimeout.current = setTimeout(resume, 3000);
+    scheduleResume(900);
   };
 
   useEffect(() => {
-    return () => clearInterval(settleCheckRef.current);
+    return () => clearTimeout(idleTimeoutRef.current);
   }, []);
 
   return (
@@ -147,8 +84,8 @@ function MarqueeRow({ products, reverse, secondary }) {
       <div
         className="marquee-track"
         ref={trackRef}
-        onMouseEnter={pause}
-        onMouseLeave={resume}
+        onMouseEnter={markInteracting}
+        onMouseLeave={() => scheduleResume(200)}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchEnd}
