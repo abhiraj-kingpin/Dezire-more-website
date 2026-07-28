@@ -101,14 +101,12 @@ function Navbar() {
   const [paymentMethod, setPaymentMethod] = useState('');
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [lastOrderId, setLastOrderId] = useState('');
-  const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [readyToWearOpen, setReadyToWearOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const closeMobileMenu = () => {
     setMobileMenuOpen(false);
-    setCategoriesOpen(false);
     setReadyToWearOpen(false);
   };
 
@@ -426,21 +424,7 @@ function Navbar() {
       {mobileMenuOpen && <div className="nav-mobile-backdrop" onClick={closeMobileMenu} />}
 
       <ul className={`nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
-        <li className={`dropdown ${categoriesOpen ? 'open' : ''}`}>
-          <a href="/" onClick={(e) => { e.preventDefault(); setCategoriesOpen(prev => !prev); }}>
-            Categories
-            <svg className="dropdown-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </a>
-          <ul className="dropdown-menu">
-            <li><Link to="/sarees" onClick={closeMobileMenu}>Sarees</Link></li>
-            <li><Link to="/dress-materials" onClick={closeMobileMenu}>Dress Materials</Link></li>
-            <li><Link to="/ready-to-wear" onClick={closeMobileMenu}>Ready to Wear</Link></li>
-            <li><Link to="/western-apparels" onClick={closeMobileMenu}>Casual Western</Link></li>
-            <li><Link to="/jewelry-accessories" onClick={closeMobileMenu}>Jewelry & Accessories</Link></li>
-          </ul>
-        </li>
+        <li><Link to="/sarees" onClick={closeMobileMenu}>Sarees</Link></li>
         <li><Link to="/dress-materials" onClick={closeMobileMenu}>Dress Materials</Link></li>
         <li className={`dropdown ${readyToWearOpen ? 'open' : ''}`}>
           <a href="/ready-to-wear" onClick={(e) => { e.preventDefault(); setReadyToWearOpen(prev => !prev); }}>
