@@ -117,6 +117,13 @@ function OrderCard({ order, onCancelled }) {
             ))}
           </div>
 
+          {order.isGift && (
+            <div className="order-success-summary">
+              <h4>🎁 Gift Order</h4>
+              {order.giftMessage && <p className="order-success-address">"{order.giftMessage}"</p>}
+            </div>
+          )}
+
           <div className="order-success-summary">
             <h4>Delivery Address</h4>
             <p className="order-success-address">

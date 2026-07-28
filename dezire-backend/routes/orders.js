@@ -51,7 +51,7 @@ router.post('/', async (req, res) => {
     const {
       customerEmail, customerName, customerPhone,
       items, address, subtotal, deliveryCharge, total,
-      paymentMethod, paymentStatus,
+      paymentMethod, paymentStatus, isGift, giftMessage,
     } = req.body;
 
     if (!customerEmail || !customerName || !customerPhone) {
@@ -103,6 +103,8 @@ router.post('/', async (req, res) => {
       paymentStatus: resolvedPaymentStatus,
       orderStatus: resolvedPaymentStatus === 'paid' ? 'Payment Confirmed' : 'Order Placed',
       estimatedDelivery: estimatedDeliveryDate(),
+      isGift: !!isGift,
+      giftMessage: isGift ? giftMessage : undefined,
     });
 
     // Fire-and-forget — a slow/unconfigured mail server should never block

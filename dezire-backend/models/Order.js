@@ -52,6 +52,9 @@ const orderSchema = new mongoose.Schema(
     },
 
     estimatedDelivery: { type: Date },
+
+    isGift:      { type: Boolean, default: false },
+    giftMessage: { type: String, trim: true },
   },
   { timestamps: true }
 );

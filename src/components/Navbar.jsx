@@ -5,6 +5,7 @@ import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
 import { useSearch } from '../context/SearchContext';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import UserMenu from './UserMenu';
 import FlowingThreads from './FlowingThreads';
 import SettingsDrawer from './SettingsDrawer';
@@ -147,6 +148,7 @@ function Navbar() {
     signup, resendVerification, addAddress,
     authOpen, setAuthOpen, authPrompt, promptLogin,
   } = useAuth();
+  const { showToast } = useToast();
 
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -280,6 +282,26 @@ function Navbar() {
   const finalTotal = cartTotal + DELIVERY_CHARGE;
   const cartSavings = cart.reduce((sum, p) => sum + Math.max(0, (p.originalPrice || p.price) - p.price) * p.quantity, 0);
 
+  const estimatedDeliveryDate = new Date(Date.now() + 9 * 24 * 60 * 60 * 1000)
+    .toLocaleDateString('en-IN', { day: 'numeric', month: 'long' });
+
+  const [isGift, setIsGift] = useState(false);
+  const [giftMessage, setGiftMessage] = useState('');
+
+  // "You may also like" — a light cross-sell strip in the cart, based on
+  // the category of whatever's already in the bag.
+  const [cartRecommendations, setCartRecommendations] = useState([]);
+  useEffect(() => {
+    if (cart.length === 0) { setCartRecommendations([]); return; }
+    const category = cart[0].category;
+    if (!category) return;
+    fetch(`${BASE}/products/category/${category}?limit=6`)
+      .then(res => res.json())
+      .then(data => setCartRecommendations((data.data || []).filter(p => !cart.some(c => c.id === p._id)).slice(0, 4)))
+      .catch(() => setCartRecommendations([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cart.length > 0 ? cart[0].id : null]);
+
   // GST breakup shown on the Pay Online (QR) summary — prices are treated
   // as GST-inclusive, so this is an informational split, not an add-on.
   const GST_RATE = 0.05;
@@ -369,6 +391,23 @@ function Navbar() {
     }
   };
 
+  const handleShareWishlist = async () => {
+    const lines = wishlist.map(p => `• ${p.name} — ₹${p.price.toLocaleString('en-IN')}`);
+    const text = `My Dezire More Wishlist ✦\n\n${lines.join('\n')}\n\nShop at ${window.location.origin}`;
+
+    if (navigator.share) {
+      try { await navigator.share({ title: 'My Dezire More Wishlist', text }); }
+      catch { /* user cancelled the share sheet — nothing to do */ }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('Wishlist copied — paste it anywhere to share', 'success');
+    } catch {
+      showToast('Could not copy your wishlist — please try again', 'info');
+    }
+  };
+
   const handlePlaceOrder = async () => {
     if (isPlacingOrder) return; // guards against double-click / duplicate orders
 
@@ -421,6 +460,8 @@ function Navbar() {
           total: finalTotal,
           paymentMethod,
           paymentStatus: paymentMethod === 'COD' ? 'pending' : 'paid',
+          isGift,
+          giftMessage: isGift ? giftMessage.trim() : undefined,
         }),
       });
       const data = await res.json();
@@ -430,6 +471,8 @@ function Navbar() {
       setLastOrderId(data.order.orderNumber);
       setOrderPlaced(true);
       clearCart();
+      setIsGift(false);
+      setGiftMessage('');
     } catch (err) {
       setOrderError(err.message);
     } finally {
@@ -596,7 +639,14 @@ function Navbar() {
           <div className="wl-drawer" onClick={e => e.stopPropagation()}>
             <div className="wl-header">
               <h3 className="wl-title">My Wishlist ({wishlist.length})</h3>
-              <button className="wl-close" onClick={() => setWishlistOpen(false)}>✕</button>
+              <div className="wl-header-actions">
+                {wishlist.length > 0 && (
+                  <button className="wl-share-btn" onClick={handleShareWishlist} aria-label="Share wishlist" title="Share wishlist">
+                    ↗ Share
+                  </button>
+                )}
+                <button className="wl-close" onClick={() => setWishlistOpen(false)}>✕</button>
+              </div>
             </div>
             {wishlist.length === 0 ? (
               <div className="wl-empty">
@@ -628,10 +678,11 @@ function Navbar() {
                             const imgEl = e.currentTarget.closest('.wl-item')?.querySelector('.wl-item-img');
                             flyToCart(imgEl);
                             addToCart(product);
+                            toggleWishlist(product);
                             setWishlistOpen(false);
                           }}
                         >
-                          Add to Bag
+                          Move to Cart
                         </button>
                       </div>
                       <button className="wl-remove" onClick={() => toggleWishlist(product)} aria-label="Remove from wishlist">✕</button>
@@ -740,6 +791,33 @@ function Navbar() {
                       </div>
                     );
                   })}
+
+                  {cartRecommendations.length > 0 && (
+                    <div className="cm-recommendations">
+                      <p className="cm-recommendations-title">You May Also Like</p>
+                      <div className="cm-recommendations-row">
+                        {cartRecommendations.map(p => (
+                          <button
+                            key={p._id}
+                            type="button"
+                            className="cm-recommendation-card"
+                            onClick={() => addToCart({
+                              id: p._id, name: p.name, price: p.price, originalPrice: p.originalPrice,
+                              image: p.images?.[0]?.url, category: p.category, sizes: p.sizes,
+                            })}
+                          >
+                            <div className="cm-recommendation-img-wrap">
+                              {p.images?.[0]?.url
+                                ? <img src={p.images[0].url} alt={p.name} loading="lazy" decoding="async" />
+                                : <div className="product-img-placeholder" />}
+                            </div>
+                            <p className="cm-recommendation-name">{p.name}</p>
+                            <p className="cm-recommendation-price">₹{p.price.toLocaleString('en-IN')}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="cm-summary">
@@ -758,6 +836,10 @@ function Navbar() {
                   <div className="cm-summary-row">
                     <span>Tax</span>
                     <span>Included</span>
+                  </div>
+                  <div className="cm-summary-row cm-delivery-estimate-row">
+                    <span>Estimated Delivery</span>
+                    <span>{estimatedDeliveryDate}</span>
                   </div>
                   {DELIVERY_CHARGE > 0 && (
                     <p className="cart-free-msg cm-free-msg">Add ₹{(1899 - cartTotal).toLocaleString('en-IN')} more for free delivery!</p>
@@ -854,6 +936,22 @@ function Navbar() {
               <div className="payment-section">
                 <h4 className="payment-section-title">Delivery Address</h4>
                 <AddressBook compact selectedId={selectedAddressId} onSelect={applyAddress} />
+              </div>
+              <div className="payment-section">
+                <label className="filter-availability-check">
+                  <input type="checkbox" checked={isGift} onChange={e => setIsGift(e.target.checked)} />
+                  🎁 This is a gift
+                </label>
+                {isGift && (
+                  <textarea
+                    className="payment-input review-textarea"
+                    style={{ marginTop: '10px' }}
+                    placeholder="Add a gift message (optional)"
+                    rows={2}
+                    value={giftMessage}
+                    onChange={e => setGiftMessage(e.target.value)}
+                  />
+                )}
               </div>
               <div className="payment-section">
                 <h4 className="payment-section-title">Payment Method</h4>
