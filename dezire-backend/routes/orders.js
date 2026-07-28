@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const Order = require('../models/Order');
+const Product = require('../models/Product');
 const adminAuth = require('../middleware/auth');
 const { sendOrderConfirmationEmail, sendAdminOrderAlert } = require('../utils/notifications');
 
@@ -12,6 +14,30 @@ function estimatedDeliveryDate() {
   const d = new Date();
   d.setDate(d.getDate() + 9); // matches the site's 7–10 business day shipping policy
   return d;
+}
+
+// Validates each cart line before it ever reaches Order.create(). The
+// checkout UI lets a shopper pick a size, which the cart used to fold into
+// a client-side "<productId>-<size>" string and send straight through as
+// productId — Mongoose then blew up trying to cast that to an ObjectId.
+// Size now travels in its own `size` field, and this guards against any
+// other malformed/tampered item shape reaching the database.
+function validateItems(items) {
+  for (const item of items) {
+    if (!mongoose.Types.ObjectId.isValid(item?.productId)) {
+      return `Invalid product reference: "${item?.productId}"`;
+    }
+    if (!item.name || typeof item.name !== 'string') {
+      return 'Every order item needs a product name';
+    }
+    if (typeof item.price !== 'number' || item.price <= 0) {
+      return `Invalid price for "${item.name}"`;
+    }
+    if (!Number.isInteger(item.quantity) || item.quantity < 1) {
+      return `Invalid quantity for "${item.name}"`;
+    }
+  }
+  return null;
 }
 
 // POST /api/orders — create an order once payment is confirmed client-side
@@ -29,6 +55,17 @@ router.post('/', async (req, res) => {
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: 'Order must contain at least one item' });
     }
+
+    const itemError = validateItems(items);
+    if (itemError) return res.status(400).json({ error: itemError });
+
+    const existingCount = await Product.countDocuments({
+      _id: { $in: items.map(item => item.productId) },
+    });
+    if (existingCount !== new Set(items.map(item => item.productId)).size) {
+      return res.status(400).json({ error: 'One or more items in this order no longer exist' });
+    }
+
     if (!address?.line1 || !address?.city || !address?.state || !address?.pin) {
       return res.status(400).json({ error: 'Complete delivery address is required' });
     }

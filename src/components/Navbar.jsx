@@ -153,7 +153,7 @@ function Navbar() {
   const { wishlist, toggleWishlist, wishlistOpen, setWishlistOpen, lastAddedId } = useWishlist();
   const {
     cart, addToCart, removeFromCart, updateQuantity, updateSize, clearCart, cartTotal, cartCount,
-    cartOpen, setCartOpen, paymentStep, setPaymentStep,
+    cartOpen, setCartOpen, paymentStep, setPaymentStep, lastAddedId: cartLastAddedId,
   } = useCart();
   const { searchOpen, setSearchOpen, searchQuery, setSearchQuery } = useSearch();
   const [searchShowAll, setSearchShowAll] = useState(false);
@@ -596,7 +596,7 @@ function Navbar() {
                       ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
                       : 0;
                     return (
-                      <div key={product.id} className={`cm-item ${product.id === lastAddedId ? 'wl-item-highlight' : ''}`}>
+                      <div key={product.cartKey} className={`cm-item ${product.cartKey === cartLastAddedId ? 'wl-item-highlight' : ''}`}>
                         <img src={product.image} alt={product.name} className="cm-item-img" loading="lazy" decoding="async" />
                         <div className="cm-item-info">
                           <div className="cm-item-top">
@@ -607,7 +607,7 @@ function Navbar() {
                                   <path d="M12 21s-7.5-4.9-10-9.3C.6 8.2 2.3 4.7 5.8 4.1 8 3.7 10 4.7 12 7c2-2.3 4-3.3 6.2-2.9 3.5.6 5.2 4.1 3.8 7.6C19.5 16.1 12 21 12 21Z" />
                                 </svg>
                               </button>
-                              <button className="cm-icon-btn" onClick={() => removeFromCart(product.id)} aria-label="Remove item" title="Remove">
+                              <button className="cm-icon-btn" onClick={() => removeFromCart(product.cartKey)} aria-label="Remove item" title="Remove">
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                                   <path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m-8 0 1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13" />
                                 </svg>
@@ -622,12 +622,12 @@ function Navbar() {
 
                           {product.selectedSize && (
                             <div className="cm-item-size-row">
-                              <label className="cm-field-label" htmlFor={`cm-size-${product.id}`}>Size</label>
+                              <label className="cm-field-label" htmlFor={`cm-size-${product.cartKey}`}>Size</label>
                               <select
-                                id={`cm-size-${product.id}`}
+                                id={`cm-size-${product.cartKey}`}
                                 className="cm-size-select"
                                 value={product.selectedSize}
-                                onChange={(e) => updateSize(product.id, e.target.value)}
+                                onChange={(e) => updateSize(product.cartKey, e.target.value)}
                               >
                                 {(product.sizes?.length ? product.sizes : FALLBACK_SIZES).map(size => (
                                   <option key={size} value={size}>{size}</option>
@@ -638,9 +638,9 @@ function Navbar() {
 
                           <div className="cm-field-label cm-qty-label">Quantity</div>
                           <div className="cart-qty-row cm-qty-row cm-qty-pill">
-                            <button className="cm-qty-btn" onClick={() => updateQuantity(product.id, product.quantity - 1)} aria-label="Decrease quantity">−</button>
+                            <button className="cm-qty-btn" onClick={() => updateQuantity(product.cartKey, product.quantity - 1)} aria-label="Decrease quantity">−</button>
                             <span className="cm-qty-num">{product.quantity}</span>
-                            <button className="cm-qty-btn" onClick={() => updateQuantity(product.id, product.quantity + 1)} aria-label="Increase quantity">+</button>
+                            <button className="cm-qty-btn" onClick={() => updateQuantity(product.cartKey, product.quantity + 1)} aria-label="Increase quantity">+</button>
                           </div>
 
                           <div className="cm-item-bottom">
@@ -749,7 +749,7 @@ function Navbar() {
               <div className="payment-section">
                 <h4 className="payment-section-title">Order Summary</h4>
                 {cart.map(p => (
-                  <div key={p.id} className="payment-item">
+                  <div key={p.cartKey} className="payment-item">
                     <span>{p.name}{p.selectedSize ? ` (${p.selectedSize})` : ''} × {p.quantity}</span>
                     <span>₹{(p.price * p.quantity).toLocaleString('en-IN')}</span>
                   </div>

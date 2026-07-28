@@ -245,8 +245,12 @@ function ProductCard({ product: rawProduct }) {
     addToCart(product);
   };
 
+  // NOTE: `id` must always stay the real MongoDB product id — it's sent
+  // straight through as `productId` on checkout. CartContext derives its own
+  // cart-line key from id + selectedSize, so distinct sizes of the same
+  // product still get separate cart rows without corrupting the real id.
   const cartProduct = () => (
-    selectedSize ? { ...product, id: `${product.id}-${selectedSize}`, selectedSize } : product
+    selectedSize ? { ...product, selectedSize } : product
   );
 
   const handleModalAddToCart = (e) => {
