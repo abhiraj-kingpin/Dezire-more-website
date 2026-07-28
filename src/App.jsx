@@ -28,7 +28,6 @@ import FAQ from './components/FAQ';
 import HelpSupport from './components/HelpSupport';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsConditions from './components/TermsConditions';
-import WelcomePopup from './components/WelcomePopup';
 import ScrollToTop from './components/ScrollToTop';
 import HelplineWidget from './components/HelplineWidget';
 import IntroAnimation from './components/IntroAnimation';
@@ -44,7 +43,6 @@ function App() {
             <SearchProvider>
               <BrowserRouter>
                 <ScrollToTop />
-                <WelcomePopup />
                 <Routes>
                   <Route path="/" element={<Layout />}>
                     <Route index element={<Home />} />

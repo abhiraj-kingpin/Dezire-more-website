@@ -355,6 +355,16 @@ nav {
   .btn-chat-us { animation: none; }
 }
 
+@keyframes dm-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes dm-pop-in {
+  from { opacity: 0; transform: scale(0.92) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
 /* ===== Chat With Us Modal ===== */
 .chatus-overlay {
   position: fixed;
@@ -4760,139 +4770,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     height: 360px;
   }
 }
-/* ===== Welcome Popup — Deep Green & Gold ===== */
-
-.welcome-popup-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  animation: dm-fade-in 0.3s ease;
-  padding: 20px;
-}
-
-@keyframes dm-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.welcome-popup-card {
-  position: relative;
-  background: #F8F4EC;
-  max-width: 440px;
-  width: 100%;
-  padding: 48px 40px;
-  text-align: center;
-  border-radius: 4px;
-  box-shadow: 0 30px 60px rgba(31, 61, 46, 0.35);
-  animation: dm-pop-in 0.35s ease;
-}
-
-@keyframes dm-pop-in {
-  from { opacity: 0; transform: scale(0.92) translateY(12px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-.welcome-popup-card::before {
-  content: "";
-  position: absolute;
-  inset: 14px;
-  border: 1px solid rgba(201, 168, 76, 0.45);
-  pointer-events: none;
-}
-
-.welcome-popup-close {
-  position: absolute;
-  top: 14px;
-  right: 16px;
-  background: none;
-  border: none;
-  font-size: 1.375rem;
-  line-height: 1;
-  color: #1f3d2e;
-  cursor: pointer;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  transition: background 0.2s ease;
-}
-
-.welcome-popup-close:hover {
-  background: rgba(31, 61, 46, 0.08);
-}
-
-.welcome-popup-eyebrow {
-  font-size: 0.75rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #c9a84c;
-  font-style: italic;
-  margin: 0 0 12px;
-}
-
-.welcome-popup-title {
-  font-family: var(--font-serif, 'Playfair Display', Georgia, serif);
-  font-size: 1.875rem;
-  font-weight: 600;
-  color: #1a2e22;
-  margin: 0 0 16px;
-  line-height: 1.15;
-}
-
-.welcome-popup-text {
-  font-size: 0.875rem;
-  line-height: 1.6;
-  color: #5c6b5e;
-  margin: 0 0 24px;
-}
-
-.welcome-popup-frame {
-  display: inline-block;
-  border-top: 1px solid #c9a84c;
-  border-bottom: 1px solid #c9a84c;
-  padding: 10px 24px;
-  margin-bottom: 26px;
-}
-
-.welcome-popup-code {
-  font-family: var(--font-serif, 'Playfair Display', Georgia, serif);
-  font-size: 1rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: #1f3d2e;
-}
-
-.welcome-popup-btn {
-  display: inline-block;
-  background: #1f3d2e;
-  color: #F8F4EC;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  text-decoration: none;
-  padding: 14px 32px;
-  border: 1px solid #1f3d2e;
-  transition: background 0.25s ease, color 0.25s ease;
-}
-
-.welcome-popup-btn:hover {
-  background: transparent;
-  color: #1f3d2e;
-}
-
-@media (max-width: 480px) {
-  .welcome-popup-card {
-    padding: 36px 24px;
-  }
-  .welcome-popup-title {
-    font-size: 1.5rem;
-  }
-}
-
 /* ===== PREMIUM PRODUCT GRID — scoped fixes + royal polish ===== */
 
 /* Slider cards keep their fixed width; grid pages (Sarees, Co-ords, etc)
