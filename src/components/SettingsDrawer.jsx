@@ -56,7 +56,7 @@ function SettingsDrawer({ open, onClose, onOpenAuth, onOpenWishlist }) {
       <div className="wl-drawer settings-drawer" onClick={e => e.stopPropagation()}>
         <div className="wl-header">
           <h3 className="wl-title">Settings</h3>
-          <button className="wl-close" onClick={onClose}>✕</button>
+          <button className="wl-close" onClick={onClose} aria-label="Close settings">✕</button>
         </div>
 
         <div className="settings-body">

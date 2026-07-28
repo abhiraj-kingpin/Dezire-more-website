@@ -654,7 +654,7 @@ function Navbar() {
                   autoFocus
                 />
                 {searchQuery && (
-                  <button className="search-clear" onClick={() => setSearchQuery('')}>✕</button>
+                  <button className="search-clear" onClick={() => setSearchQuery('')} aria-label="Clear search">✕</button>
                 )}
               </div>
               <button className="search-close" onClick={() => { setSearchOpen(false); setSearchQuery(''); }}>Cancel</button>
@@ -683,7 +683,7 @@ function Navbar() {
                     ↗ Share
                   </button>
                 )}
-                <button className="wl-close" onClick={() => setWishlistOpen(false)}>✕</button>
+                <button className="wl-close" onClick={() => setWishlistOpen(false)} aria-label="Close wishlist">✕</button>
               </div>
             </div>
             {wishlist.length === 0 ? (
@@ -1167,7 +1167,7 @@ function Navbar() {
       {authOpen && (
         <div className="auth-overlay" onClick={closeAuthModal}>
           <div className="auth-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="auth-close" onClick={closeAuthModal}>✕</button>
+            <button className="auth-close" onClick={closeAuthModal} aria-label="Close">✕</button>
 
             {authStep !== 'check-email' && (
               <div className="auth-tabs">

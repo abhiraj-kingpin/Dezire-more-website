@@ -16,11 +16,12 @@ function Layout() {
 
   return (
     <>
+      <a href="#main-content" className="skip-to-content">Skip to content</a>
       <AnnouncementBar />
       <Navbar />
-      <div key={pathname} className="page-fade-in">
+      <main id="main-content" key={pathname} className="page-fade-in">
         <Outlet />
-      </div>
+      </main>
       <Footer />
       {isHome && <Chatbot />}
     </>

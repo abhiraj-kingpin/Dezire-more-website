@@ -771,7 +771,7 @@ export default function Chatbot() {
         {/* ── Greeting Bubble ── */}
         {!isOpen && showGreeting && (
           <div className="dz-greet">
-            <button className="dz-greet-close" onClick={(e) => { e.stopPropagation(); setShowGreeting(false); }}>✕</button>
+            <button className="dz-greet-close" onClick={(e) => { e.stopPropagation(); setShowGreeting(false); }} aria-label="Dismiss greeting">✕</button>
             <p className="dz-greet-label">Style Assistant</p>
             <p className="dz-greet-name">👋 Hi, I'm Priya!</p>
             <p className="dz-greet-text">Your personal stylist at Dezire More. How can I help you today?</p>

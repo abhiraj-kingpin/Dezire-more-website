@@ -755,7 +755,7 @@ function ProductCard({ product: rawProduct }) {
           <div className="size-chart-modal" onClick={e => e.stopPropagation()}>
             <div className="size-chart-header">
               <h3>Size Chart</h3>
-              <button className="size-chart-close" onClick={() => setSizeChartOpen(false)}>✕</button>
+              <button className="size-chart-close" onClick={() => setSizeChartOpen(false)} aria-label="Close size chart">✕</button>
             </div>
             <p className="size-chart-note">All sizes are in inches. Lengths can vary with styles.</p>
             <div className="size-chart-table-wrap">
