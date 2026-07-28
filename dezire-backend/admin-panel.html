@@ -623,9 +623,46 @@ async function confirmOrderPayment(id) {
     if (idx > -1) allOrders[idx] = data.order;
     renderOrdersTable();
     toast('Payment confirmed', 'success');
+    // There's no automatic email/SMS/WhatsApp API wired in, so the customer
+    // isn't notified unless someone tells them. This opens WhatsApp Web/App
+    // with the confirmation pre-typed — you still have to hit Send yourself.
+    window.open(waLinkForOrder(data.order, waPaymentConfirmedMessage(data.order)), '_blank', 'noreferrer');
   } catch (err) {
     toast(err.message, 'error');
   }
+}
+
+// Same "no API, admin sends it by hand" pattern as confirmOrderPayment —
+// covers the other lifecycle stages (Shipped/Delivered/etc.) that the
+// site's own FAQ/Shipping Policy pages already promise customers a
+// WhatsApp update for.
+const WA_STATUS_MESSAGES = {
+  'Payment Confirmed': (o) => `Hi ${o.customerName.split(' ')[0]}! We've confirmed your payment of Rs.${o.total.toLocaleString('en-IN')} for order ${o.orderNumber}. Your order is now being prepared. Thank you for shopping with Dezire More!`,
+  'Processing':        (o) => `Hi ${o.customerName.split(' ')[0]}, your Dezire More order ${o.orderNumber} is being processed. We'll keep you posted!`,
+  'Packed':            (o) => `Hi ${o.customerName.split(' ')[0]}, your order ${o.orderNumber} has been packed and is ready for dispatch.`,
+  'Shipped':           (o) => `Hi ${o.customerName.split(' ')[0]}, great news - your order ${o.orderNumber} has been shipped and is on its way!`,
+  'Out for Delivery':  (o) => `Hi ${o.customerName.split(' ')[0]}, your order ${o.orderNumber} is out for delivery and should arrive today!`,
+  'Delivered':         (o) => `Hi ${o.customerName.split(' ')[0]}, your order ${o.orderNumber} has been delivered. We hope you love it! Thank you for shopping with Dezire More.`,
+  'Cancelled':         (o) => `Hi ${o.customerName.split(' ')[0]}, your order ${o.orderNumber} has been cancelled as requested.`,
+};
+
+function waPaymentConfirmedMessage(o) {
+  return WA_STATUS_MESSAGES['Payment Confirmed'](o);
+}
+
+function waLinkForOrder(order, overrideMessage) {
+  const message = overrideMessage
+    || (WA_STATUS_MESSAGES[order.orderStatus]
+      ? WA_STATUS_MESSAGES[order.orderStatus](order)
+      : `Hi ${order.customerName.split(' ')[0]}, here's an update on your Dezire More order ${order.orderNumber}: ${order.orderStatus}.`);
+  const phone = '91' + String(order.customerPhone).replace(/\D/g, '').slice(-10);
+  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+}
+
+function sendWhatsAppUpdate(id) {
+  const order = allOrders.find(o => o._id === id);
+  if (!order) return;
+  window.open(waLinkForOrder(order), '_blank', 'noreferrer');
 }
 
 function renderOrdersTable() {
@@ -653,6 +690,7 @@ function renderOrdersTable() {
               <select onchange="updateOrderStatus('${o._id}', this.value)" style="width:auto;padding:6px 8px;font-size:12px">
                 ${ORDER_STATUSES.map(s => `<option value="${s}" ${s === o.orderStatus ? 'selected' : ''}>${s}</option>`).join('')}
               </select>
+              <button class="btn btn-outline" style="padding:4px 8px;font-size:11px;margin-top:6px" onclick="event.stopPropagation();sendWhatsAppUpdate('${o._id}')" title="Open WhatsApp with an update message pre-filled">📱 WhatsApp</button>
             </td>
             <td>${expandedOrderId === o._id ? '▲' : '▼'}</td>
           </tr>
