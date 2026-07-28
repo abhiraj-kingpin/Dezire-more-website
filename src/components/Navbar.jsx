@@ -127,6 +127,7 @@ function Navbar() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [pendingAddress, setPendingAddress] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('');
+  const [paymentReferenceInput, setPaymentReferenceInput] = useState('');
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [lastOrderId, setLastOrderId] = useState('');
   const [readyToWearOpen, setReadyToWearOpen] = useState(false);
@@ -465,6 +466,10 @@ function Navbar() {
       setOrderError('Please enter a valid email address for your order confirmation.');
       return;
     }
+    if (paymentMethod !== 'COD' && !paymentReferenceInput.trim()) {
+      setOrderError('Please enter the UPI transaction ID / reference number from your payment app.');
+      return;
+    }
 
     setIsPlacingOrder(true);
     try {
@@ -495,7 +500,7 @@ function Navbar() {
           total: finalTotal,
           couponCode: appliedCoupon?.code,
           paymentMethod,
-          paymentStatus: paymentMethod === 'COD' ? 'pending' : 'paid',
+          paymentReference: paymentMethod === 'COD' ? undefined : paymentReferenceInput.trim(),
           isGift,
           giftMessage: isGift ? giftMessage.trim() : undefined,
         }),
@@ -1074,11 +1079,26 @@ function Navbar() {
                 {paymentMethod === 'UPI' && (
                   <input className="payment-input payment-input-spaced" type="text" placeholder="Enter UPI ID (e.g. name@upi)" value={upiIdInput} onChange={e => setUpiIdInput(e.target.value)} />
                 )}
+
+                {paymentMethod && paymentMethod !== 'COD' && (
+                  <div className="payment-verify-block">
+                    <p className="payment-verify-hint">
+                      After paying, enter the UPI transaction ID / reference number (UTR) from your payment app — we use this to verify and confirm your payment.
+                    </p>
+                    <input
+                      className="payment-input payment-input-spaced"
+                      type="text"
+                      placeholder="e.g. 402816734521"
+                      value={paymentReferenceInput}
+                      onChange={e => setPaymentReferenceInput(e.target.value)}
+                    />
+                  </div>
+                )}
               </div>
               {orderError && <p className="payment-error">{orderError}</p>}
               <button
                 className="cart-checkout-btn"
-                disabled={!paymentMethod || isPlacingOrder}
+                disabled={!paymentMethod || (paymentMethod !== 'COD' && !paymentReferenceInput.trim()) || isPlacingOrder}
                 onClick={handlePlaceOrder}
               >
                 {isPlacingOrder
@@ -1099,6 +1119,7 @@ function Navbar() {
           setCartOpen(false);
           setPaymentStep(false);
           setPaymentMethod('');
+          setPaymentReferenceInput('');
           setPlacedOrder(null);
         }}>
           <div className="checkout-modal checkout-modal-narrow" onClick={e => e.stopPropagation()}>
@@ -1113,9 +1134,18 @@ function Navbar() {
                 <div className="order-success-row">
                   <span>Payment Status</span>
                   <span className={placedOrder.paymentStatus === 'paid' ? 'order-status-paid' : 'order-status-pending'}>
-                    {placedOrder.paymentStatus === 'paid' ? 'Paid' : 'Pending (Pay on Delivery)'}
+                    {placedOrder.paymentStatus === 'paid'
+                      ? 'Paid'
+                      : placedOrder.paymentMethod === 'COD'
+                      ? 'Pending (Pay on Delivery)'
+                      : 'Pending Verification'}
                   </span>
                 </div>
+                {placedOrder.paymentStatus !== 'paid' && placedOrder.paymentMethod !== 'COD' && (
+                  <p className="order-success-note" style={{ marginTop: '-4px' }}>
+                    We're verifying your payment (Ref: {placedOrder.paymentReference}) — you'll get a confirmation email once it's checked, usually within a few hours.
+                  </p>
+                )}
                 <div className="order-success-row"><span>Amount</span><span>₹{placedOrder.total.toLocaleString('en-IN')}</span></div>
                 {placedOrder.estimatedDelivery && (
                   <div className="order-success-row">

@@ -43,6 +43,10 @@ const orderSchema = new mongoose.Schema(
       enum: ['pending', 'paid', 'failed'],
       default: 'pending',
     },
+    // UPI/UTR transaction reference the customer enters after paying via QR
+    // or UPI — there's no payment gateway wired in, so this is the evidence
+    // an admin checks against their bank/UPI app before confirming payment.
+    paymentReference: { type: String, trim: true },
 
     orderStatus: {
       type: String,

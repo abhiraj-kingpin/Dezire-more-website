@@ -3693,6 +3693,20 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   margin-top: 10px;
 }
 
+.payment-verify-block {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: rgba(184,150,78,0.08);
+  border: 1px solid rgba(184,150,78,0.25);
+  border-radius: 8px;
+}
+.payment-verify-hint {
+  font-size: 0.75rem;
+  color: var(--text-light);
+  line-height: 1.5;
+  margin: 0;
+}
+
 @media (max-width: 640px) {
   .checkout-overlay {
     padding: 14px;

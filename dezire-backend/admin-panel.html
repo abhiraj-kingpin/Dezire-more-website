@@ -601,6 +601,33 @@ async function updateOrderStatus(id, orderStatus) {
   }
 }
 
+// There's no payment gateway wired in — QR/UPI orders arrive with a
+// customer-entered transaction reference. Check that reference against your
+// own bank/UPI app before clicking this; it marks the order paid and moves
+// it out of "Order Placed".
+async function confirmOrderPayment(id) {
+  if (!confirm('Have you verified this payment in your bank/UPI app? This will mark the order as Paid.')) return;
+  try {
+    const order = allOrders.find(o => o._id === id);
+    const res = await fetch(`${API}/orders/${id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        paymentStatus: 'paid',
+        orderStatus: order?.orderStatus === 'Order Placed' ? 'Payment Confirmed' : undefined,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const idx = allOrders.findIndex(o => o._id === id);
+    if (idx > -1) allOrders[idx] = data.order;
+    renderOrdersTable();
+    toast('Payment confirmed', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
 function renderOrdersTable() {
   const el = document.getElementById('orders-list');
   if (!allOrders.length) {
@@ -619,7 +646,9 @@ function renderOrdersTable() {
             <td>${o.customerName}<br/><span style="font-size:11px;color:var(--muted)">${o.customerPhone}</span></td>
             <td>${o.items.length} item${o.items.length !== 1 ? 's' : ''}</td>
             <td>₹${o.total.toLocaleString('en-IN')}</td>
-            <td>${o.paymentMethod}<br/><span class="badge ${o.paymentStatus === 'paid' ? 'badge-active' : 'badge-inactive'}">${o.paymentStatus}</span></td>
+            <td>${o.paymentMethod}<br/><span class="badge ${o.paymentStatus === 'paid' ? 'badge-active' : 'badge-inactive'}">${o.paymentStatus}</span>
+              ${o.paymentStatus !== 'paid' && o.paymentMethod !== 'COD' ? `<br/><button class="btn btn-gold" style="padding:4px 10px;font-size:11px;margin-top:6px" onclick="event.stopPropagation();confirmOrderPayment('${o._id}')">Confirm Payment</button>` : ''}
+            </td>
             <td onclick="event.stopPropagation()">
               <select onchange="updateOrderStatus('${o._id}', this.value)" style="width:auto;padding:6px 8px;font-size:12px">
                 ${ORDER_STATUSES.map(s => `<option value="${s}" ${s === o.orderStatus ? 'selected' : ''}>${s}</option>`).join('')}
@@ -629,6 +658,10 @@ function renderOrdersTable() {
           </tr>
           ${expandedOrderId === o._id ? `
             <tr><td colspan="7" style="background:var(--bg);padding:16px 20px">
+              ${o.paymentReference ? `
+              <strong style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Payment Reference (UTR)</strong>
+              <p style="font-size:13px;margin:4px 0 12px;font-family:monospace">${o.paymentReference}</p>
+              ` : ''}
               <strong style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Items</strong>
               ${o.items.map(item => `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px">
                 <span>${item.name}${item.size ? ` (${item.size})` : ''} × ${item.quantity}</span>

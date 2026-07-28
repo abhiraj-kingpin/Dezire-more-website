@@ -58,7 +58,7 @@ router.post('/', requireAuth, async (req, res) => {
     const {
       customerName, customerPhone,
       items, address, subtotal, deliveryCharge, total,
-      paymentMethod, paymentStatus, isGift, giftMessage, couponCode,
+      paymentMethod, paymentReference, isGift, giftMessage, couponCode,
     } = req.body;
     const customerEmail = req.user.email;
 
@@ -99,6 +99,9 @@ router.post('/', requireAuth, async (req, res) => {
     if (!paymentMethod) {
       return res.status(400).json({ error: 'Payment method is required' });
     }
+    if (paymentMethod !== 'COD' && !paymentReference?.trim()) {
+      return res.status(400).json({ error: 'Please enter the UPI transaction ID / reference number from your payment app.' });
+    }
 
     // Re-validated here rather than trusting whatever discount the client
     // already showed at checkout — a coupon can expire or hit its usage
@@ -113,11 +116,10 @@ router.post('/', requireAuth, async (req, res) => {
     }
     const resolvedTotal = Number(subtotal) - discountAmount + Number(deliveryCharge || 0);
 
-    // COD orders start "pending"; anything the customer has already paid
-    // for (QR / UPI / online banking) is trusted as "paid" since there is
-    // no payment gateway wired in yet to verify server-side.
-    const resolvedPaymentStatus = paymentMethod === 'COD' ? 'pending' : (paymentStatus || 'paid');
-
+    // No payment gateway is wired in — every order starts "pending"
+    // regardless of method. QR/UPI orders carry a customer-entered
+    // transaction reference the admin checks against their bank/UPI app
+    // before manually confirming payment (see PATCH /:id/status).
     let orderNumber = generateOrderNumber();
     // Extremely unlikely, but guard against a collision on the unique index.
     for (let i = 0; i < 3 && await Order.exists({ orderNumber }); i++) {
@@ -137,8 +139,9 @@ router.post('/', requireAuth, async (req, res) => {
       couponCode: appliedCoupon?.code,
       discountAmount,
       paymentMethod,
-      paymentStatus: resolvedPaymentStatus,
-      orderStatus: resolvedPaymentStatus === 'paid' ? 'Payment Confirmed' : 'Order Placed',
+      paymentReference: paymentMethod === 'COD' ? undefined : paymentReference.trim(),
+      paymentStatus: 'pending',
+      orderStatus: 'Order Placed',
       estimatedDelivery: estimatedDeliveryDate(),
       isGift: !!isGift,
       giftMessage: isGift ? giftMessage : undefined,
