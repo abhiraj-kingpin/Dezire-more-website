@@ -9,16 +9,18 @@ import UserMenu from './UserMenu';
 import FlowingThreads from './FlowingThreads';
 import SettingsDrawer from './SettingsDrawer';
 import { READY_TO_WEAR_SUBCATEGORIES } from './CategoryPages';
-import { useSearch as useSearchAPI, BASE } from '../hooks/useProducts';
+import { BASE } from '../hooks/useProducts';
 import useLockBodyScroll from '../hooks/useLockBodyScroll';
 import { flyToCart, ripple } from './ProductCard';
+import { searchProducts, highlightMatch } from '../utils/fuzzySearch';
 
 const FALLBACK_SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+const SUGGESTION_LIMIT = 6;
 
-function SearchResults({ query, onClose, onSelectTag }) {
+function SearchResults({ query, onClose, onSelectTag, showAll, onShowAll }) {
   const { addToCart } = useCart();
   const { toggleWishlist, isWishlisted } = useWishlist();
-  const { results, loading } = useSearchAPI(query);
+  const { allProducts, productsLoading } = useSearch();
 
   if (!query.trim()) {
     return (
@@ -33,9 +35,13 @@ function SearchResults({ query, onClose, onSelectTag }) {
     );
   }
 
-  if (loading) return <div className="search-suggestions"><p style={{padding:'20px',color:'var(--text-light)'}}>Searching…</p></div>;
+  if (productsLoading && allProducts.length === 0) {
+    return <div className="search-suggestions"><p style={{padding:'20px',color:'var(--text-light)'}}>Searching…</p></div>;
+  }
 
-  if (results.length === 0) {
+  const matches = searchProducts(allProducts, query);
+
+  if (matches.length === 0) {
     return (
       <div className="search-no-results">
         <p>No results for "<strong>{query}</strong>"</p>
@@ -44,11 +50,22 @@ function SearchResults({ query, onClose, onSelectTag }) {
     );
   }
 
+  const visible = showAll ? matches : matches.slice(0, SUGGESTION_LIMIT);
+
   return (
     <div className="search-results">
-      <p className="search-results-count">{results.length} result{results.length !== 1 ? 's' : ''} for "{query}"</p>
+      {showAll ? (
+        <p className="search-results-count">{matches.length} result{matches.length !== 1 ? 's' : ''} for "{query}"</p>
+      ) : (
+        <p className="search-results-count">
+          Top {visible.length} of {matches.length} match{matches.length !== 1 ? 'es' : ''} for "{query}"
+          {matches.length > visible.length && (
+            <button type="button" className="search-view-all" onClick={onShowAll}>View all {matches.length} results</button>
+          )}
+        </p>
+      )}
       <div className="search-results-grid">
-        {results.map(product => {
+        {visible.map(product => {
           const img = product.images?.[0]?.url || product.image || '';
           const discount = product.originalPrice > product.price
             ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
@@ -58,7 +75,7 @@ function SearchResults({ query, onClose, onSelectTag }) {
           return (
             <div key={id} className="search-result-card">
               <div className="search-result-img-wrap">
-                <img src={img} alt={product.name} className="search-result-img" />
+                <img src={img} alt={product.name} className="search-result-img" loading="lazy" decoding="async" />
                 <button
                   className={`wishlist-btn ${wishlisted ? 'wishlisted' : ''}`}
                   onClick={() => toggleWishlist({ ...product, id, image: img })}
@@ -70,7 +87,7 @@ function SearchResults({ query, onClose, onSelectTag }) {
               </div>
               <div className="search-result-info">
                 <p className="search-result-material">{product.fabric || 'Dezire More'}</p>
-                <p className="search-result-name">{product.name}</p>
+                <p className="search-result-name">{highlightMatch(product.name, query)}</p>
                 <div className="search-result-price">
                   <span className="price-now">₹{product.price.toLocaleString('en-IN')}</span>
                   {product.originalPrice > 0 && <span className="price-was">₹{product.originalPrice.toLocaleString('en-IN')}</span>}
@@ -139,6 +156,8 @@ function Navbar() {
     cartOpen, setCartOpen, paymentStep, setPaymentStep,
   } = useCart();
   const { searchOpen, setSearchOpen, searchQuery, setSearchQuery } = useSearch();
+  const [searchShowAll, setSearchShowAll] = useState(false);
+  useEffect(() => { setSearchShowAll(false); }, [searchQuery]);
 
   useLockBodyScroll(cartOpen || wishlistOpen || authOpen || settingsOpen || searchOpen);
 
@@ -468,6 +487,7 @@ function Navbar() {
                   placeholder="Search for sarees, dress materials, co-ords..."
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') setSearchShowAll(true); }}
                   autoFocus
                 />
                 {searchQuery && (
@@ -476,7 +496,13 @@ function Navbar() {
               </div>
               <button className="search-close" onClick={() => { setSearchOpen(false); setSearchQuery(''); }}>Cancel</button>
             </div>
-            <SearchResults query={searchQuery} onClose={() => { setSearchOpen(false); setSearchQuery(''); }} onSelectTag={setSearchQuery} />
+            <SearchResults
+              query={searchQuery}
+              onClose={() => { setSearchOpen(false); setSearchQuery(''); }}
+              onSelectTag={setSearchQuery}
+              showAll={searchShowAll}
+              onShowAll={() => setSearchShowAll(true)}
+            />
           </div>
         </div>,
         document.body
@@ -504,7 +530,7 @@ function Navbar() {
                     : 0;
                   return (
                     <div key={product.id} className={`wl-item ${product.id === lastAddedId ? 'wl-item-highlight' : ''}`}>
-                      <img src={product.image} alt={product.name} className="wl-item-img" />
+                      <img src={product.image} alt={product.name} className="wl-item-img" loading="lazy" decoding="async" />
                       <div className="wl-item-info">
                         <p className="wl-item-material">{product.fabric || product.material || 'Dezire More'}</p>
                         <p className="wl-item-name">{product.name}</p>
@@ -571,7 +597,7 @@ function Navbar() {
                       : 0;
                     return (
                       <div key={product.id} className={`cm-item ${product.id === lastAddedId ? 'wl-item-highlight' : ''}`}>
-                        <img src={product.image} alt={product.name} className="cm-item-img" />
+                        <img src={product.image} alt={product.name} className="cm-item-img" loading="lazy" decoding="async" />
                         <div className="cm-item-info">
                           <div className="cm-item-top">
                             <p className="cm-item-name">{product.name}</p>
@@ -958,7 +984,12 @@ function Navbar() {
         </div>
       )}
 
-      <SettingsDrawer open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <SettingsDrawer
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        onOpenAuth={() => { setSettingsOpen(false); setAuthOpen(true); }}
+        onOpenWishlist={() => { setSettingsOpen(false); setWishlistOpen(true); }}
+      />
     </nav>
   );
 }

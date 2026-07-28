@@ -75,7 +75,7 @@ function ReviewAvatar({ review }) {
   return (
     <div className="testimonial-avatar">
       {!failed && (
-        <img src={review.photo} alt={review.name} onError={() => setFailed(true)} />
+        <img src={review.photo} alt={review.name} loading="lazy" decoding="async" onError={() => setFailed(true)} />
       )}
       {failed && <span>{getInitials(review.name)}</span>}
     </div>

@@ -16,10 +16,13 @@ function Footer() {
         <div className="footer-col">
           <h4>Help</h4>
           <ul>
+            <li><Link to="/faq">FAQ</Link></li>
             <li><Link to="/size-guide">Size Guide</Link></li>
             <li><Link to="/shipping-policy">Shipping Policy</Link></li>
             <li><Link to="/exchange-policy">Exchange Policy</Link></li>
             <li><Link to="/contact">Contact Us</Link></li>
+            <li><Link to="/privacy-policy">Privacy Policy</Link></li>
+            <li><Link to="/terms-conditions">Terms &amp; Conditions</Link></li>
             <li>
               <a href="https://wa.me/918171761948" target="_blank" rel="noreferrer">
                 Track order on WhatsApp

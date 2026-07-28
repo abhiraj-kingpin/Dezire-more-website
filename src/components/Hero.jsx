@@ -102,6 +102,8 @@ function Hero() {
               <img
                 src={s.image}
                 alt={s.title.join(' ')}
+                loading={i === 0 ? 'eager' : 'lazy'}
+                fetchPriority={i === 0 ? 'high' : 'auto'}
                 onError={(e) => {
                   console.error("Failed to load hero image:", s.image);
                   e.currentTarget.onerror = null;

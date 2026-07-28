@@ -314,7 +314,7 @@ function ProductCard({ product: rawProduct }) {
       >
         <div className="product-img-wrap">
           {product.image
-            ? <img ref={cardImgRef} src={product.image} alt={product.name} />
+            ? <img ref={cardImgRef} src={product.image} alt={product.name} loading="lazy" decoding="async" />
             : <div className="product-img-placeholder" />}
 
           {product.isNew        && <span className="product-badge badge-new">New</span>}

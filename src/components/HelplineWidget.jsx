@@ -145,19 +145,19 @@ export default function HelplineWidget() {
                   <div className="dm-icon">
                     <svg viewBox="0 0 24 24" fill="none"><path d="M4 5c0-1 1-2 2-2h2l2 5-2 2c1 3 3 5 6 6l2-2 5 2v2c0 1-1 2-2 2C10 20 4 14 4 5z" fill="#fff"/></svg>
                   </div>
-                  <a href="tel:+911234567890">+91 12345 67890</a>
+                  <a href="tel:+918171761948">+91 81717 61948</a>
                 </div>
                 <div className="dm-contact-row">
                   <div className="dm-icon">
                     <svg viewBox="0 0 24 24" fill="none"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.6.1-.2.3-.7.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.5-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6l.4-.5c.1-.2.2-.3.2-.5.1-.2 0-.4 0-.5-.1-.1-.6-1.5-.8-2-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.1 0 1.2.9 2.4 1 2.6.1.2 1.8 2.8 4.5 3.9.6.3 1.1.4 1.5.5.6.2 1.2.2 1.6.1.5-.1 1.6-.6 1.8-1.3.2-.6.2-1.1.1-1.3 0-.1-.2-.2-.5-.3z" fill="#fff"/></svg>
                   </div>
-                  <a href="https://wa.me/911234567890" target="_blank" rel="noreferrer">WhatsApp Support</a>
+                  <a href="https://wa.me/918171761948" target="_blank" rel="noreferrer">WhatsApp Support</a>
                 </div>
                 <div className="dm-contact-row">
                   <div className="dm-icon">
                     <svg viewBox="0 0 24 24" fill="none"><path d="M4 5h16v14H4z" stroke="#fff" strokeWidth="1.6" fill="none"/><path d="M4 6l8 6 8-6" stroke="#fff" strokeWidth="1.6" fill="none" strokeLinecap="round"/></svg>
                   </div>
-                  <a href="mailto:support@deziremore.com">support@deziremore.com</a>
+                  <a href="mailto:hello@deziremore.in">hello@deziremore.in</a>
                 </div>
               </div>
             </div>

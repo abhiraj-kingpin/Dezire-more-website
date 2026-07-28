@@ -22,9 +22,12 @@ import SizeGuide from './components/SizeGuide';
 import ShippingPolicy from './components/ShippingPolicy';
 import ExchangePolicy from './components/ExchangePolicy';
 import ContactUs from './components/ContactUs';
+import FAQ from './components/FAQ';
+import HelpSupport from './components/HelpSupport';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsConditions from './components/TermsConditions';
 import WelcomePopup from './components/WelcomePopup';
 import ScrollToTop from './components/ScrollToTop';
-import Chatbot from './components/Chatbot';
 import HelplineWidget from './components/HelplineWidget';
 import IntroAnimation from './components/IntroAnimation';
 
@@ -61,6 +64,10 @@ function App() {
                     <Route path="shipping-policy" element={<ShippingPolicy />} />
                     <Route path="exchange-policy" element={<ExchangePolicy />} />
                     <Route path="contact" element={<ContactUs />} />
+                    <Route path="faq" element={<FAQ />} />
+                    <Route path="help-support" element={<HelpSupport />} />
+                    <Route path="privacy-policy" element={<PrivacyPolicy />} />
+                    <Route path="terms-conditions" element={<TermsConditions />} />
                     <Route path="*" element={<NotFound />} />
                   </Route>
                 </Routes>
@@ -69,7 +76,6 @@ function App() {
           </WishlistProvider>
         </CartProvider>
       </AuthProvider>
-      <Chatbot />
       <HelplineWidget />
       </ToastProvider>
     </ThemeProvider>

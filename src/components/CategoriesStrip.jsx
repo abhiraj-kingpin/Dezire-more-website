@@ -87,6 +87,8 @@ function CategoryCard({ cat }) {
       <img
         src={cat.images[currentImg]}
         alt={cat.name}
+        loading="lazy"
+        decoding="async"
         style={{ opacity: opacity, transition: 'opacity 0.6s ease' }}
       />
       <div className="cat-overlay">

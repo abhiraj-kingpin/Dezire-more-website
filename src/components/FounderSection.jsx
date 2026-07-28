@@ -14,6 +14,8 @@ function FounderSection() {
               <img
                 src="/assets/founder/roop-kamal-taneja.jpg"
                 alt="Roop Kamal Taneja — Founder & CEO, Dezire More"
+                loading="lazy"
+                decoding="async"
                 onError={() => setPhotoFailed(true)}
               />
             )}
