@@ -5859,6 +5859,7 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
   background: linear-gradient(160deg, #0a1f16 0%, #123324 55%, #1e3a2f 100%);
   transition: opacity 0.6s ease;
 }
@@ -5866,15 +5867,54 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   opacity: 0;
   pointer-events: none;
 }
+
+/* Soft ambient glow drifting behind the wordmark — the one bit of
+   background motion, kept slow/subtle so it reads as "premium", not flashy. */
+.intro-glow {
+  position: absolute;
+  width: 130vmax;
+  height: 130vmax;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(184,150,78,0.16) 0%, rgba(184,150,78,0.05) 35%, transparent 65%);
+  animation: introGlowDrift 5s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes introGlowDrift {
+  from { transform: translate(-4%, -3%) scale(1); }
+  to   { transform: translate(4%, 3%) scale(1.08); }
+}
+
 .intro-content {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
 }
+
+.intro-logo-ring {
+  position: relative;
+  width: 118px;
+  height: 118px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.intro-logo-ring::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(212, 174, 110, 0.45);
+  opacity: 0;
+  transform: scale(0.7);
+  animation: introRingIn 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: 0.15s;
+}
+
 .intro-logo {
-  width: 110px;
-  height: 110px;
+  width: 100px;
+  height: 100px;
   object-fit: contain;
   border-radius: 50%;
   opacity: 0;
@@ -5885,10 +5925,14 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 @keyframes introLogoIn {
   to { opacity: 1; transform: scale(1); }
 }
+@keyframes introRingIn {
+  to { opacity: 1; transform: scale(1); }
+}
+
 .intro-wordmark {
-  margin-top: 22px;
+  margin-top: 24px;
   font-family: 'Cormorant Garamond', serif;
-  font-size: 1.625rem;
+  font-size: 1.75rem;
   font-weight: 600;
   letter-spacing: 6px;
   text-transform: uppercase;
@@ -5902,28 +5946,44 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 @keyframes introTextIn {
   to { opacity: 1; transform: translateY(0); }
 }
+
+.intro-flourish {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0;
+  animation: introTextIn 0.7s ease forwards;
+  animation-delay: 0.85s;
+}
+.intro-flourish span {
+  width: 26px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212,174,110,0.7));
+}
+.intro-flourish span:last-child { background: linear-gradient(90deg, rgba(212,174,110,0.7), transparent); }
+.intro-flourish i {
+  font-style: normal;
+  font-size: 0.5rem;
+  color: var(--gold-light);
+}
+
 .intro-tagline {
-  margin-top: 8px;
-  font-size: 0.6875rem;
+  margin-top: 12px;
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 0.8125rem;
   letter-spacing: 3px;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.55);
+  color: rgba(255,255,255,0.6);
   opacity: 0;
   transform: translateY(10px);
   animation: introTextIn 0.7s ease forwards;
-  animation-delay: 0.8s;
-}
-.intro-shimmer-line {
-  margin-top: 24px;
-  width: 60px;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--gold-light), transparent);
-  opacity: 0;
-  animation: introTextIn 0.7s ease forwards;
   animation-delay: 1.1s;
 }
+
 @media (prefers-reduced-motion: reduce) {
-  .intro-logo, .intro-wordmark, .intro-tagline, .intro-shimmer-line {
+  .intro-logo, .intro-logo-ring::before, .intro-wordmark, .intro-flourish, .intro-tagline, .intro-glow {
     animation: none;
     opacity: 1;
     transform: none;
