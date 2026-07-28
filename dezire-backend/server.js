@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 const productRoutes = require('./routes/products');
 const adminRoutes   = require('./routes/admin');
 const orderRoutes   = require('./routes/orders');
+const { router: authRoutes } = require('./routes/auth');
 
 const app = express();
 
@@ -50,7 +51,8 @@ const chatRoute = require('./routes/chat');
 app.use('/api/products', productRoutes);
 app.use('/api/orders',   orderRoutes);
 app.use('/api/admin',    adminRoutes);
-app.use('/api/chat',     chatRoute);        
+app.use('/api/auth',     authRoutes);
+app.use('/api/chat',     chatRoute);
 
 // Health check
 app.get('/api/health', async (req, res) => {

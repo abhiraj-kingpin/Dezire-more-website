@@ -99,4 +99,27 @@ async function sendAdminOrderAlert(order) {
   return { sent: true };
 }
 
-module.exports = { sendOrderConfirmationEmail, sendAdminOrderAlert };
+async function sendOtpEmail(email, code, purpose) {
+  const t = getTransporter();
+  if (!t) return { sent: false, reason: 'smtp-not-configured' };
+
+  const heading = purpose === 'signup' ? 'Verify Your Email' : 'Your Login Code';
+  const html = `
+    <div style="font-family:Georgia,serif;max-width:480px;margin:0 auto;color:#1a1a1a;">
+      <h2 style="color:#1e3a2f;">${heading}</h2>
+      <p>Use this code to continue with your Dezire More account. It expires in 10 minutes.</p>
+      <div style="font-size:32px;font-weight:bold;letter-spacing:8px;color:#1e3a2f;background:#f7f3ea;padding:16px 24px;text-align:center;border-radius:8px;margin:20px 0;">${code}</div>
+      <p style="color:#888;font-size:13px;">If you didn't request this, you can safely ignore this email.</p>
+      <p style="margin-top:24px;color:#888;font-size:13px;">Dezire More — Ethnic Elegance. Modern You.</p>
+    </div>`;
+
+  await t.sendMail({
+    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    to: email,
+    subject: `Your Dezire More verification code: ${code}`,
+    html,
+  });
+  return { sent: true };
+}
+
+module.exports = { sendOrderConfirmationEmail, sendAdminOrderAlert, sendOtpEmail };
