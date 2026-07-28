@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import ProductCard from './ProductCard';
 import SortDropdown from './SortDropdown';
-import { useTag } from '../hooks/useProducts';
+import FilterPanel from './FilterPanel';
+import { useTag, useFacets } from '../hooks/useProducts';
 
 const SORT_OPTIONS = [
   { label: 'Newest First',       value: 'newest' },
@@ -30,8 +31,14 @@ function Pagination({ page, totalPages, onPage }) {
 function TagPage({ title, tag, defaultSort }) {
   const [sort, setSort] = useState(defaultSort || 'newest');
   const [page, setPage] = useState(1);
+  const [advancedFilters, setAdvancedFilters] = useState({});
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const { products, total, totalPages, loading, error } = useTag(tag, { sort, limit: LIMIT, page });
+  const facets = useFacets();
+  const { products, total, totalPages, loading, error } = useTag(tag, { sort, limit: LIMIT, page, ...advancedFilters });
+
+  const handleAdvancedFilters = (next) => { setAdvancedFilters(next); setPage(1); };
+  const handleClearFilters = () => { setAdvancedFilters({}); setPage(1); };
 
   return (
     <section className="sarees-page">
@@ -42,28 +49,39 @@ function TagPage({ title, tag, defaultSort }) {
       </div>
 
       <div className="sarees-filter-bar">
+        <button type="button" className="filter-toggle-btn" onClick={() => setFiltersOpen(v => !v)}>
+          ⚙ Filters {Object.values(advancedFilters).filter(Boolean).length > 0 ? `(${Object.values(advancedFilters).filter(Boolean).length})` : ''}
+        </button>
         <div className="sarees-sort" style={{ marginLeft: 'auto' }}>
           <SortDropdown options={SORT_OPTIONS} value={sort} onChange={val => { setSort(val); setPage(1); }} />
         </div>
       </div>
 
-      {loading && <p className="page-loading">Loading {title.toLowerCase()}…</p>}
-      {error   && <p className="page-error">Could not load products. Is the backend running?</p>}
+      <div className="category-layout">
+        {filtersOpen && (
+          <FilterPanel facets={facets} filters={advancedFilters} onChange={handleAdvancedFilters} onClear={handleClearFilters} />
+        )}
 
-      {!loading && !error && (
-        products.length === 0
-          ? <p className="page-empty">No {title.toLowerCase()} yet. Add some from the admin panel!</p>
-          : (
-            <>
-              <div className="products-grid products-grid-3col">
-                {products.map(product => (
-                  <ProductCard key={product._id || product.id} product={product} />
-                ))}
-              </div>
-              <Pagination page={page} totalPages={totalPages} onPage={setPage} />
-            </>
-          )
-      )}
+        <div className="category-results">
+          {loading && <p className="page-loading">Loading {title.toLowerCase()}…</p>}
+          {error   && <p className="page-error">Could not load products. Is the backend running?</p>}
+
+          {!loading && !error && (
+            products.length === 0
+              ? <p className="page-empty">No {title.toLowerCase()} found matching these filters.</p>
+              : (
+                <>
+                  <div className="products-grid products-grid-3col">
+                    {products.map(product => (
+                      <ProductCard key={product._id || product.id} product={product} />
+                    ))}
+                  </div>
+                  <Pagination page={page} totalPages={totalPages} onPage={setPage} />
+                </>
+              )
+          )}
+        </div>
+      </div>
     </section>
   );
 }

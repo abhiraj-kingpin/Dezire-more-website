@@ -64,6 +64,22 @@ export function useCategory(category, filters = {}) {
   };
 }
 
+// ─── useFacets ────────────────────────────────────────────────────────────────
+// const { colors, sizes, fabrics, occasions, minPrice, maxPrice } = useFacets('sarees')
+export function useFacets(category) {
+  const endpoint = `/products/facets${category ? `?category=${category}` : ''}`;
+  const { data, loading } = useProducts(endpoint, [category]);
+  return {
+    colors:    data?.colors    || [],
+    sizes:     data?.sizes     || [],
+    fabrics:   data?.fabrics   || [],
+    occasions: data?.occasions || [],
+    minPrice:  data?.minPrice  ?? 0,
+    maxPrice:  data?.maxPrice  ?? 10000,
+    loading,
+  };
+}
+
 // ─── useTag ───────────────────────────────────────────────────────────────────
 // useTag('bestseller') / useTag('new-arrival') / useTag('sale')
 export function useTag(tag, filters = {}) {

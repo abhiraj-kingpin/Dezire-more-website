@@ -17,15 +17,30 @@ const buildFilter = (query) => {
     const categoryValue = categoryFilterValue(query.category);
     filter.category = Array.isArray(categoryValue) ? { $in: categoryValue } : categoryValue;
   }
-  if (query.color)       filter.colors      = { $regex: query.color, $options: 'i' };
-  if (query.occasion)    filter.occasion    = { $regex: query.occasion, $options: 'i' };
+  // color/size/fabric/occasion accept a comma-separated list of exact values
+  // (as offered by /products/facets) — matched via $in so selecting several
+  // is "any of these", the standard e-commerce filter behavior.
+  if (query.color)       filter.colors      = { $in: query.color.split(',') };
+  if (query.size)        filter.sizes       = { $in: query.size.split(',') };
+  if (query.fabric)      filter.fabric      = { $in: query.fabric.split(',') };
+  if (query.occasion)    filter.occasion    = { $in: query.occasion.split(',') };
   if (query.inStock)     filter.inStock     = query.inStock === 'true';
   if (query.tag)         filter.tags        = query.tag;
   if (query.subcategory) filter.subcategory = query.subcategory;
+  if (query.minRating)   filter.rating      = { $gte: Number(query.minRating) };
   if (query.minPrice || query.maxPrice) {
     filter.price = {};
     if (query.minPrice) filter.price.$gte = Number(query.minPrice);
     if (query.maxPrice) filter.price.$lte = Number(query.maxPrice);
+  }
+  if (query.minDiscount) {
+    filter.originalPrice = { ...(filter.originalPrice || {}), $gt: 0 };
+    filter.$expr = {
+      $gte: [
+        { $multiply: [{ $divide: [{ $subtract: ['$originalPrice', '$price'] }, '$originalPrice'] }, 100] },
+        Number(query.minDiscount),
+      ],
+    };
   }
   return filter;
 };
@@ -103,8 +118,8 @@ router.get('/category/:category', async (req, res) => {
 // GET /api/products/tag/:tag
 router.get('/tag/:tag', async (req, res) => {
   try {
-    const { page = 1, limit = 12, sort } = req.query;
-    const filter = { isActive: true, tags: req.params.tag };
+    const { page = 1, limit = 12, sort, ...filters } = req.query;
+    const filter = { ...buildFilter(filters), tags: req.params.tag };
 
     const [data, total] = await Promise.all([
       Product.find(filter)
@@ -139,6 +154,41 @@ router.get('/home', async (req, res) => {
     res.json({
       sections: { newArrivals, bestsellers, sale },
       stats: { totalProducts, avgRating },
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/products/facets?category=sarees — distinct filter values available
+// for a category, so the filter panel only ever offers choices that actually
+// exist (never an empty result after applying them).
+router.get('/facets', async (req, res) => {
+  try {
+    const match = { isActive: true };
+    if (req.query.category) {
+      const categoryValue = categoryFilterValue(req.query.category);
+      match.category = Array.isArray(categoryValue) ? { $in: categoryValue } : categoryValue;
+    }
+
+    const [colors, sizes, fabrics, occasions, priceBounds] = await Promise.all([
+      Product.distinct('colors', match),
+      Product.distinct('sizes', match),
+      Product.distinct('fabric', match),
+      Product.distinct('occasion', match),
+      Product.aggregate([
+        { $match: match },
+        { $group: { _id: null, min: { $min: '$price' }, max: { $max: '$price' } } },
+      ]),
+    ]);
+
+    res.json({
+      colors: colors.filter(Boolean).sort(),
+      sizes: sizes.filter(Boolean),
+      fabrics: fabrics.filter(Boolean).sort(),
+      occasions: occasions.filter(Boolean).sort(),
+      minPrice: priceBounds[0]?.min ?? 0,
+      maxPrice: priceBounds[0]?.max ?? 10000,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

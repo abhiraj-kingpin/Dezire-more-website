@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import ProductCard from './ProductCard';
 import SortDropdown from './SortDropdown';
-import { useCategory } from '../hooks/useProducts';
+import FilterPanel from './FilterPanel';
+import { useCategory, useFacets } from '../hooks/useProducts';
 
 const FILTERS = [
   { label: 'All',          value: '' },
@@ -49,8 +50,12 @@ function CategoryPage({ title, category, subcategories }) {
   const [activeSubcategory, setActiveSubcategory]  = useState(searchParams.get('subcategory') || '');
   const [sort,              setSort]              = useState('');
   const [page,              setPage]              = useState(1);
+  const [advancedFilters,   setAdvancedFilters]   = useState({});
+  const [filtersOpen,       setFiltersOpen]       = useState(false);
 
-  const filters = { limit: LIMIT, page };
+  const facets = useFacets(category);
+
+  const filters = { limit: LIMIT, page, ...advancedFilters };
   if (sort)              filters.sort        = sort;
   if (activeFilter)      filters.tag         = activeFilter;
   if (activeSubcategory) filters.subcategory = activeSubcategory;
@@ -64,6 +69,8 @@ function CategoryPage({ title, category, subcategories }) {
     setPage(1);
     setSearchParams(val ? { subcategory: val } : {});
   };
+  const handleAdvancedFilters = (next) => { setAdvancedFilters(next); setPage(1); };
+  const handleClearFilters = () => { setAdvancedFilters({}); setPage(1); };
 
   return (
     <section className="sarees-page">
@@ -95,6 +102,9 @@ function CategoryPage({ title, category, subcategories }) {
 
       <div className="sarees-filter-bar">
         <div className="sarees-filters">
+          <button type="button" className="filter-toggle-btn" onClick={() => setFiltersOpen(v => !v)}>
+            ⚙ Filters {Object.values(advancedFilters).filter(Boolean).length > 0 ? `(${Object.values(advancedFilters).filter(Boolean).length})` : ''}
+          </button>
           <span className="filter-label">Filter:</span>
           {FILTERS.map(f => (
             <button key={f.value} className={`filter-btn ${activeFilter === f.value ? 'active' : ''}`} onClick={() => handleFilter(f.value)}>{f.label}</button>
@@ -105,23 +115,31 @@ function CategoryPage({ title, category, subcategories }) {
         </div>
       </div>
 
-      {loading && <p className="page-loading">Loading {title.toLowerCase()}…</p>}
-      {error   && <p className="page-error">Could not load products. Is the backend running?</p>}
+      <div className="category-layout">
+        {filtersOpen && (
+          <FilterPanel facets={facets} filters={advancedFilters} onChange={handleAdvancedFilters} onClear={handleClearFilters} />
+        )}
 
-      {!loading && !error && (
-        products.length === 0
-          ? <p className="page-empty">No {title.toLowerCase()} found. Add some from the admin panel!</p>
-          : (
-            <>
-              <div className="products-grid products-grid-3col">
-                {products.map(product => (
-                  <ProductCard key={product._id || product.id} product={product} />
-                ))}
-              </div>
-              <Pagination page={page} totalPages={totalPages} onPage={setPage} />
-            </>
-          )
-      )}
+        <div className="category-results">
+          {loading && <p className="page-loading">Loading {title.toLowerCase()}…</p>}
+          {error   && <p className="page-error">Could not load products. Is the backend running?</p>}
+
+          {!loading && !error && (
+            products.length === 0
+              ? <p className="page-empty">No {title.toLowerCase()} found matching these filters.</p>
+              : (
+                <>
+                  <div className="products-grid products-grid-3col">
+                    {products.map(product => (
+                      <ProductCard key={product._id || product.id} product={product} />
+                    ))}
+                  </div>
+                  <Pagination page={page} totalPages={totalPages} onPage={setPage} />
+                </>
+              )
+          )}
+        </div>
+      </div>
     </section>
   );
 }
