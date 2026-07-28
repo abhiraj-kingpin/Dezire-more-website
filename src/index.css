@@ -572,7 +572,7 @@ nav {
 .products-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
 .product-card { background: var(--surface); border-radius: 2px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.05); transition: box-shadow 0.3s, transform 0.3s; cursor: pointer; }
 .product-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.12); transform: translateY(-3px); }
-.product-img-wrap { position: relative; aspect-ratio: 3/4; overflow: hidden; background: var(--surface-alt); }
+.product-img-wrap { position: relative; aspect-ratio: 4/5; overflow: hidden; background: var(--surface-alt); }
 .product-img-wrap img { width: 100%; height: 100%; object-fit: contain; object-position: center; transition: transform 0.5s; }
 .product-card:hover .product-img-wrap img { transform: scale(1.05); }
 .wishlist-btn { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
@@ -1557,6 +1557,7 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center 22%;
   display: block;
 }
 
@@ -1595,23 +1596,31 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 .pd-main-img-wrap {
   flex: 1;
   min-width: 0;
+  min-height: 380px;
+  max-height: 64vh;
   border-radius: 12px;
   overflow: hidden;
   position: relative;
   background: var(--surface);
   cursor: zoom-in;
   box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  transition: aspect-ratio 0.3s ease, box-shadow 0.3s ease;
+  touch-action: pan-y;
 }
 
 .pd-main-img {
   width: 100%;
   height: 100%;
-  min-height: 380px;
-  max-height: 64vh;
   object-fit: contain;
   object-position: center;
   display: block;
   transition: transform 0.4s ease;
+  animation: pdMainFadeIn 0.4s ease;
+}
+
+@keyframes pdMainFadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 .pd-main-img-wrap:hover .pd-main-img {
@@ -4676,7 +4685,8 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     height: 66px;
   }
   .pd-main-img-wrap {
-    height: 300px;
+    min-height: 260px;
+    max-height: 60vh;
   }
   .pd-main-img {
     min-height: 0;

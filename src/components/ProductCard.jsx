@@ -16,6 +16,14 @@ const SIZE_CHART = [
 
 const STANDARD_SIZES = SIZE_CHART.map(row => row.size);
 
+// Keeps the modal's main image box close to the photo's own aspect ratio
+// (measured on load) so `object-fit: contain` never has to letterbox large
+// empty margins — bounded so an extreme panorama/strip photo can't distort
+// the modal's layout.
+function clampImageRatio(ratio) {
+  return Math.min(1.6, Math.max(0.55, ratio));
+}
+
 // Sarees, jewelry/accessories, and dress materials are unstitched/one-size —
 // no size selector or size chart needed. 'jewelry' and 'accessories' are kept
 // here too since older products are still saved under those pre-merge values.
@@ -120,12 +128,15 @@ function ProductCard({ product: rawProduct }) {
   const [lightboxOpen,  setLightboxOpen]  = useState(false);
   const [zoom,          setZoom]          = useState(1);
   const [pan,           setPan]           = useState({ x: 0, y: 0 });
+  const [mainImgRatio,  setMainImgRatio]  = useState(null);
 
   const cardImgRef   = useRef(null);
   const modalImgRef  = useRef(null);
   const wishlistBtnRef      = useRef(null);
   const modalWishlistBtnRef = useRef(null);
   const dragState = useRef(null);
+  const gallerySwipeRef = useRef(null);
+  const lightboxSwipeRef = useRef(null);
 
   const { toggleWishlist, addToWishlist, isWishlisted } = useWishlist();
   const { addToCart, buyNow }            = useCart();
@@ -145,8 +156,17 @@ function ProductCard({ product: rawProduct }) {
   const mediaCount = galleryImages.length + (hasVideo ? 1 : 0);
   const isVideoActive = hasVideo && activeImg === galleryImages.length;
 
-  const openModal = () => { setActiveImg(0); setQuantity(1); setSelectedSize(null); setModalOpen(true); };
+  const openModal = () => { setActiveImg(0); setQuantity(1); setSelectedSize(null); setMainImgRatio(null); setModalOpen(true); };
   const closeModal = () => { setModalOpen(false); setLightboxOpen(false); };
+
+  // Drop the previous image's measured ratio the moment we switch images so
+  // the box doesn't briefly keep the old shape before the new one loads.
+  useEffect(() => { setMainImgRatio(null); }, [activeImg]);
+
+  const handleMainImgLoad = (e) => {
+    const { naturalWidth, naturalHeight } = e.target;
+    if (naturalWidth && naturalHeight) setMainImgRatio(clampImageRatio(naturalWidth / naturalHeight));
+  };
 
   useLockBodyScroll(modalOpen || sizeChartOpen);
 
@@ -190,6 +210,51 @@ function ProductCard({ product: rawProduct }) {
     setActiveImg(i => (i + 1) % galleryImages.length);
     setZoom(1); setPan({ x: 0, y: 0 });
   }, [galleryImages.length]);
+
+  // Swipe-to-navigate on the main gallery image (mobile). A genuine swipe
+  // preventDefaults the trailing synthetic click so it doesn't also open
+  // the lightbox — a plain tap (no meaningful movement) still opens it.
+  const handleGalleryTouchStart = (e) => {
+    const t = e.touches[0];
+    gallerySwipeRef.current = { x: t.clientX, y: t.clientY };
+  };
+  const handleGalleryTouchEnd = (e) => {
+    const start = gallerySwipeRef.current;
+    gallerySwipeRef.current = null;
+    if (!start || mediaCount < 2) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      e.preventDefault();
+      dx < 0 ? showNext() : showPrev();
+    }
+  };
+
+  // Same idea inside the full-screen lightbox, but only while not zoomed in
+  // (when zoomed, touch-drag pans the image instead — handled separately).
+  const handleLightboxTouchStart = (e) => {
+    const t = e.touches[0];
+    if (zoom === 1) { lightboxSwipeRef.current = { x: t.clientX, y: t.clientY }; return; }
+    onDragStart(t.clientX, t.clientY);
+  };
+  const handleLightboxTouchMove = (e) => {
+    if (zoom === 1) return;
+    const t = e.touches[0];
+    onDragMove(t.clientX, t.clientY);
+  };
+  const handleLightboxTouchEnd = (e) => {
+    if (zoom !== 1) { onDragEnd(); return; }
+    const start = lightboxSwipeRef.current;
+    lightboxSwipeRef.current = null;
+    if (!start) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      dx < 0 ? showNextImage() : showPrevImage();
+    }
+  };
 
   // Arrow keys navigate the gallery while the modal or lightbox is open
   useEffect(() => {
@@ -392,7 +457,13 @@ function ProductCard({ product: rawProduct }) {
                   </div>
                 )}
 
-                <div className="pd-main-img-wrap" onClick={isVideoActive ? undefined : openLightbox}>
+                <div
+                  className="pd-main-img-wrap"
+                  style={!isVideoActive && mainImgRatio ? { aspectRatio: mainImgRatio } : undefined}
+                  onClick={isVideoActive ? undefined : openLightbox}
+                  onTouchStart={isVideoActive ? undefined : handleGalleryTouchStart}
+                  onTouchEnd={isVideoActive ? undefined : handleGalleryTouchEnd}
+                >
                   {isVideoActive ? (
                     <video
                       src={product.video.url}
@@ -406,10 +477,12 @@ function ProductCard({ product: rawProduct }) {
                   ) : (
                     <>
                       <img
+                        key={activeImg}
                         ref={modalImgRef}
                         src={galleryImages[activeImg] || product.image}
                         alt={product.name}
                         className="pd-main-img"
+                        onLoad={handleMainImgLoad}
                       />
                       <div className="pd-zoom-hint">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
@@ -609,11 +682,12 @@ function ProductCard({ product: rawProduct }) {
             onMouseMove={(e) => onDragMove(e.clientX, e.clientY)}
             onMouseUp={onDragEnd}
             onMouseLeave={onDragEnd}
-            onTouchStart={(e) => { const t = e.touches[0]; onDragStart(t.clientX, t.clientY); }}
-            onTouchMove={(e) => { const t = e.touches[0]; onDragMove(t.clientX, t.clientY); }}
-            onTouchEnd={onDragEnd}
+            onTouchStart={handleLightboxTouchStart}
+            onTouchMove={handleLightboxTouchMove}
+            onTouchEnd={handleLightboxTouchEnd}
           >
             <img
+              key={activeImg}
               src={galleryImages[activeImg] || product.image}
               alt={product.name}
               className="lightbox-img"
