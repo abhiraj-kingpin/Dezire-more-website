@@ -9,7 +9,7 @@ const heroSlides = [
     subtitle: "Elegant ethnic silhouettes designed for the modern Indian woman who loves timeless fashion.",
   },
   {
-    image: "/assets/hero/hero2.jpeg",
+    image: "/assets/hero/hero2.png",
     eyebrow: "✦ New Arrivals 2026",
     title: ["Drape Yourself", "In", "Tradition"],
     subtitle: "Handcrafted sarees and kurtas that celebrate the artistry of Indian weavers.",
