@@ -189,7 +189,7 @@ export function AuthProvider({ children }) {
       user, loading, error, setError,
       signupRequestOtp, verifySignupOtp, resendSignupOtp, login, logout, updateUser,
       addAddress, updateAddress, deleteAddress, subscribeMembership,
-      authOpen, setAuthOpen, authPrompt, promptLogin,
+      authOpen, setAuthOpen, authPrompt, promptLogin, authHeaders,
     }}>
       {children}
     </AuthContext.Provider>

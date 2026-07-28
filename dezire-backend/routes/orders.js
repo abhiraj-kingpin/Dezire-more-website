@@ -4,7 +4,12 @@ const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const adminAuth = require('../middleware/auth');
+const { requireAuth } = require('./auth');
 const { sendOrderConfirmationEmail, sendAdminOrderAlert } = require('../utils/notifications');
+
+// Orders placed before real accounts existed have no owning user, but their
+// email still identifies the customer — cancellable/early statuses only.
+const CANCELLABLE_STATUSES = ['Order Placed', 'Payment Confirmed', 'Processing'];
 
 function generateOrderNumber() {
   return 'DZM' + Math.floor(100000 + Math.random() * 900000);
@@ -111,19 +116,39 @@ router.post('/', async (req, res) => {
   }
 });
 
-// GET /api/orders?email=customer@example.com — a customer's own order history
-router.get('/', async (req, res) => {
+// GET /api/orders — the logged-in customer's own order history. Scoped to
+// their verified account email server-side, not a client-supplied param —
+// previously any caller could read anyone's orders just by knowing their email.
+router.get('/', requireAuth, async (req, res) => {
   try {
-    const { email } = req.query;
-    if (!email) return res.status(400).json({ error: 'email query parameter is required' });
-
-    const orders = await Order.find({ customerEmail: email.toLowerCase().trim() })
+    const orders = await Order.find({ customerEmail: req.user.email })
       .sort({ createdAt: -1 })
       .lean();
 
     res.json({ data: orders });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /api/orders/:id/cancel — customer-initiated cancellation, only while
+// the order hasn't progressed past processing.
+router.patch('/:id/cancel', requireAuth, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    if (order.customerEmail !== req.user.email) {
+      return res.status(403).json({ error: 'This order does not belong to your account' });
+    }
+    if (!CANCELLABLE_STATUSES.includes(order.orderStatus)) {
+      return res.status(400).json({ error: `Orders can no longer be cancelled once they're ${order.orderStatus.toLowerCase()}` });
+    }
+
+    order.orderStatus = 'Cancelled';
+    await order.save();
+    res.json({ success: true, order });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 });
 
