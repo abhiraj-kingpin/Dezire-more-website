@@ -4,16 +4,17 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/User');
-const Otp = require('../models/Otp');
+const VerificationToken = require('../models/VerificationToken');
 const adminAuth = require('../middleware/auth');
-const { sendOtpEmail } = require('../utils/notifications');
+const { sendVerificationEmail } = require('../utils/notifications');
 
-const OTP_TTL_MINUTES = 10;
-const OTP_RESEND_COOLDOWN_SECONDS = 30;
+const VERIFICATION_TTL_HOURS = 24;
+const RESEND_COOLDOWN_SECONDS = 60;
 const MEMBERSHIP_PLANS = { gold: 5000, platinum: 10000 };
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://www.deziremore.com';
 
-function generateOtp() {
-  return String(crypto.randomInt(100000, 999999));
+function hashToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
 }
 
 function signToken(user) {
@@ -35,19 +36,36 @@ function publicUser(user) {
   };
 }
 
-async function issueOtp(email, purpose) {
-  const code = generateOtp();
-  await Otp.deleteMany({ email, purpose });
-  await Otp.create({
+// Issues a fresh verification link for `email`, invalidating any previous
+// one. Throws if a link was already sent inside the resend cooldown, so
+// both signup and explicit resend share one rate-limited code path.
+async function issueVerificationLink(email) {
+  const recent = await VerificationToken.findOne({ email, purpose: 'signup' }).sort({ createdAt: -1 });
+  if (recent) {
+    const secondsSinceSent = (Date.now() - recent.createdAt.getTime()) / 1000;
+    if (secondsSinceSent < RESEND_COOLDOWN_SECONDS) {
+      const wait = Math.ceil(RESEND_COOLDOWN_SECONDS - secondsSinceSent);
+      const err = new Error(`Please wait ${wait}s before requesting another email`);
+      err.status = 429;
+      throw err;
+    }
+  }
+
+  const token = crypto.randomBytes(32).toString('hex');
+  await VerificationToken.deleteMany({ email, purpose: 'signup' });
+  await VerificationToken.create({
     email,
-    codeHash: await bcrypt.hash(code, 10),
-    purpose,
-    expiresAt: new Date(Date.now() + OTP_TTL_MINUTES * 60000),
+    tokenHash: hashToken(token),
+    purpose: 'signup',
+    expiresAt: new Date(Date.now() + VERIFICATION_TTL_HOURS * 60 * 60 * 1000),
   });
-  const result = await sendOtpEmail(email, code, purpose);
-  // SMTP isn't configured yet — surface the code in the server log so signups
-  // aren't a hard dead-end while that's being set up. Never exposed to the client.
-  if (!result.sent) console.warn(`[auth] OTP for ${email} (${purpose}): ${code} — SMTP not configured, email not sent.`);
+
+  const verifyUrl = `${FRONTEND_URL}/verify-email?token=${token}`;
+  const result = await sendVerificationEmail(email, verifyUrl);
+  // SMTP isn't configured yet — surface the link in the server log so
+  // signups aren't a hard dead-end while that's being set up. Never
+  // exposed to the client/browser.
+  if (!result.sent) console.warn(`[auth] Verification link for ${email}: ${verifyUrl} — SMTP not configured, email not sent.`);
   return result;
 }
 
@@ -68,9 +86,9 @@ async function requireAuth(req, res, next) {
   }
 }
 
-// POST /api/auth/signup/request-otp — creates/updates an unverified account
-// and emails a 6-digit code. The account only becomes usable once verified.
-router.post('/signup/request-otp', async (req, res) => {
+// POST /api/auth/signup — creates/updates an unverified account and emails
+// a verification link. The account can't log in until that link is clicked.
+router.post('/signup', async (req, res) => {
   try {
     const { email, password, firstName, lastName, phone } = req.body;
     if (!email || !password || !firstName) {
@@ -97,45 +115,40 @@ router.post('/signup/request-otp', async (req, res) => {
       await User.create({ email: normalizedEmail, passwordHash, firstName, lastName: lastName || '', phone: phone || '' });
     }
 
-    const result = await issueOtp(normalizedEmail, 'signup');
+    const result = await issueVerificationLink(normalizedEmail);
     if (!result.sent) {
       return res.status(503).json({ error: 'Email verification is temporarily unavailable. Please try again shortly.' });
     }
 
-    res.json({ success: true, message: `A verification code was sent to ${normalizedEmail}`, resendCooldown: OTP_RESEND_COOLDOWN_SECONDS });
+    res.json({ success: true, message: `A verification link was sent to ${normalizedEmail}`, email: normalizedEmail });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 });
 
-// POST /api/auth/signup/verify-otp
-router.post('/signup/verify-otp', async (req, res) => {
+// POST /api/auth/verify-email — consumes the token from the emailed link.
+// Called by the /verify-email frontend page, not the raw email link itself,
+// so an email client's link-preview/prefetch can't silently burn the token.
+router.post('/verify-email', async (req, res) => {
   try {
-    const { email, code } = req.body;
-    if (!email || !code) return res.status(400).json({ error: 'Email and code are required' });
-    const normalizedEmail = email.toLowerCase().trim();
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ error: 'Verification token is required' });
 
-    const otp = await Otp.findOne({ email: normalizedEmail, purpose: 'signup' }).sort({ createdAt: -1 });
-    if (!otp || otp.expiresAt < new Date()) {
-      return res.status(400).json({ error: 'This code has expired. Please request a new one.' });
+    const record = await VerificationToken.findOne({ tokenHash: hashToken(token), purpose: 'signup' });
+    if (!record) {
+      return res.status(400).json({ error: 'This verification link is invalid or has already been used.', invalid: true });
     }
-    if (otp.attempts >= 5) {
-      return res.status(429).json({ error: 'Too many incorrect attempts. Please request a new code.' });
-    }
-
-    const match = await bcrypt.compare(code, otp.codeHash);
-    if (!match) {
-      otp.attempts += 1;
-      await otp.save();
-      return res.status(400).json({ error: 'Incorrect code. Please try again.' });
+    if (record.expiresAt < new Date()) {
+      await record.deleteOne();
+      return res.status(400).json({ error: 'This verification link has expired. Please request a new one.', expired: true, email: record.email });
     }
 
-    const user = await User.findOne({ email: normalizedEmail });
+    const user = await User.findOne({ email: record.email });
     if (!user) return res.status(404).json({ error: 'Account not found — please sign up again.' });
 
     user.emailVerified = true;
     await user.save();
-    await Otp.deleteMany({ email: normalizedEmail, purpose: 'signup' });
+    await VerificationToken.deleteMany({ email: record.email, purpose: 'signup' });
 
     res.json({ success: true, token: signToken(user), user: publicUser(user) });
   } catch (err) {
@@ -143,8 +156,8 @@ router.post('/signup/verify-otp', async (req, res) => {
   }
 });
 
-// POST /api/auth/signup/resend-otp
-router.post('/signup/resend-otp', async (req, res) => {
+// POST /api/auth/resend-verification
+router.post('/resend-verification', async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'Email is required' });
@@ -155,12 +168,12 @@ router.post('/signup/resend-otp', async (req, res) => {
       return res.status(400).json({ error: 'No pending signup found for this email' });
     }
 
-    const result = await issueOtp(normalizedEmail, 'signup');
+    const result = await issueVerificationLink(normalizedEmail);
     if (!result.sent) return res.status(503).json({ error: 'Email verification is temporarily unavailable.' });
 
-    res.json({ success: true, resendCooldown: OTP_RESEND_COOLDOWN_SECONDS });
+    res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 });
 
@@ -179,7 +192,7 @@ router.post('/login', async (req, res) => {
 
     if (!user.emailVerified) {
       return res.status(403).json({
-        error: 'Please verify your email before logging in',
+        error: 'Please verify your email before logging in — check your inbox for the verification link.',
         needsVerification: true,
         email: normalizedEmail,
       });

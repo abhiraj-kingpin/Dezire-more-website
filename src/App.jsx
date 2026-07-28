@@ -17,6 +17,7 @@ import NewArrivals from './components/NewArrivals';
 import OurStory from './components/OurStory';
 import AccountDashboard from './components/AccountDashboard';
 import MyOrders from './components/MyOrders';
+import VerifyEmail from './components/VerifyEmail';
 import NotFound from './components/NotFound';
 import SizeGuide from './components/SizeGuide';
 import ShippingPolicy from './components/ShippingPolicy';
@@ -59,6 +60,7 @@ function App() {
                     <Route path="our-story" element={<OurStory />} />
                     <Route path="account" element={<AccountDashboard />} />
                     <Route path="orders" element={<MyOrders />} />
+                    <Route path="verify-email" element={<VerifyEmail />} />
                     {/* Help Pages */}
                     <Route path="size-guide" element={<SizeGuide />} />
                     <Route path="shipping-policy" element={<ShippingPolicy />} />

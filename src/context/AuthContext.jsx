@@ -45,10 +45,10 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false));
   }, []);
 
-  const signupRequestOtp = async ({ email, password, firstName, lastName, phone }) => {
+  const signup = async ({ email, password, firstName, lastName, phone }) => {
     setError('');
     try {
-      const res = await fetch(`${BASE}/auth/signup/request-otp`, {
+      const res = await fetch(`${BASE}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, firstName, lastName, phone }),
@@ -62,33 +62,34 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const verifySignupOtp = async (email, code) => {
+  // Consumes the token from the emailed verification link (called by the
+  // /verify-email page after it reads ?token= from the URL).
+  const verifyEmailToken = async (token) => {
     setError('');
     try {
-      const res = await fetch(`${BASE}/auth/signup/verify-otp`, {
+      const res = await fetch(`${BASE}/auth/verify-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code }),
+        body: JSON.stringify({ token }),
       });
       const data = await parseJson(res);
-      if (!res.ok) throw new Error(data.error || 'Invalid code');
+      if (!res.ok) return { success: false, ...data };
       applySession(data.token, data.user);
       return { success: true };
     } catch (err) {
-      setError(err.message);
       return { success: false, message: err.message };
     }
   };
 
-  const resendSignupOtp = async (email) => {
+  const resendVerification = async (email) => {
     try {
-      const res = await fetch(`${BASE}/auth/signup/resend-otp`, {
+      const res = await fetch(`${BASE}/auth/resend-verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
       const data = await parseJson(res);
-      if (!res.ok) throw new Error(data.error || 'Could not resend code');
+      if (!res.ok) throw new Error(data.error || 'Could not resend verification email');
       return { success: true, ...data };
     } catch (err) {
       return { success: false, message: err.message };
@@ -187,7 +188,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{
       user, loading, error, setError,
-      signupRequestOtp, verifySignupOtp, resendSignupOtp, login, logout, updateUser,
+      signup, verifyEmailToken, resendVerification, login, logout, updateUser,
       addAddress, updateAddress, deleteAddress, subscribeMembership,
       authOpen, setAuthOpen, authPrompt, promptLogin, authHeaders,
     }}>

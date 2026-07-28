@@ -117,13 +117,12 @@ function SearchResults({ query, onClose, onSelectTag, showAll, onShowAll }) {
 
 function Navbar() {
   const [activeTab, setActiveTab] = useState('login');
-  // 'login' | 'signup' | 'otp' — 'otp' covers both the signup-verification
-  // step and the "please verify" prompt shown after an unverified login.
+  // 'login' | 'signup' | 'check-email' — 'check-email' covers both the
+  // post-signup "we sent you a link" screen and the prompt shown after an
+  // unverified login attempt.
   const [authStep, setAuthStep] = useState('login');
-  const [otpEmail, setOtpEmail] = useState('');
-  const [otpCode, setOtpCode] = useState('');
-  const [otpError, setOtpError] = useState('');
-  const [otpLoading, setOtpLoading] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState('');
+  const [verifyError, setVerifyError] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
   const [pendingAddress, setPendingAddress] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('');
@@ -145,7 +144,7 @@ function Navbar() {
 
   const {
     user, login, loading, error, setError,
-    signupRequestOtp, verifySignupOtp, resendSignupOtp, addAddress,
+    signup, resendVerification, addAddress,
     authOpen, setAuthOpen, authPrompt, promptLogin,
   } = useAuth();
 
@@ -292,7 +291,9 @@ function Navbar() {
   const upiPayString = `upi://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent('Dezire More')}&am=${finalTotal}&cu=INR&tn=${encodeURIComponent('Dezire More Order')}`;
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiPayString)}`;
 
-  // Ticks the resend-OTP cooldown down to 0 once a code has been (re)sent.
+  // Ticks the resend-email cooldown down to 0 once a link has been (re)sent.
+  // Matches the backend's own 60s rate limit on resend-verification.
+  const RESEND_COOLDOWN_SECONDS = 60;
   useEffect(() => {
     if (resendCooldown <= 0) return;
     const t = setInterval(() => setResendCooldown(c => Math.max(0, c - 1)), 1000);
@@ -304,7 +305,7 @@ function Navbar() {
     setSignupFirstName(''); setSignupLastName(''); setSignupEmail(''); setSignupPhone(''); setSignupPassword('');
     setSignupAddress(''); setSignupCity(''); setSignupState(''); setSignupPin('');
     setAgreedToTerms(false);
-    setOtpCode(''); setOtpEmail(''); setOtpError(''); setPendingAddress(null); setResendCooldown(0);
+    setPendingEmail(''); setVerifyError(''); setPendingAddress(null); setResendCooldown(0);
     setAuthStep('login'); setActiveTab('login');
   };
 
@@ -320,10 +321,10 @@ function Navbar() {
     }
     if (result.needsVerification) {
       setError('');
-      setOtpEmail(result.email);
-      setAuthStep('otp');
-      const resend = await resendSignupOtp(result.email);
-      setResendCooldown(resend.resendCooldown || 30);
+      setPendingEmail(result.email);
+      setAuthStep('check-email');
+      const resend = await resendVerification(result.email);
+      if (resend.success) setResendCooldown(RESEND_COOLDOWN_SECONDS);
     }
   };
 
@@ -333,7 +334,7 @@ function Navbar() {
       setError('Please agree to the Terms & Privacy Policy');
       return;
     }
-    const result = await signupRequestOtp({
+    const result = await signup({
       email: signupEmail, password: signupPassword,
       firstName: signupFirstName, lastName: signupLastName, phone: signupPhone,
     });
@@ -341,41 +342,30 @@ function Navbar() {
       if (signupAddress.trim()) {
         setPendingAddress({ line1: signupAddress, city: signupCity, state: signupState, pin: signupPin });
       }
-      setOtpEmail(signupEmail);
-      setAuthStep('otp');
-      setResendCooldown(result.resendCooldown || 30);
+      setPendingEmail(signupEmail);
+      setAuthStep('check-email');
+      setResendCooldown(RESEND_COOLDOWN_SECONDS);
     }
   };
 
-  const handleVerifyOtp = async (e) => {
-    e.preventDefault();
-    setOtpError('');
-    if (!/^\d{6}$/.test(otpCode.trim())) {
-      setOtpError('Enter the 6-digit code from your email');
-      return;
+  // The pending address (if any) is saved once verification actually
+  // completes — but that happens on the separate /verify-email page, not
+  // here, so stash it where that page's own logic can't reach it directly.
+  // Simplest robust option: persist it to localStorage keyed by email.
+  useEffect(() => {
+    if (pendingAddress?.line1 && pendingEmail) {
+      localStorage.setItem(`dm-pending-address:${pendingEmail}`, JSON.stringify(pendingAddress));
     }
-    setOtpLoading(true);
-    const result = await verifySignupOtp(otpEmail, otpCode.trim());
-    setOtpLoading(false);
-    if (!result.success) {
-      setOtpError(result.message || 'Incorrect code');
-      return;
-    }
-    if (pendingAddress?.line1) {
-      addAddress({ label: 'Home', ...pendingAddress, isDefault: true });
-    }
-    setAuthOpen(false);
-    resetAuthFields();
-  };
+  }, [pendingAddress, pendingEmail]);
 
-  const handleResendOtp = async () => {
+  const handleResendVerification = async () => {
     if (resendCooldown > 0) return;
-    setOtpError('');
-    const result = await resendSignupOtp(otpEmail);
+    setVerifyError('');
+    const result = await resendVerification(pendingEmail);
     if (result.success) {
-      setResendCooldown(result.resendCooldown || 30);
+      setResendCooldown(RESEND_COOLDOWN_SECONDS);
     } else {
-      setOtpError(result.message || 'Could not resend code — please try again shortly.');
+      setVerifyError(result.message || 'Could not resend the email — please try again shortly.');
     }
   };
 
@@ -1005,43 +995,32 @@ function Navbar() {
           <div className="auth-modal" onClick={(e) => e.stopPropagation()}>
             <button className="auth-close" onClick={closeAuthModal}>✕</button>
 
-            {authStep !== 'otp' && (
+            {authStep !== 'check-email' && (
               <div className="auth-tabs">
                 <button className={`auth-tab ${activeTab === 'login' ? 'active' : ''}`} onClick={() => { setActiveTab('login'); setError(''); }}>Sign In</button>
                 <button className={`auth-tab ${activeTab === 'signup' ? 'active' : ''}`} onClick={() => { setActiveTab('signup'); setError(''); }}>Create Account</button>
               </div>
             )}
 
-            {authPrompt && authStep !== 'otp' && <div className="auth-prompt-banner">🔒 {authPrompt}</div>}
+            {authPrompt && authStep !== 'check-email' && <div className="auth-prompt-banner">🔒 {authPrompt}</div>}
             {error && <div className="auth-error">⚠ {error}</div>}
 
-            {authStep === 'otp' ? (
+            {authStep === 'check-email' ? (
               <div className="auth-panel">
-                <div className="auth-eyebrow">✦ Verify your email</div>
-                <div className="auth-heading">Enter the code sent to <em>{otpEmail}</em></div>
-                {otpError && <div className="auth-error">⚠ {otpError}</div>}
-                <label className="auth-label">6-digit code</label>
-                <input
-                  className="auth-input auth-otp-input"
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  autoFocus
-                  placeholder="000000"
-                  value={otpCode}
-                  onChange={e => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  onKeyDown={e => e.key === 'Enter' && handleVerifyOtp(e)}
-                />
-                <button className="auth-submit" onClick={handleVerifyOtp} disabled={otpLoading}>
-                  {otpLoading ? 'Verifying...' : 'Verify & Continue →'}
-                </button>
+                <div className="auth-check-email-icon">✉</div>
+                <div className="auth-eyebrow">✦ Check your email</div>
+                <div className="auth-heading">We sent a verification link to <em>{pendingEmail}</em></div>
+                <p className="auth-check-email-note">
+                  Click the link in that email to activate your account. It expires in 24 hours.
+                </p>
+                {verifyError && <div className="auth-error">⚠ {verifyError}</div>}
                 <div className="auth-switch">
                   {resendCooldown > 0
-                    ? <span className="auth-resend-cooldown">Resend code in {resendCooldown}s</span>
-                    : <span onClick={handleResendOtp}>Resend code</span>}
+                    ? <span className="auth-resend-cooldown">Resend email in {resendCooldown}s</span>
+                    : <span onClick={handleResendVerification}>Resend verification email</span>}
                 </div>
                 <div className="auth-switch">
-                  <span onClick={() => { setAuthStep('login'); setActiveTab('login'); setOtpError(''); }}>← Back</span>
+                  <span onClick={() => { setAuthStep('login'); setActiveTab('login'); setVerifyError(''); }}>← Back</span>
                 </div>
               </div>
             ) : activeTab === 'login' ? (
