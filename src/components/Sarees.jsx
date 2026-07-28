@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import ProductCard from './ProductCard';
+import SortDropdown from './SortDropdown';
 import { useCategory } from '../hooks/useProducts';
 
 const FILTERS = [
@@ -101,10 +102,7 @@ function Sarees() {
           ))}
         </div>
         <div className="sarees-sort">
-          <span className="filter-label">Sort By</span>
-          <select className="sort-select" value={sort} onChange={e => handleSort(e.target.value)}>
-            {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
+          <SortDropdown options={SORT_OPTIONS} value={sort} onChange={handleSort} />
         </div>
       </div>
 

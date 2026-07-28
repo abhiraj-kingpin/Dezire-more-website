@@ -1381,22 +1381,105 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   gap: 10px;
 }
 
-/* Sort select (single merged definition — was previously repeated with conflicting values) */
-.sort-select {
-  border: 1px solid var(--border);
-  padding: 8px 14px;
-  font-size: 0.6875rem;
-  font-family: inherit;
-  color: var(--text-dark);
-  background: var(--surface);
-  cursor: pointer;
-  outline: none;
-  letter-spacing: 0.5px;
-  border-radius: 1px;
+/* ── Custom luxury Sort dropdown (replaces the native <select>) ── */
+.sort-dd {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.sort-select:focus {
+.sort-dd-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dark);
+  padding: 9px 16px;
+  font-family: inherit;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+}
+
+.sort-dd-trigger:hover {
   border-color: var(--gold);
+}
+
+.sort-dd-trigger.open {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(184, 150, 78, 0.14);
+}
+
+.sort-dd-chevron {
+  flex-shrink: 0;
+  color: var(--gold);
+  transition: transform 0.25s ease;
+}
+
+.sort-dd-trigger.open .sort-dd-chevron {
+  transform: rotate(180deg);
+}
+
+.sort-dd-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 20;
+  min-width: 190px;
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.16), 0 0 0 1px rgba(184, 150, 78, 0.08);
+  transform-origin: top right;
+  animation: sortDdIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes sortDdIn {
+  from { opacity: 0; transform: scale(0.94) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.sort-dd-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-mid);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.sort-dd-option:hover {
+  background: var(--warm-white);
+  color: var(--text-dark);
+}
+
+.sort-dd-option.active {
+  color: var(--dark-green);
+  font-weight: 700;
+}
+
+.sort-dd-check {
+  width: 14px;
+  flex-shrink: 0;
+  color: var(--gold);
+  font-size: 0.75rem;
 }
 
 .product-badge {
@@ -4617,9 +4700,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   .product-card {
     width: 100% !important;
     min-width: 0 !important;
-  }
-  .product-card img {
-    height: 220px !important;
   }
 
   /* About section */

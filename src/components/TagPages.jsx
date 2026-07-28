@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ProductCard from './ProductCard';
+import SortDropdown from './SortDropdown';
 import { useTag } from '../hooks/useProducts';
 
 const SORT_OPTIONS = [
@@ -42,10 +43,7 @@ function TagPage({ title, tag, defaultSort }) {
 
       <div className="sarees-filter-bar">
         <div className="sarees-sort" style={{ marginLeft: 'auto' }}>
-          <span className="filter-label">Sort By</span>
-          <select className="sort-select" value={sort} onChange={e => { setSort(e.target.value); setPage(1); }}>
-            {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
+          <SortDropdown options={SORT_OPTIONS} value={sort} onChange={val => { setSort(val); setPage(1); }} />
         </div>
       </div>
 
