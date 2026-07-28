@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const User = require('../models/User');
 const VerificationToken = require('../models/VerificationToken');
 const adminAuth = require('../middleware/auth');
+const { authLimiter } = require('../middleware/rateLimiter');
 const { sendVerificationEmail } = require('../utils/notifications');
 
 const VERIFICATION_TTL_HOURS = 24;
@@ -88,7 +89,7 @@ async function requireAuth(req, res, next) {
 
 // POST /api/auth/signup — creates/updates an unverified account and emails
 // a verification link. The account can't log in until that link is clicked.
-router.post('/signup', async (req, res) => {
+router.post('/signup', authLimiter, async (req, res) => {
   try {
     const { email, password, firstName, lastName, phone } = req.body;
     if (!email || !password || !firstName) {
@@ -157,7 +158,7 @@ router.post('/verify-email', async (req, res) => {
 });
 
 // POST /api/auth/resend-verification
-router.post('/resend-verification', async (req, res) => {
+router.post('/resend-verification', authLimiter, async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'Email is required' });
@@ -178,7 +179,7 @@ router.post('/resend-verification', async (req, res) => {
 });
 
 // POST /api/auth/login
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });

@@ -145,7 +145,7 @@ function Navbar() {
 
   const {
     user, login, loading, error, setError,
-    signup, resendVerification, addAddress,
+    signup, resendVerification, addAddress, authHeaders,
     authOpen, setAuthOpen, authPrompt, promptLogin,
   } = useAuth();
   const { showToast } = useToast();
@@ -470,7 +470,7 @@ function Navbar() {
     try {
       const res = await fetch(`${BASE}/orders`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({
           customerEmail: checkoutEmail.trim(),
           customerName: checkoutName.trim(),
@@ -1005,7 +1005,7 @@ function Navbar() {
               <div className="payment-section">
                 <h4 className="payment-section-title">Contact Details</h4>
                 <input className="payment-input" type="text" placeholder="Full Name" value={checkoutName} onChange={e => setCheckoutName(e.target.value)} />
-                <input className="payment-input" type="email" placeholder="Email (for order confirmation)" value={checkoutEmail} onChange={e => setCheckoutEmail(e.target.value)} />
+                <input className="payment-input" type="email" value={checkoutEmail} disabled title="Order confirmations always go to your account's verified email" />
                 <input className="payment-input" type="tel" placeholder="Phone Number" value={checkoutPhone} onChange={e => setCheckoutPhone(e.target.value)} />
               </div>
               <div className="payment-section">

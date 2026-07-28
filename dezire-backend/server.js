@@ -2,6 +2,7 @@ const path = require('path');
 require('dotenv').config();
 const express = require('express');
 const cors    = require('cors');
+const helmet  = require('helmet');
 const mongoose = require('mongoose');
 
 const productRoutes = require('./routes/products');
@@ -13,7 +14,23 @@ const { router: couponRoutes } = require('./routes/coupons');
 
 const app = express();
 
+// Render (and most hosts) sit behind a reverse proxy — without this,
+// express-rate-limit sees every request as coming from the proxy's IP
+// instead of the real client, making the limits meaningless.
+app.set('trust proxy', 1);
+
 // ─── Middleware ───────────────────────────────────────────────────────────────
+
+// contentSecurityPolicy/crossOriginResourcePolicy are off: the admin panel
+// is a single static HTML file full of inline <script> tags with no nonce
+// setup, and product images are served from Cloudinary on a different
+// origin — both would break under Helmet's strict defaults. Still get the
+// rest: X-Content-Type-Options, X-Frame-Options, HSTS, etc.
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: false,
+  crossOriginEmbedderPolicy: false,
+}));
 
 app.use(cors({
   origin: [

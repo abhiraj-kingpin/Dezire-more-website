@@ -124,6 +124,43 @@ async function sendAdminOrderAlert(order) {
   return { sent: true };
 }
 
+const STATUS_MESSAGES = {
+  'Payment Confirmed': 'We\'ve confirmed your payment — your order is being prepared.',
+  'Processing':         'Your order is being processed by our team.',
+  'Packed':              'Your order has been packed and is ready for dispatch.',
+  'Shipped':             'Your order is on its way!',
+  'Out for Delivery':    'Your order is out for delivery — it should arrive today.',
+  'Delivered':           'Your order has been delivered. We hope you love it!',
+  'Cancelled':           'Your order has been cancelled.',
+};
+
+// Sent whenever the admin panel moves an order to a customer-meaningful
+// status — not every internal state, just the ones worth an email.
+async function sendOrderStatusEmail(order) {
+  const t = getTransporter();
+  if (!t) return { sent: false, reason: 'smtp-not-configured' };
+
+  const message = STATUS_MESSAGES[order.orderStatus];
+  if (!message) return { sent: false, reason: 'status-not-notifiable' };
+
+  const html = emailShell(`
+      <h2 style="color:#1e3a2f;margin:0 0 12px;font-size:20px;">${order.orderStatus}</h2>
+      <p style="margin:0 0 16px;">Hi ${order.customerName}, ${message}</p>
+      <p style="font-size:14px;"><strong>Order:</strong> ${order.orderNumber}</p>
+      ${order.estimatedDelivery && order.orderStatus !== 'Delivered' && order.orderStatus !== 'Cancelled'
+        ? `<p style="font-size:14px;"><strong>Estimated Delivery:</strong> ${new Date(order.estimatedDelivery).toDateString()}</p>`
+        : ''}
+  `);
+
+  await t.sendMail({
+    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    to: order.customerEmail,
+    subject: `${order.orderStatus} — Order ${order.orderNumber} | Dezire More`,
+    html,
+  });
+  return { sent: true };
+}
+
 // Link-based email verification (signup). The button is the primary path;
 // the raw URL is included as a fallback for email clients that strip links
 // out of buttons or block images/styling.
@@ -149,4 +186,4 @@ async function sendVerificationEmail(email, verifyUrl) {
   return { sent: true };
 }
 
-module.exports = { sendOrderConfirmationEmail, sendAdminOrderAlert, sendVerificationEmail };
+module.exports = { sendOrderConfirmationEmail, sendAdminOrderAlert, sendVerificationEmail, sendOrderStatusEmail };

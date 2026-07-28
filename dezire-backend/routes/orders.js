@@ -7,7 +7,8 @@ const adminAuth = require('../middleware/auth');
 const { requireAuth } = require('./auth');
 const { resolveCoupon } = require('./coupons');
 const Coupon = require('../models/Coupon');
-const { sendOrderConfirmationEmail, sendAdminOrderAlert } = require('../utils/notifications');
+const User = require('../models/User');
+const { sendOrderConfirmationEmail, sendAdminOrderAlert, sendOrderStatusEmail } = require('../utils/notifications');
 
 // Orders placed before real accounts existed have no owning user, but their
 // email still identifies the customer — cancellable/early statuses only.
@@ -47,16 +48,21 @@ function validateItems(items) {
   return null;
 }
 
-// POST /api/orders — create an order once payment is confirmed client-side
-router.post('/', async (req, res) => {
+// POST /api/orders — create an order once payment is confirmed client-side.
+// Requires login (the frontend already gates "Place Order" behind
+// authentication; this closes the gap where the API itself didn't enforce
+// it). customerEmail always comes from the verified session, never the
+// request body, so an order can't be filed under someone else's account.
+router.post('/', requireAuth, async (req, res) => {
   try {
     const {
-      customerEmail, customerName, customerPhone,
+      customerName, customerPhone,
       items, address, subtotal, deliveryCharge, total,
       paymentMethod, paymentStatus, isGift, giftMessage, couponCode,
     } = req.body;
+    const customerEmail = req.user.email;
 
-    if (!customerEmail || !customerName || !customerPhone) {
+    if (!customerName || !customerPhone) {
       return res.status(400).json({ error: 'Customer details are required' });
     }
     if (!Array.isArray(items) || items.length === 0) {
@@ -201,6 +207,11 @@ router.patch('/:id/cancel', requireAuth, async (req, res) => {
 
     order.orderStatus = 'Cancelled';
     await order.save();
+
+    if (req.user.notificationsEnabled !== false) {
+      sendOrderStatusEmail(order).catch(err => console.error('[order status email]', err.message));
+    }
+
     res.json({ success: true, order });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -240,6 +251,13 @@ router.patch('/:id/status', adminAuth, async (req, res) => {
 
     const order = await Order.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true });
     if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    if (orderStatus) {
+      const customer = await User.findOne({ email: order.customerEmail }).select('notificationsEnabled').lean();
+      if (!customer || customer.notificationsEnabled !== false) {
+        sendOrderStatusEmail(order).catch(err => console.error('[order status email]', err.message));
+      }
+    }
 
     res.json({ success: true, order });
   } catch (err) {

@@ -3202,6 +3202,12 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   border-color: var(--gold);
 }
 
+.payment-input:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  background: var(--warm-white);
+}
+
 .payment-methods {
   display: flex;
   flex-direction: column;
