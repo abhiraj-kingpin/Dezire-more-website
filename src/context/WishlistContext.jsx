@@ -1,11 +1,19 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { useToast } from './ToastContext';
+import { useAuth } from './AuthContext';
 
 const WishlistContext = createContext();
 
 export function WishlistProvider({ children }) {
   const { showToast } = useToast();
+  const { user, promptLogin } = useAuth();
   const [wishlist, setWishlist] = useState([]);
+
+  useEffect(() => {
+    const onLogout = () => setWishlist([]);
+    window.addEventListener('dm:logout', onLogout);
+    return () => window.removeEventListener('dm:logout', onLogout);
+  }, []);
   // Drawer state lives here (not in Navbar) so any component — e.g. a
   // product card's "Add to Wishlist" button — can open the wishlist drawer.
   const [wishlistOpen, setWishlistOpen] = useState(false);
@@ -16,6 +24,8 @@ export function WishlistProvider({ children }) {
   // Adding surfaces the drawer + a toast; removing stays quiet so repeatedly
   // un-hearting items doesn't spam the UI.
   const toggleWishlist = (product) => {
+    if (!user) { promptLogin('Log in to save items to your wishlist'); return false; }
+
     const exists = wishlist.some(p => p.id === product.id);
     setWishlist(prev =>
       exists
@@ -33,6 +43,8 @@ export function WishlistProvider({ children }) {
   // Explicit "Add to Wishlist" action (e.g. from the product detail modal) —
   // always surfaces the drawer with clear feedback, even if already saved.
   const addToWishlist = (product) => {
+    if (!user) { promptLogin('Log in to save items to your wishlist'); return false; }
+
     const exists = wishlist.some(p => p.id === product.id);
     if (!exists) {
       setWishlist(prev => [...prev, product]);

@@ -3789,6 +3789,29 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   margin: 0 24px;
 }
 
+.auth-prompt-banner {
+  background: rgba(184, 150, 78, 0.1);
+  border: 1px solid rgba(184, 150, 78, 0.35);
+  color: var(--dark-green);
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  margin: 0 24px;
+}
+
+.auth-otp-input {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 10px;
+}
+
+.auth-resend-cooldown {
+  color: var(--text-light);
+  cursor: default;
+}
+
 /* ── User Menu ── */
 .user-menu-wrap { position: relative; }
 

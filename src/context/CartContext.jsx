@@ -1,5 +1,6 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { useToast } from './ToastContext';
+import { useAuth } from './AuthContext';
 
 const CartContext = createContext();
 
@@ -14,7 +15,14 @@ function makeCartKey(product) {
 
 export function CartProvider({ children }) {
   const { showToast } = useToast();
+  const { user, promptLogin } = useAuth();
   const [cart, setCart] = useState([]);
+
+  useEffect(() => {
+    const onLogout = () => setCart([]);
+    window.addEventListener('dm:logout', onLogout);
+    return () => window.removeEventListener('dm:logout', onLogout);
+  }, []);
   // Drawer state lives here (not in Navbar) so any component — e.g. a
   // product card's "Buy Now" button — can open the cart / jump to checkout.
   const [cartOpen, setCartOpen] = useState(false);
@@ -26,6 +34,8 @@ export function CartProvider({ children }) {
   // opts.fromBuy  — internal flag set by buyNow, skips the "added" toast
   // opts.quantity — initial quantity to add (defaults to 1)
   const addToCart = (product, opts = {}) => {
+    if (!user) { promptLogin('Log in to add items to your cart'); return; }
+
     const { silent = false, fromBuy = false, quantity = 1 } = opts;
     const cartKey = makeCartKey(product);
 
@@ -51,6 +61,8 @@ export function CartProvider({ children }) {
   // Buy Now: add the item then jump straight to the payment step, skipping
   // the cart list entirely.
   const buyNow = (product, quantity = 1) => {
+    if (!user) { promptLogin('Log in to continue with your purchase'); return; }
+
     addToCart(product, { fromBuy: true, quantity });
     showToast('Proceeding to Secure Checkout…', 'checkout');
     setCartOpen(true);

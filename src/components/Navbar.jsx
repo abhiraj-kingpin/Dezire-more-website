@@ -115,8 +115,16 @@ function SearchResults({ query, onClose, onSelectTag, showAll, onShowAll }) {
 }
 
 function Navbar() {
-  const [authOpen, setAuthOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
+  // 'login' | 'signup' | 'otp' — 'otp' covers both the signup-verification
+  // step and the "please verify" prompt shown after an unverified login.
+  const [authStep, setAuthStep] = useState('login');
+  const [otpEmail, setOtpEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [pendingAddress, setPendingAddress] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [lastOrderId, setLastOrderId] = useState('');
@@ -134,7 +142,11 @@ function Navbar() {
     return () => { document.body.style.overflow = ''; };
   }, [mobileMenuOpen]);
 
-  const { user, login, signup, loading, error, setError } = useAuth();
+  const {
+    user, login, loading, error, setError,
+    signupRequestOtp, verifySignupOtp, resendSignupOtp, addAddress,
+    authOpen, setAuthOpen, authPrompt, promptLogin,
+  } = useAuth();
 
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -166,7 +178,7 @@ function Navbar() {
     const onKeyDown = (e) => {
       if (e.key !== 'Escape') return;
       if (searchOpen) { setSearchOpen(false); setSearchQuery(''); return; }
-      if (authOpen) { setAuthOpen(false); setError(''); return; }
+      if (authOpen) { closeAuthModal(); return; }
       if (settingsOpen) { setSettingsOpen(false); return; }
       if (cartOpen) {
         if (paymentStep) setPaymentStep(false);
@@ -273,13 +285,38 @@ function Navbar() {
   const upiPayString = `upi://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent('Dezire More')}&am=${finalTotal}&cu=INR&tn=${encodeURIComponent('Dezire More Order')}`;
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiPayString)}`;
 
+  // Ticks the resend-OTP cooldown down to 0 once a code has been (re)sent.
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setInterval(() => setResendCooldown(c => Math.max(0, c - 1)), 1000);
+    return () => clearInterval(t);
+  }, [resendCooldown]);
+
+  const resetAuthFields = () => {
+    setLoginEmail(''); setLoginPassword('');
+    setSignupFirstName(''); setSignupLastName(''); setSignupEmail(''); setSignupPhone(''); setSignupPassword('');
+    setSignupAddress(''); setSignupCity(''); setSignupState(''); setSignupPin('');
+    setAgreedToTerms(false);
+    setOtpCode(''); setOtpEmail(''); setOtpError(''); setPendingAddress(null); setResendCooldown(0);
+    setAuthStep('login'); setActiveTab('login');
+  };
+
+  const closeAuthModal = () => { setAuthOpen(false); setError(''); resetAuthFields(); };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     const result = await login(loginEmail, loginPassword);
     if (result.success) {
       setAuthOpen(false);
-      setLoginEmail('');
-      setLoginPassword('');
+      resetAuthFields();
+      return;
+    }
+    if (result.needsVerification) {
+      setError('');
+      setOtpEmail(result.email);
+      setAuthStep('otp');
+      const resend = await resendSignupOtp(result.email);
+      setResendCooldown(resend.resendCooldown || 30);
     }
   };
 
@@ -289,14 +326,60 @@ function Navbar() {
       setError('Please agree to the Terms & Privacy Policy');
       return;
     }
-    const result = await signup(signupFirstName, signupLastName, signupEmail, signupPhone, signupPassword, {
-      line1: signupAddress, city: signupCity, state: signupState, pin: signupPin,
+    const result = await signupRequestOtp({
+      email: signupEmail, password: signupPassword,
+      firstName: signupFirstName, lastName: signupLastName, phone: signupPhone,
     });
-    if (result.success) setAuthOpen(false);
+    if (result.success) {
+      if (signupAddress.trim()) {
+        setPendingAddress({ line1: signupAddress, city: signupCity, state: signupState, pin: signupPin });
+      }
+      setOtpEmail(signupEmail);
+      setAuthStep('otp');
+      setResendCooldown(result.resendCooldown || 30);
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    setOtpError('');
+    if (!/^\d{6}$/.test(otpCode.trim())) {
+      setOtpError('Enter the 6-digit code from your email');
+      return;
+    }
+    setOtpLoading(true);
+    const result = await verifySignupOtp(otpEmail, otpCode.trim());
+    setOtpLoading(false);
+    if (!result.success) {
+      setOtpError(result.message || 'Incorrect code');
+      return;
+    }
+    if (pendingAddress?.line1) {
+      addAddress({ label: 'Home', ...pendingAddress, isDefault: true });
+    }
+    setAuthOpen(false);
+    resetAuthFields();
+  };
+
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0) return;
+    setOtpError('');
+    const result = await resendSignupOtp(otpEmail);
+    if (result.success) {
+      setResendCooldown(result.resendCooldown || 30);
+    } else {
+      setOtpError(result.message || 'Could not resend code — please try again shortly.');
+    }
   };
 
   const handlePlaceOrder = async () => {
     if (isPlacingOrder) return; // guards against double-click / duplicate orders
+
+    if (!user) {
+      setCartOpen(false);
+      promptLogin('Log in to place your order');
+      return;
+    }
 
     setOrderError('');
     if (!checkoutName.trim() || !checkoutPhone.trim() || !checkoutAddress.trim() || !checkoutCity.trim() || !checkoutState.trim() || !checkoutPin.trim()) {
@@ -912,15 +995,50 @@ function Navbar() {
 
       {/* Auth Modal */}
       {authOpen && (
-        <div className="auth-overlay" onClick={() => { setAuthOpen(false); setError(''); }}>
+        <div className="auth-overlay" onClick={closeAuthModal}>
           <div className="auth-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="auth-close" onClick={() => { setAuthOpen(false); setError(''); }}>✕</button>
-            <div className="auth-tabs">
-              <button className={`auth-tab ${activeTab === 'login' ? 'active' : ''}`} onClick={() => { setActiveTab('login'); setError(''); }}>Sign In</button>
-              <button className={`auth-tab ${activeTab === 'signup' ? 'active' : ''}`} onClick={() => { setActiveTab('signup'); setError(''); }}>Create Account</button>
-            </div>
+            <button className="auth-close" onClick={closeAuthModal}>✕</button>
+
+            {authStep !== 'otp' && (
+              <div className="auth-tabs">
+                <button className={`auth-tab ${activeTab === 'login' ? 'active' : ''}`} onClick={() => { setActiveTab('login'); setError(''); }}>Sign In</button>
+                <button className={`auth-tab ${activeTab === 'signup' ? 'active' : ''}`} onClick={() => { setActiveTab('signup'); setError(''); }}>Create Account</button>
+              </div>
+            )}
+
+            {authPrompt && authStep !== 'otp' && <div className="auth-prompt-banner">🔒 {authPrompt}</div>}
             {error && <div className="auth-error">⚠ {error}</div>}
-            {activeTab === 'login' ? (
+
+            {authStep === 'otp' ? (
+              <div className="auth-panel">
+                <div className="auth-eyebrow">✦ Verify your email</div>
+                <div className="auth-heading">Enter the code sent to <em>{otpEmail}</em></div>
+                {otpError && <div className="auth-error">⚠ {otpError}</div>}
+                <label className="auth-label">6-digit code</label>
+                <input
+                  className="auth-input auth-otp-input"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  autoFocus
+                  placeholder="000000"
+                  value={otpCode}
+                  onChange={e => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  onKeyDown={e => e.key === 'Enter' && handleVerifyOtp(e)}
+                />
+                <button className="auth-submit" onClick={handleVerifyOtp} disabled={otpLoading}>
+                  {otpLoading ? 'Verifying...' : 'Verify & Continue →'}
+                </button>
+                <div className="auth-switch">
+                  {resendCooldown > 0
+                    ? <span className="auth-resend-cooldown">Resend code in {resendCooldown}s</span>
+                    : <span onClick={handleResendOtp}>Resend code</span>}
+                </div>
+                <div className="auth-switch">
+                  <span onClick={() => { setAuthStep('login'); setActiveTab('login'); setOtpError(''); }}>← Back</span>
+                </div>
+              </div>
+            ) : activeTab === 'login' ? (
               <div className="auth-panel">
                 <div className="auth-eyebrow">✦ Welcome back</div>
                 <div className="auth-heading">Sign into <em>your account</em></div>
@@ -928,10 +1046,6 @@ function Navbar() {
                 <input className="auth-input" type="email" placeholder="you@example.com" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} />
                 <label className="auth-label">Password</label>
                 <input className="auth-input" type="password" placeholder="••••••••" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin(e)} />
-                <div className="auth-row">
-                  <label className="auth-check"><input type="checkbox" /> Remember me</label>
-                  <span className="auth-forgot">Forgot password?</span>
-                </div>
                 <button className="auth-submit" onClick={handleLogin} disabled={loading}>{loading ? 'Signing in...' : 'Sign In →'}</button>
                 <div className="auth-switch">New here? <span onClick={() => { setActiveTab('signup'); setError(''); }}>Create a free account</span></div>
               </div>
@@ -956,7 +1070,7 @@ function Navbar() {
                 <label className="auth-label">Password</label>
                 <input className="auth-input" type="password" placeholder="Min. 8 characters" value={signupPassword} onChange={e => setSignupPassword(e.target.value)} />
 
-                <div className="auth-divider"><span>Delivery Address</span></div>
+                <div className="auth-divider"><span>Delivery Address (optional)</span></div>
                 <label className="auth-label">Address line 1</label>
                 <input className="auth-input" type="text" placeholder="House no., street, locality" value={signupAddress} onChange={e => setSignupAddress(e.target.value)} />
                 <div className="auth-name-row">
@@ -976,7 +1090,7 @@ function Navbar() {
                   <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} />
                   I agree to the <span style={{ color: '#b8902d' }}>Terms & Privacy Policy</span>
                 </label>
-                <button className="auth-submit" style={{ marginTop: '14px' }} onClick={handleSignup} disabled={loading}>{loading ? 'Creating account...' : 'Create Account →'}</button>
+                <button className="auth-submit" style={{ marginTop: '14px' }} onClick={handleSignup} disabled={loading}>{loading ? 'Sending code...' : 'Create Account →'}</button>
                 <div className="auth-switch">Already have an account? <span onClick={() => { setActiveTab('login'); setError(''); }}>Sign in</span></div>
               </div>
             )}
