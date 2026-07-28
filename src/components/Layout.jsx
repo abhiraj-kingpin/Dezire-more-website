@@ -12,7 +12,9 @@ function Layout() {
     <>
       <AnnouncementBar />
       <Navbar />
-      <Outlet />
+      <div key={pathname} className="page-fade-in">
+        <Outlet />
+      </div>
       <Footer />
       {isHome && <Chatbot />}
     </>

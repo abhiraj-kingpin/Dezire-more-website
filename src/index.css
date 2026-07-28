@@ -6302,6 +6302,16 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   }
 }
 
+/* ── Page transition ── */
+.page-fade-in { animation: pageFadeIn 0.35s ease; }
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-fade-in { animation: none; }
+}
+
 /* ===== TOUCH DEVICES: kill hover-triggered transforms ==========================
    Touch browsers simulate a lingering ":hover" the moment you tap or swipe
    across a card. On cards with a hover transform this caused visible
