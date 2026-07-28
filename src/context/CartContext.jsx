@@ -58,6 +58,12 @@ export function CartProvider({ children }) {
     );
   };
 
+  const updateSize = (id, selectedSize) => {
+    setCart(prev =>
+      prev.map(p => p.id === id ? { ...p, selectedSize } : p)
+    );
+  };
+
   const clearCart = () => setCart([]);
 
   const cartTotal = cart.reduce((sum, p) => sum + p.price * p.quantity, 0);
@@ -65,7 +71,7 @@ export function CartProvider({ children }) {
 
   return (
     <CartContext.Provider value={{
-      cart, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, cartCount,
+      cart, addToCart, removeFromCart, updateQuantity, updateSize, clearCart, cartTotal, cartCount,
       cartOpen, setCartOpen, paymentStep, setPaymentStep, buyNow, lastAddedId,
     }}>
       {children}

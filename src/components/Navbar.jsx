@@ -13,6 +13,8 @@ import { useSearch as useSearchAPI, BASE } from '../hooks/useProducts';
 import useLockBodyScroll from '../hooks/useLockBodyScroll';
 import { flyToCart, ripple } from './ProductCard';
 
+const FALLBACK_SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+
 function SearchResults({ query, onClose, onSelectTag }) {
   const { addToCart } = useCart();
   const { toggleWishlist, isWishlisted } = useWishlist();
@@ -133,7 +135,7 @@ function Navbar() {
 
   const { wishlist, toggleWishlist, wishlistOpen, setWishlistOpen, lastAddedId } = useWishlist();
   const {
-    cart, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, cartCount,
+    cart, addToCart, removeFromCart, updateQuantity, updateSize, clearCart, cartTotal, cartCount,
     cartOpen, setCartOpen, paymentStep, setPaymentStep,
   } = useCart();
   const { searchOpen, setSearchOpen, searchQuery, setSearchQuery } = useSearch();
@@ -547,7 +549,7 @@ function Navbar() {
                   </svg>
                 </span>
                 <div>
-                  <h3 className="cm-title">My Cart <span className="cm-count">{cartCount}</span></h3>
+                  <h3 className="cm-title">Shopping Bag <span className="cm-count">{cartCount}</span></h3>
                   <p className="cm-subtitle">Review your items before checkout</p>
                 </div>
               </div>
@@ -587,11 +589,34 @@ function Navbar() {
                             </div>
                           </div>
                           <p className="cm-item-material">{product.fabric || product.material || 'Alloy base, handcrafted finish'}</p>
-                          {product.selectedSize && <p className="cm-item-size">Size: {product.selectedSize}</p>}
                           <span className="cm-badge">
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 2 9l10 13L22 9 12 2Z"/></svg>
                             Premium Collection
                           </span>
+
+                          {product.selectedSize && (
+                            <div className="cm-item-size-row">
+                              <label className="cm-field-label" htmlFor={`cm-size-${product.id}`}>Size</label>
+                              <select
+                                id={`cm-size-${product.id}`}
+                                className="cm-size-select"
+                                value={product.selectedSize}
+                                onChange={(e) => updateSize(product.id, e.target.value)}
+                              >
+                                {(product.sizes?.length ? product.sizes : FALLBACK_SIZES).map(size => (
+                                  <option key={size} value={size}>{size}</option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+
+                          <div className="cm-field-label cm-qty-label">Quantity</div>
+                          <div className="cart-qty-row cm-qty-row cm-qty-pill">
+                            <button className="cm-qty-btn" onClick={() => updateQuantity(product.id, product.quantity - 1)} aria-label="Decrease quantity">−</button>
+                            <span className="cm-qty-num">{product.quantity}</span>
+                            <button className="cm-qty-btn" onClick={() => updateQuantity(product.id, product.quantity + 1)} aria-label="Increase quantity">+</button>
+                          </div>
+
                           <div className="cm-item-bottom">
                             <div className="cm-item-price">
                               <span className="cm-price-now">₹{product.price.toLocaleString('en-IN')}</span>
@@ -602,11 +627,6 @@ function Navbar() {
                                 </>
                               )}
                             </div>
-                            <div className="cart-qty-row cm-qty-row">
-                              <button className="cm-qty-btn" onClick={() => updateQuantity(product.id, product.quantity - 1)} aria-label="Decrease quantity">−</button>
-                              <span className="cm-qty-num">{product.quantity}</span>
-                              <button className="cm-qty-btn" onClick={() => updateQuantity(product.id, product.quantity + 1)} aria-label="Increase quantity">+</button>
-                            </div>
                           </div>
                         </div>
                       </div>
@@ -616,6 +636,7 @@ function Navbar() {
 
                 <div className="cm-summary">
                   <h4 className="cm-summary-title">Order Summary</h4>
+                  <div className="cm-summary-ornament"><span /><i>❖</i><span /></div>
                   <div className="cm-summary-row">
                     <span>Subtotal ({cartCount} {cartCount === 1 ? 'item' : 'items'})</span>
                     <span>₹{cartTotal.toLocaleString('en-IN')}</span>
@@ -644,7 +665,7 @@ function Navbar() {
 
                   <button className="cm-checkout-btn" onClick={() => setPaymentStep(true)}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-                    Proceed to Checkout →
+                    Proceed Securely →
                   </button>
                   <button className="cm-continue-btn" onClick={() => setCartOpen(false)}>Continue Shopping</button>
                   <button className="cm-clear-btn" onClick={clearCart}>
@@ -675,14 +696,14 @@ function Navbar() {
             {cart.length > 0 && (
               <div className="cm-payments">
                 <span className="cm-ssl">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-                  256-bit SSL Secured
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M12 3 4 6v6c0 5 3.4 8.7 8 9 4.6-.3 8-4 8-9V6l-8-3Z"/></svg>
+                  Secure Payments via Razorpay
                 </span>
-                <span className="cm-pay-icon">VISA</span>
-                <span className="cm-pay-icon cm-pay-mc"><i></i><i></i></span>
-                <span className="cm-pay-icon">AMEX</span>
-                <span className="cm-pay-icon">Razorpay</span>
-                <span className="cm-pay-icon">UPI</span>
+                <span className="cm-payments-divider" />
+                <span className="cm-ssl">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                  256-bit SSL Encrypted
+                </span>
               </div>
             )}
           </div>
