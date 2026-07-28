@@ -43,6 +43,27 @@ const REVIEWS = [
     text: "Love your all collection, I'm buying beautiful suits and sarees from last 6 years. Every month I buy — na na karke bhi, I order. Seriously, I desire more, can't resist after seeing such elegant, beautiful pieces. Looking forward to shop more and more.",
     photo: '/assets/testimonials/customer6.png',
   },
+  {
+    name: 'Priya S.',
+    location: 'Customer Since 2016',
+    rating: 5,
+    text: "I am absolutely in love with the hand-embroidered chiffon sarees from Dezire More! The craftsmanship is breathtaking, and the fabric drapes like an absolute dream. Every single piece I've bought feels so luxurious and special. Dezire More has truly become my go-to destination for timeless ethnic wear.",
+    photo: '/assets/testimonials/customer7.jpg',
+  },
+  {
+    name: 'Natasha K.',
+    location: '',
+    rating: 5,
+    text: "The Parsi Gara saree I purchased from Dezire More is an absolute masterpiece. The intricate hand embroidery and heritage detailing are breathtaking, and you can truly feel the love and artistry poured into every stitch. It's a treasured piece in my wardrobe that always draws endless compliments!",
+    photo: '/assets/testimonials/customer8.jpg',
+  },
+  {
+    name: 'Sakshi',
+    location: '',
+    rating: 5,
+    text: "I was honestly a bit hesitant to order ethnic wear online, but Dezire More completely changed my mind! From the exquisite craftsmanship of my first piece to the flawless quality, I am now a completely hooked regular client. Finding a brand that delivers such authentic elegance and reliability is rare.",
+    photo: '/assets/testimonials/customer9.jpg',
+  },
 ];
 
 function getInitials(name) {
@@ -70,7 +91,7 @@ function ReviewCard({ review }) {
       <p className="testimonial-text">{review.text}</p>
       <span className="testimonial-divider"></span>
       <p className="testimonial-name">{review.name}</p>
-      <p className="testimonial-location">{review.location}</p>
+      {review.location && <p className="testimonial-location">{review.location}</p>}
     </div>
   );
 }
