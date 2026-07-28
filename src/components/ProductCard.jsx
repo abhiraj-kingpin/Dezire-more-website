@@ -3,8 +3,11 @@ import { createPortal } from 'react-dom';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
+import { Link } from 'react-router-dom';
 import useLockBodyScroll from '../hooks/useLockBodyScroll';
-import { recordRecentlyViewed } from '../utils/recentlyViewed';
+import { recordRecentlyViewed, categoryToPath } from '../utils/recentlyViewed';
+import { BASE } from '../hooks/useProducts';
+import ReviewsSection from './ReviewsSection';
 
 const SIZE_CHART = [
   { size: 'S',    chest: 36, waist: 36, hip: 40, kurtaLength: 47, pantsLength: 38 },
@@ -130,6 +133,7 @@ function ProductCard({ product: rawProduct }) {
   const [zoom,          setZoom]          = useState(1);
   const [pan,           setPan]           = useState({ x: 0, y: 0 });
   const [mainImgRatio,  setMainImgRatio]  = useState(null);
+  const [related,       setRelated]       = useState([]);
 
   const cardImgRef   = useRef(null);
   const modalImgRef  = useRef(null);
@@ -171,6 +175,17 @@ function ProductCard({ product: rawProduct }) {
     const { naturalWidth, naturalHeight } = e.target;
     if (naturalWidth && naturalHeight) setMainImgRatio(clampImageRatio(naturalWidth / naturalHeight));
   };
+
+  // "Similar Products" — fetched once per modal open, not kept in sync with
+  // every re-render, since it's a lightweight browsing aid, not live data.
+  useEffect(() => {
+    if (!modalOpen) return;
+    fetch(`${BASE}/products/${product.id}`)
+      .then(res => res.json())
+      .then(data => setRelated((data.related || []).filter(p => p._id !== product.id)))
+      .catch(() => setRelated([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modalOpen, product.id]);
 
   useLockBodyScroll(modalOpen || sizeChartOpen);
 
@@ -552,6 +567,10 @@ function ProductCard({ product: rawProduct }) {
                 {discount > 0 && <span className="pd-discount">{discount}% off</span>}
               </div>
 
+              <p className="pd-delivery-estimate">
+                🚚 Estimated delivery in 7–10 business days · Free shipping above ₹1,699
+              </p>
+
               {needsSize && (
                 <div className="pd-size-select">
                   <div className="pd-size-select-header">
@@ -652,6 +671,30 @@ function ProductCard({ product: rawProduct }) {
               <p className="pd-footer-note">
                 ✦ Free shipping above ₹1699 &nbsp;|&nbsp; Easy 3-day returns
               </p>
+            </div>
+
+            {related.length > 0 && (
+              <div className="pd-related-wrap">
+                <p className="pd-detail-label">You May Also Like</p>
+                <div className="pd-related-grid">
+                  {related.map(p => (
+                    <Link to={categoryToPath(p.category)} key={p._id} className="pd-related-card">
+                      <div className="pd-related-img-wrap">
+                        {p.images?.[0]?.url
+                          ? <img src={p.images[0].url} alt={p.name} loading="lazy" decoding="async" />
+                          : <div className="product-img-placeholder" />}
+                      </div>
+                      <p className="pd-related-name">{p.name}</p>
+                      <p className="pd-related-price">₹{p.price.toLocaleString('en-IN')}</p>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="pd-reviews-wrap">
+              <p className="pd-detail-label">Ratings &amp; Reviews</p>
+              <ReviewsSection productId={product.id} />
             </div>
           </div>
         </div>,
