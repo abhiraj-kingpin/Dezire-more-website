@@ -546,6 +546,7 @@ function Navbar() {
         </li>
         <li><Link to="/western-apparels" onClick={closeMobileMenu}>Casual Western</Link></li>
         <li><Link to="/jewelry-accessories" onClick={closeMobileMenu}>Jewelry & Accessories</Link></li>
+        <li><Link to="/membership" className="nav-link-membership" onClick={closeMobileMenu}>✦ Premium Membership</Link></li>
         <li className="nav-links-settings">
           <a href="#" onClick={(e) => { e.preventDefault(); closeMobileMenu(); setSettingsOpen(true); }}>Settings</a>
         </li>

@@ -98,6 +98,7 @@ function SettingsDrawer({ open, onClose, onOpenAuth, onOpenWishlist }) {
               </MenuButton>
               <MenuLink to="/account" onClose={onClose}>Profile</MenuLink>
               <MenuLink to="/account" onClose={onClose}>Saved Addresses</MenuLink>
+              <MenuLink to="/membership" onClose={onClose}>✦ Premium Membership</MenuLink>
             </div>
           </div>
 

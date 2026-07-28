@@ -1,42 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useToast } from '../context/ToastContext';
 import AddressBook from './AddressBook';
 import { getRecentlyViewed, categoryToPath } from '../utils/recentlyViewed';
-
-const MEMBERSHIP_PLANS = [
-  {
-    tier: 'gold',
-    name: 'Gold Membership',
-    price: 5000,
-    benefits: [
-      'Exclusive member pricing',
-      'Early access to new collections',
-      'Priority customer support',
-      'Exclusive coupon codes',
-      'Premium Member badge on your account',
-      'Birthday offers',
-      'Special festival discounts',
-    ],
-  },
-  {
-    tier: 'platinum',
-    name: 'Platinum Membership',
-    price: 10000,
-    benefits: [
-      'Everything in Gold',
-      'Higher discounts on selected collections',
-      'Free priority shipping',
-      'First access to limited-edition launches',
-      'Dedicated customer support',
-      'Exclusive premium collections',
-      'Premium Platinum badge on your account',
-      'VIP shopping experience',
-    ],
-  },
-];
 
 function ProfileSection() {
   const { user, updateUser } = useAuth();
@@ -101,78 +70,6 @@ function NotificationsSection() {
   );
 }
 
-function MembershipSection() {
-  const { user, subscribeMembership } = useAuth();
-  const { showToast } = useToast();
-  const [subscribing, setSubscribing] = useState('');
-  const membership = user.membership || { tier: 'none', status: 'inactive' };
-
-  const handleSubscribe = async (tier) => {
-    setSubscribing(tier);
-    const result = await subscribeMembership(tier);
-    setSubscribing('');
-    if (result.success) {
-      showToast(`${tier === 'gold' ? 'Gold' : 'Platinum'} membership request received — we'll confirm once payment is verified.`, 'success');
-    } else {
-      showToast(result.error || 'Could not start membership', 'info');
-    }
-  };
-
-  return (
-    <div className="membership-section">
-      {membership.tier !== 'none' && (
-        <div className={`membership-status-card tier-${membership.tier}`}>
-          <span className="membership-badge">{membership.tier === 'gold' ? '★ Gold Member' : '♛ Platinum Member'}</span>
-          <p className="membership-status-line">
-            Status: <b>{membership.status === 'active' ? 'Active' : membership.status === 'pending' ? 'Payment Pending' : membership.status}</b>
-          </p>
-          {membership.renewalDate && (
-            <p className="membership-status-line">Renews on {new Date(membership.renewalDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-          )}
-          {membership.payments?.length > 0 && (
-            <div className="membership-payment-history">
-              <p className="settings-section-title">Payment History</p>
-              {membership.payments.slice().reverse().map((p, i) => (
-                <div key={i} className="membership-payment-row">
-                  <span>{p.tier === 'gold' ? 'Gold' : 'Platinum'} — ₹{p.amount.toLocaleString('en-IN')}</span>
-                  <span className={`membership-payment-status status-${p.status}`}>{p.status}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="membership-plans">
-        {MEMBERSHIP_PLANS.map(plan => {
-          const isCurrent = membership.tier === plan.tier && membership.status !== 'expired';
-          return (
-            <div key={plan.tier} className={`membership-plan-card tier-${plan.tier} ${isCurrent ? 'current' : ''}`}>
-              <h3>{plan.name}</h3>
-              <p className="membership-plan-price">₹{plan.price.toLocaleString('en-IN')}<span>/year</span></p>
-              <ul className="membership-benefits">
-                {plan.benefits.map(b => <li key={b}>{b}</li>)}
-              </ul>
-              <button
-                className="membership-subscribe-btn"
-                disabled={isCurrent || subscribing === plan.tier}
-                onClick={() => handleSubscribe(plan.tier)}
-              >
-                {isCurrent
-                  ? (membership.status === 'pending' ? 'Payment Pending' : 'Current Plan')
-                  : subscribing === plan.tier ? 'Processing...' : `Get ${plan.tier === 'gold' ? 'Gold' : 'Platinum'}`}
-              </button>
-            </div>
-          );
-        })}
-      </div>
-      <p className="membership-note">
-        After subscribing, our team confirms your payment manually (the same trust-based process used at checkout) — your badge activates as soon as that's done.
-      </p>
-    </div>
-  );
-}
-
 function RecentlyViewedSection() {
   const items = getRecentlyViewed();
   if (items.length === 0) {
@@ -204,7 +101,6 @@ function ComingSoonSection({ label }) {
 const NAV_ITEMS = [
   { key: 'profile', label: 'My Profile', icon: '👤' },
   { key: 'addresses', label: 'Saved Addresses', icon: '📍' },
-  { key: 'membership', label: 'Premium Membership', icon: '✦' },
   { key: 'notifications', label: 'Notifications', icon: '🔔' },
   { key: 'recent', label: 'Recently Viewed', icon: '🕐' },
   { key: 'coupons', label: 'Coupons & Rewards', icon: '🎁' },
@@ -213,6 +109,7 @@ const NAV_ITEMS = [
 
 function AccountDashboard() {
   const { user, logout } = useAuth();
+  const { cart, setCartOpen } = useCart();
   const { wishlist, setWishlistOpen } = useWishlist();
   const navigate = useNavigate();
   const [section, setSection] = useState('profile');
@@ -272,8 +169,14 @@ function AccountDashboard() {
             <button className="account-nav-item" onClick={() => setWishlistOpen(true)}>
               <span className="account-nav-icon">♡</span>Wishlist {wishlist.length > 0 ? `(${wishlist.length})` : ''}
             </button>
+            <button className="account-nav-item" onClick={() => setCartOpen(true)}>
+              <span className="account-nav-icon">🛍</span>Cart {cart.length > 0 ? `(${cart.length})` : ''}
+            </button>
+            <button className="account-nav-item" onClick={() => navigate('/membership')}>
+              <span className="account-nav-icon">✦</span>Premium Membership
+            </button>
             <button className="account-nav-item" onClick={() => navigate('/help-support')}>
-              <span className="account-nav-icon">❓</span>Help &amp; Support
+              <span className="account-nav-icon">❓</span>Support
             </button>
             <button className="account-nav-item account-nav-logout" onClick={logout}>
               <span className="account-nav-icon">↪</span>Logout
@@ -284,7 +187,6 @@ function AccountDashboard() {
         <div className="account-main">
           {section === 'profile' && <ProfileSection />}
           {section === 'addresses' && <AddressBook />}
-          {section === 'membership' && <MembershipSection />}
           {section === 'notifications' && <NotificationsSection />}
           {section === 'recent' && <RecentlyViewedSection />}
           {section === 'coupons' && <ComingSoonSection label="Coupons & Rewards" />}

@@ -16,6 +16,7 @@ import Bestsellers from './components/Bestsellers';
 import NewArrivals from './components/NewArrivals';
 import OurStory from './components/OurStory';
 import AccountDashboard from './components/AccountDashboard';
+import Membership from './components/Membership';
 import MyOrders from './components/MyOrders';
 import VerifyEmail from './components/VerifyEmail';
 import NotFound from './components/NotFound';
@@ -59,6 +60,7 @@ function App() {
                     <Route path="new-arrivals" element={<NewArrivals />} />
                     <Route path="our-story" element={<OurStory />} />
                     <Route path="account" element={<AccountDashboard />} />
+                    <Route path="membership" element={<Membership />} />
                     <Route path="orders" element={<MyOrders />} />
                     <Route path="verify-email" element={<VerifyEmail />} />
                     {/* Help Pages */}
