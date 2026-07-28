@@ -279,8 +279,43 @@ function Navbar() {
   }, [user]);
 
   const DELIVERY_CHARGE = cartTotal >= 1899 ? 0 : 99;
-  const finalTotal = cartTotal + DELIVERY_CHARGE;
+
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null); // { code, discount }
+  const [couponError, setCouponError] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
+
+  const discountAmount = appliedCoupon?.discount || 0;
+  const finalTotal = Math.max(0, cartTotal - discountAmount) + DELIVERY_CHARGE;
   const cartSavings = cart.reduce((sum, p) => sum + Math.max(0, (p.originalPrice || p.price) - p.price) * p.quantity, 0);
+
+  const handleApplyCoupon = async () => {
+    if (!couponInput.trim()) return;
+    setCouponLoading(true);
+    setCouponError('');
+    try {
+      const res = await fetch(`${BASE}/coupons/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: couponInput.trim(), subtotal: cartTotal }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Invalid coupon');
+      setAppliedCoupon({ code: data.code, discount: data.discount });
+      showToast(`Coupon ${data.code} applied — ₹${data.discount.toLocaleString('en-IN')} off`, 'success');
+    } catch (err) {
+      setCouponError(err.message);
+      setAppliedCoupon(null);
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponInput('');
+    setCouponError('');
+  };
 
   const estimatedDeliveryDate = new Date(Date.now() + 9 * 24 * 60 * 60 * 1000)
     .toLocaleDateString('en-IN', { day: 'numeric', month: 'long' });
@@ -458,6 +493,7 @@ function Navbar() {
           subtotal: cartTotal,
           deliveryCharge: DELIVERY_CHARGE,
           total: finalTotal,
+          couponCode: appliedCoupon?.code,
           paymentMethod,
           paymentStatus: paymentMethod === 'COD' ? 'pending' : 'paid',
           isGift,
@@ -473,6 +509,8 @@ function Navbar() {
       clearCart();
       setIsGift(false);
       setGiftMessage('');
+      setAppliedCoupon(null);
+      setCouponInput('');
     } catch (err) {
       setOrderError(err.message);
     } finally {
@@ -844,6 +882,37 @@ function Navbar() {
                   {DELIVERY_CHARGE > 0 && (
                     <p className="cart-free-msg cm-free-msg">Add ₹{(1899 - cartTotal).toLocaleString('en-IN')} more for free delivery!</p>
                   )}
+
+                  <div className="cm-coupon-block">
+                    {appliedCoupon ? (
+                      <div className="cm-coupon-applied">
+                        <span>✓ <b>{appliedCoupon.code}</b> applied</span>
+                        <button type="button" onClick={handleRemoveCoupon}>Remove</button>
+                      </div>
+                    ) : (
+                      <div className="cm-coupon-row">
+                        <input
+                          type="text"
+                          placeholder="Coupon code"
+                          value={couponInput}
+                          onChange={e => setCouponInput(e.target.value.toUpperCase())}
+                          onKeyDown={e => e.key === 'Enter' && handleApplyCoupon()}
+                        />
+                        <button type="button" onClick={handleApplyCoupon} disabled={couponLoading}>
+                          {couponLoading ? '...' : 'Apply'}
+                        </button>
+                      </div>
+                    )}
+                    {couponError && <p className="cm-coupon-error">{couponError}</p>}
+                  </div>
+
+                  {discountAmount > 0 && (
+                    <div className="cm-summary-row">
+                      <span>Coupon Discount</span>
+                      <span className="cm-free">−₹{discountAmount.toLocaleString('en-IN')}</span>
+                    </div>
+                  )}
+
                   <div className="cm-summary-divider" />
                   <div className="cm-total-row">
                     <span>TOTAL</span>
@@ -922,6 +991,12 @@ function Navbar() {
                   <span>Delivery</span>
                   <span className={DELIVERY_CHARGE === 0 ? 'cart-free' : ''}>{DELIVERY_CHARGE === 0 ? 'FREE' : `₹${DELIVERY_CHARGE}`}</span>
                 </div>
+                {discountAmount > 0 && (
+                  <div className="payment-item">
+                    <span>Coupon ({appliedCoupon.code})</span>
+                    <span className="cart-free">−₹{discountAmount.toLocaleString('en-IN')}</span>
+                  </div>
+                )}
                 <div className="payment-item payment-total">
                   <span>Total</span>
                   <span>₹{finalTotal.toLocaleString('en-IN')}</span>

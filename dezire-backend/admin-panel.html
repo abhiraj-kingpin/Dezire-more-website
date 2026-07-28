@@ -175,6 +175,7 @@
     <button class="nav-item active" onclick="showPage('dashboard')">Dashboard</button>
     <button class="nav-item" onclick="showPage('orders')">Orders</button>
     <button class="nav-item" onclick="showPage('customers')">Customers</button>
+    <button class="nav-item" onclick="showPage('coupons')">Coupons</button>
     <button class="nav-item" onclick="showPage('products')">All Products</button>
     <button class="nav-item" onclick="showPage('add')">Add Product</button>
     <button class="nav-item" onclick="showPage('bulk')">Bulk Import</button>
@@ -214,6 +215,33 @@
       <p class="subtitle">Registered accounts and their membership status</p>
       <div class="card" style="padding:0;overflow:hidden">
         <div id="customers-list"><p class="loading" style="padding:40px">Loading…</p></div>
+      </div>
+    </div>
+
+    <!-- Coupons -->
+    <div class="page" id="page-coupons">
+      <h2>Coupons</h2>
+      <p class="subtitle">Discount codes customers can apply at checkout</p>
+      <div class="card" style="margin-bottom:20px">
+        <strong>Create Coupon</strong>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:flex-end">
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Code</label><input type="text" id="cp-code" placeholder="SUMMER25" style="width:140px;text-transform:uppercase" /></div>
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Type</label>
+            <select id="cp-type" style="width:110px">
+              <option value="percent">% Off</option>
+              <option value="flat">Flat ₹ Off</option>
+            </select>
+          </div>
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Value</label><input type="number" id="cp-value" placeholder="10" style="width:90px" /></div>
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Min Order ₹</label><input type="number" id="cp-min" placeholder="0" style="width:100px" /></div>
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Max Discount ₹</label><input type="number" id="cp-max" placeholder="(optional)" style="width:120px" /></div>
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Expires</label><input type="date" id="cp-expires" style="width:150px" /></div>
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Usage Limit</label><input type="number" id="cp-limit" placeholder="(unlimited)" style="width:120px" /></div>
+          <button class="btn btn-gold" onclick="createCoupon()">+ Create</button>
+        </div>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="coupons-list"><p class="loading" style="padding:40px">Loading…</p></div>
       </div>
     </div>
 
@@ -492,6 +520,7 @@ function showPage(name) {
   if (name === 'dashboard') loadDashboard();
   if (name === 'orders') loadOrdersList();
   if (name === 'customers') loadCustomersList();
+  if (name === 'coupons') loadCouponsList();
   if (name === 'add' && !document.getElementById('edit-product-id').value) resetForm();
 }
 
@@ -671,6 +700,104 @@ function renderCustomersTable() {
             <td>${m.status === 'pending' ? `<button class="btn btn-gold" style="padding:6px 12px;font-size:12px" onclick="confirmMembership('${c._id}')">Confirm Payment</button>` : ''}</td>
           </tr>`;
         }).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ── Coupons ───────────────────────────────────────────────────────────────────
+
+let allCoupons = [];
+
+async function loadCouponsList() {
+  try {
+    const res = await fetch(`${API}/coupons/admin/all`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    allCoupons = data.data || [];
+    renderCouponsTable();
+  } catch (err) {
+    document.getElementById('coupons-list').innerHTML = `<p class="empty">Failed to load coupons: ${err.message}</p>`;
+  }
+}
+
+async function createCoupon() {
+  const code = document.getElementById('cp-code').value.trim();
+  const type = document.getElementById('cp-type').value;
+  const value = Number(document.getElementById('cp-value').value);
+  const minOrderValue = Number(document.getElementById('cp-min').value) || 0;
+  const maxDiscount = document.getElementById('cp-max').value ? Number(document.getElementById('cp-max').value) : undefined;
+  const expiresAt = document.getElementById('cp-expires').value || undefined;
+  const usageLimit = document.getElementById('cp-limit').value ? Number(document.getElementById('cp-limit').value) : undefined;
+
+  if (!code || !value) { toast('Code and value are required', 'error'); return; }
+
+  try {
+    const res = await fetch(`${API}/coupons`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ code, type, value, minOrderValue, maxDiscount, expiresAt, usageLimit }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    toast('Coupon created', 'success');
+    ['cp-code','cp-value','cp-min','cp-max','cp-expires','cp-limit'].forEach(id => document.getElementById(id).value = '');
+    loadCouponsList();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function toggleCouponActive(id, isActive) {
+  try {
+    const res = await fetch(`${API}/coupons/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ isActive }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadCouponsList();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function deleteCoupon(id) {
+  if (!confirm('Delete this coupon permanently?')) return;
+  try {
+    const res = await fetch(`${API}/coupons/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new Error((await res.json()).error);
+    toast('Coupon deleted', 'success');
+    loadCouponsList();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+function renderCouponsTable() {
+  const el = document.getElementById('coupons-list');
+  if (!allCoupons.length) {
+    el.innerHTML = '<p class="empty">No coupons yet — create one above</p>';
+    return;
+  }
+  el.innerHTML = `
+    <table class="products-table">
+      <thead><tr>
+        <th>Code</th><th>Discount</th><th>Min Order</th><th>Expires</th><th>Usage</th><th>Status</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${allCoupons.map(c => `
+          <tr>
+            <td><strong>${c.code}</strong></td>
+            <td>${c.type === 'percent' ? c.value + '%' : '₹' + c.value}${c.maxDiscount ? ` (max ₹${c.maxDiscount})` : ''}</td>
+            <td>${c.minOrderValue ? '₹' + c.minOrderValue : '—'}</td>
+            <td>${c.expiresAt ? new Date(c.expiresAt).toLocaleDateString('en-IN') : 'Never'}</td>
+            <td>${c.usedCount}${c.usageLimit ? ' / ' + c.usageLimit : ''}</td>
+            <td><span class="badge ${c.isActive ? 'badge-active' : 'badge-inactive'}">${c.isActive ? 'Active' : 'Disabled'}</span></td>
+            <td style="display:flex;gap:8px">
+              <button class="btn btn-outline" style="padding:6px 10px;font-size:12px" onclick="toggleCouponActive('${c._id}', ${!c.isActive})">${c.isActive ? 'Disable' : 'Enable'}</button>
+              <button class="btn btn-outline" style="padding:6px 10px;font-size:12px;color:var(--danger)" onclick="deleteCoupon('${c._id}')">Delete</button>
+            </td>
+          </tr>
+        `).join('')}
       </tbody>
     </table>`;
 }

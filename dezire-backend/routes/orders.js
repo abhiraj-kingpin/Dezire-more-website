@@ -5,6 +5,8 @@ const Order = require('../models/Order');
 const Product = require('../models/Product');
 const adminAuth = require('../middleware/auth');
 const { requireAuth } = require('./auth');
+const { resolveCoupon } = require('./coupons');
+const Coupon = require('../models/Coupon');
 const { sendOrderConfirmationEmail, sendAdminOrderAlert } = require('../utils/notifications');
 
 // Orders placed before real accounts existed have no owning user, but their
@@ -51,7 +53,7 @@ router.post('/', async (req, res) => {
     const {
       customerEmail, customerName, customerPhone,
       items, address, subtotal, deliveryCharge, total,
-      paymentMethod, paymentStatus, isGift, giftMessage,
+      paymentMethod, paymentStatus, isGift, giftMessage, couponCode,
     } = req.body;
 
     if (!customerEmail || !customerName || !customerPhone) {
@@ -64,11 +66,25 @@ router.post('/', async (req, res) => {
     const itemError = validateItems(items);
     if (itemError) return res.status(400).json({ error: itemError });
 
-    const existingCount = await Product.countDocuments({
-      _id: { $in: items.map(item => item.productId) },
-    });
-    if (existingCount !== new Set(items.map(item => item.productId)).size) {
+    const products = await Product.find({ _id: { $in: items.map(item => item.productId) } });
+    if (products.length !== new Set(items.map(item => item.productId)).size) {
       return res.status(400).json({ error: 'One or more items in this order no longer exist' });
+    }
+
+    // Stock verification before payment — checked here, not just trusted
+    // from whatever the shopper had in their cart, since availability can
+    // change between browsing and checkout.
+    for (const item of items) {
+      const product = products.find(p => String(p._id) === String(item.productId));
+      if (!product.inStock || product.stockCount < item.quantity) {
+        return res.status(409).json({
+          error: !product.inStock || product.stockCount === 0
+            ? `"${item.name}" is currently out of stock`
+            : `Only ${product.stockCount} left of "${item.name}" — please reduce the quantity`,
+          outOfStock: true,
+          productId: item.productId,
+        });
+      }
     }
 
     if (!address?.line1 || !address?.city || !address?.state || !address?.pin) {
@@ -77,6 +93,19 @@ router.post('/', async (req, res) => {
     if (!paymentMethod) {
       return res.status(400).json({ error: 'Payment method is required' });
     }
+
+    // Re-validated here rather than trusting whatever discount the client
+    // already showed at checkout — a coupon can expire or hit its usage
+    // limit between being applied in the cart and the order actually posting.
+    let discountAmount = 0;
+    let appliedCoupon = null;
+    if (couponCode) {
+      const result = await resolveCoupon(couponCode, Number(subtotal) || 0);
+      if (result.error) return res.status(400).json({ error: result.error });
+      discountAmount = result.discount;
+      appliedCoupon = result.coupon;
+    }
+    const resolvedTotal = Number(subtotal) - discountAmount + Number(deliveryCharge || 0);
 
     // COD orders start "pending"; anything the customer has already paid
     // for (QR / UPI / online banking) is trusted as "paid" since there is
@@ -98,7 +127,9 @@ router.post('/', async (req, res) => {
       address,
       subtotal,
       deliveryCharge,
-      total,
+      total: resolvedTotal,
+      couponCode: appliedCoupon?.code,
+      discountAmount,
       paymentMethod,
       paymentStatus: resolvedPaymentStatus,
       orderStatus: resolvedPaymentStatus === 'paid' ? 'Payment Confirmed' : 'Order Placed',
@@ -106,6 +137,28 @@ router.post('/', async (req, res) => {
       isGift: !!isGift,
       giftMessage: isGift ? giftMessage : undefined,
     });
+
+    if (appliedCoupon) {
+      await Coupon.findByIdAndUpdate(appliedCoupon._id, { $inc: { usedCount: 1 } });
+    }
+
+    // Deduct stock now that the order is confirmed. Not wrapped in a
+    // transaction (this store's order volume doesn't warrant the added
+    // complexity) — worst case under rare concurrent checkouts is a slight
+    // oversell, which the admin can already see and address via the
+    // Products page.
+    await Promise.all(items.map(async (item) => {
+      const updated = await Product.findByIdAndUpdate(
+        item.productId,
+        { $inc: { stockCount: -item.quantity } },
+        { new: true }
+      );
+      if (updated && updated.stockCount <= 0) {
+        updated.stockCount = 0;
+        updated.inStock = false;
+        await updated.save();
+      }
+    }));
 
     // Fire-and-forget — a slow/unconfigured mail server should never block
     // or fail the order response.
