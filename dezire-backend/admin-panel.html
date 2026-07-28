@@ -375,6 +375,7 @@
           <div class="tag-check"><input type="checkbox" id="tag-sale" value="sale"><label for="tag-sale">Sale</label></div>
           <div class="tag-check"><input type="checkbox" id="tag-premium" value="premium"><label for="tag-premium">Premium</label></div>
           <div class="tag-check"><input type="checkbox" id="tag-everyday" value="everyday"><label for="tag-everyday">Everyday</label></div>
+          <div class="tag-check"><input type="checkbox" id="tag-staff-pick" value="staff-pick"><label for="tag-staff-pick">Staff Pick</label></div>
         </div>
 
         <div class="row" style="margin-top:20px">
@@ -874,7 +875,7 @@ function resetForm() {
   });
   document.getElementById('f-instock').value = 'true';
   document.getElementById('f-stock-count').value = '100';
-  ['tag-bestseller','tag-new-arrival','tag-sale','tag-premium','tag-everyday'].forEach(id => {
+  ['tag-bestseller','tag-new-arrival','tag-sale','tag-premium','tag-everyday','tag-staff-pick'].forEach(id => {
     document.getElementById(id).checked = false;
   });
   selectedFiles = [];
@@ -907,7 +908,7 @@ function editProduct(id) {
   document.getElementById('f-instock').value       = p.inStock ? 'true' : 'false';
   document.getElementById('f-stock-count').value   = p.stockCount || 100;
 
-  ['bestseller','new-arrival','sale','premium','everyday'].forEach(tag => {
+  ['bestseller','new-arrival','sale','premium','everyday','staff-pick'].forEach(tag => {
     document.getElementById(`tag-${tag}`).checked = (p.tags||[]).includes(tag);
   });
 
@@ -976,7 +977,7 @@ async function saveProduct() {
     return;
   }
 
-  const tags = ['bestseller','new-arrival','sale','premium','everyday']
+  const tags = ['bestseller','new-arrival','sale','premium','everyday','staff-pick']
     .filter(t => document.getElementById(`tag-${t}`).checked);
 
   const btn = document.getElementById('save-btn');
