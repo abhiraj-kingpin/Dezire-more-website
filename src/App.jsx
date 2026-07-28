@@ -15,7 +15,7 @@ import JewelryAccessories from './components/JewelryAccessories';
 import Bestsellers from './components/Bestsellers';
 import NewArrivals from './components/NewArrivals';
 import OurStory from './components/OurStory';
-import Account from './components/Account';
+import AccountDashboard from './components/AccountDashboard';
 import MyOrders from './components/MyOrders';
 import NotFound from './components/NotFound';
 import SizeGuide from './components/SizeGuide';
@@ -57,7 +57,7 @@ function App() {
                     <Route path="bestsellers" element={<Bestsellers />} />
                     <Route path="new-arrivals" element={<NewArrivals />} />
                     <Route path="our-story" element={<OurStory />} />
-                    <Route path="account" element={<Account />} />
+                    <Route path="account" element={<AccountDashboard />} />
                     <Route path="orders" element={<MyOrders />} />
                     {/* Help Pages */}
                     <Route path="size-guide" element={<SizeGuide />} />

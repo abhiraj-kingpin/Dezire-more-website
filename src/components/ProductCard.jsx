@@ -4,6 +4,7 @@ import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import useLockBodyScroll from '../hooks/useLockBodyScroll';
+import { recordRecentlyViewed } from '../utils/recentlyViewed';
 
 const SIZE_CHART = [
   { size: 'S',    chest: 36, waist: 36, hip: 40, kurtaLength: 47, pantsLength: 38 },
@@ -156,7 +157,10 @@ function ProductCard({ product: rawProduct }) {
   const mediaCount = galleryImages.length + (hasVideo ? 1 : 0);
   const isVideoActive = hasVideo && activeImg === galleryImages.length;
 
-  const openModal = () => { setActiveImg(0); setQuantity(1); setSelectedSize(null); setMainImgRatio(null); setModalOpen(true); };
+  const openModal = () => {
+    setActiveImg(0); setQuantity(1); setSelectedSize(null); setMainImgRatio(null); setModalOpen(true);
+    recordRecentlyViewed(product);
+  };
   const closeModal = () => { setModalOpen(false); setLightboxOpen(false); };
 
   // Drop the previous image's measured ratio the moment we switch images so

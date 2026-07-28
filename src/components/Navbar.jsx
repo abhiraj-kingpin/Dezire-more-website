@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import UserMenu from './UserMenu';
 import FlowingThreads from './FlowingThreads';
 import SettingsDrawer from './SettingsDrawer';
+import AddressBook from './AddressBook';
 import { READY_TO_WEAR_SUBCATEGORIES } from './CategoryPages';
 import { BASE } from '../hooks/useProducts';
 import useLockBodyScroll from '../hooks/useLockBodyScroll';
@@ -257,17 +258,23 @@ function Navbar() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [orderError, setOrderError] = useState('');
   const [placedOrder, setPlacedOrder] = useState(null);
+  const [selectedAddressId, setSelectedAddressId] = useState('');
+
+  const applyAddress = (addr) => {
+    setSelectedAddressId(addr._id);
+    setCheckoutAddress(addr.line1);
+    setCheckoutCity(addr.city);
+    setCheckoutState(addr.state);
+    setCheckoutPin(addr.pin);
+  };
 
   useEffect(() => {
-    if (user) {
-      setCheckoutName(`${user.firstName || ''} ${user.lastName || ''}`.trim());
-      setCheckoutEmail(user.email || '');
-      setCheckoutPhone(user.phone || '');
-      setCheckoutAddress(user.address?.line1 || '');
-      setCheckoutCity(user.address?.city || '');
-      setCheckoutState(user.address?.state || '');
-      setCheckoutPin(user.address?.pin || '');
-    }
+    if (!user) return;
+    setCheckoutName(`${user.firstName || ''} ${user.lastName || ''}`.trim());
+    setCheckoutEmail(user.email || '');
+    setCheckoutPhone(user.phone || '');
+    const defaultAddress = user.addresses?.find(a => a.isDefault) || user.addresses?.[0];
+    if (defaultAddress) applyAddress(defaultAddress);
   }, [user]);
 
   const DELIVERY_CHARGE = cartTotal >= 1899 ? 0 : 99;
@@ -411,6 +418,7 @@ function Navbar() {
             price: p.price,
             quantity: p.quantity,
             size: p.selectedSize || undefined,
+            color: p.colour || p.colors?.[0] || undefined,
           })),
           address: {
             line1: checkoutAddress.trim(),
@@ -847,16 +855,14 @@ function Navbar() {
                 </div>
               </div>
               <div className="payment-section">
-                <h4 className="payment-section-title">Delivery Address</h4>
+                <h4 className="payment-section-title">Contact Details</h4>
                 <input className="payment-input" type="text" placeholder="Full Name" value={checkoutName} onChange={e => setCheckoutName(e.target.value)} />
                 <input className="payment-input" type="email" placeholder="Email (for order confirmation)" value={checkoutEmail} onChange={e => setCheckoutEmail(e.target.value)} />
                 <input className="payment-input" type="tel" placeholder="Phone Number" value={checkoutPhone} onChange={e => setCheckoutPhone(e.target.value)} />
-                <input className="payment-input" type="text" placeholder="Address Line 1" value={checkoutAddress} onChange={e => setCheckoutAddress(e.target.value)} />
-                <input className="payment-input" type="text" placeholder="City" value={checkoutCity} onChange={e => setCheckoutCity(e.target.value)} />
-                <div className="payment-input-row">
-                  <input className="payment-input" type="text" placeholder="State" value={checkoutState} onChange={e => setCheckoutState(e.target.value)} />
-                  <input className="payment-input" type="text" placeholder="PIN Code" value={checkoutPin} onChange={e => setCheckoutPin(e.target.value)} />
-                </div>
+              </div>
+              <div className="payment-section">
+                <h4 className="payment-section-title">Delivery Address</h4>
+                <AddressBook compact selectedId={selectedAddressId} onSelect={applyAddress} />
               </div>
               <div className="payment-section">
                 <h4 className="payment-section-title">Payment Method</h4>

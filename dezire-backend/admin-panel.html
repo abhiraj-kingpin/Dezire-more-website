@@ -174,6 +174,7 @@
     <div class="sidebar-logo">DEZIRE MORE <span>ADMIN PANEL</span></div>
     <button class="nav-item active" onclick="showPage('dashboard')">Dashboard</button>
     <button class="nav-item" onclick="showPage('orders')">Orders</button>
+    <button class="nav-item" onclick="showPage('customers')">Customers</button>
     <button class="nav-item" onclick="showPage('products')">All Products</button>
     <button class="nav-item" onclick="showPage('add')">Add Product</button>
     <button class="nav-item" onclick="showPage('bulk')">Bulk Import</button>
@@ -204,6 +205,15 @@
       <p class="subtitle">Every order placed on the store, newest first</p>
       <div class="card" style="padding:0;overflow:hidden">
         <div id="orders-list"><p class="loading" style="padding:40px">Loading…</p></div>
+      </div>
+    </div>
+
+    <!-- Customers -->
+    <div class="page" id="page-customers">
+      <h2>Customers</h2>
+      <p class="subtitle">Registered accounts and their membership status</p>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="customers-list"><p class="loading" style="padding:40px">Loading…</p></div>
       </div>
     </div>
 
@@ -481,6 +491,7 @@ function showPage(name) {
   if (name === 'products') loadProductsList();
   if (name === 'dashboard') loadDashboard();
   if (name === 'orders') loadOrdersList();
+  if (name === 'customers') loadCustomersList();
   if (name === 'add' && !document.getElementById('edit-product-id').value) resetForm();
 }
 
@@ -598,6 +609,68 @@ function renderOrdersTable() {
             </td></tr>
           ` : ''}
         `).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ── Customers ─────────────────────────────────────────────────────────────────
+
+let allCustomers = [];
+
+async function loadCustomersList() {
+  try {
+    const res = await fetch(`${API}/auth/admin/all`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    allCustomers = data.data || [];
+    renderCustomersTable();
+  } catch (err) {
+    document.getElementById('customers-list').innerHTML = `<p class="empty">Failed to load customers: ${err.message}</p>`;
+  }
+}
+
+async function confirmMembership(userId) {
+  if (!confirm('Confirm this membership payment has been received?')) return;
+  try {
+    const res = await fetch(`${API}/auth/admin/membership/${userId}/confirm`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const idx = allCustomers.findIndex(c => c._id === userId);
+    if (idx > -1) allCustomers[idx].membership = data.membership;
+    renderCustomersTable();
+    toast('Membership activated', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+function renderCustomersTable() {
+  const el = document.getElementById('customers-list');
+  if (!allCustomers.length) {
+    el.innerHTML = '<p class="empty">No registered customers yet</p>';
+    return;
+  }
+  el.innerHTML = `
+    <table class="products-table">
+      <thead><tr>
+        <th>Customer</th><th>Contact</th><th>Verified</th><th>Membership</th><th>Joined</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${allCustomers.map(c => {
+          const m = c.membership || { tier: 'none', status: 'inactive' };
+          const tierLabel = m.tier === 'none' ? '—' : (m.tier === 'gold' ? 'Gold' : 'Platinum');
+          return `
+          <tr>
+            <td><strong>${c.firstName} ${c.lastName || ''}</strong></td>
+            <td>${c.email}<br/><span style="font-size:11px;color:var(--muted)">${c.phone || ''}</span></td>
+            <td><span class="badge ${c.emailVerified ? 'badge-active' : 'badge-inactive'}">${c.emailVerified ? 'Verified' : 'Unverified'}</span></td>
+            <td>${tierLabel}${m.tier !== 'none' ? `<br/><span class="badge ${m.status === 'active' ? 'badge-active' : 'badge-inactive'}">${m.status}</span>` : ''}</td>
+            <td style="font-size:12px;color:var(--muted)">${new Date(c.createdAt).toLocaleDateString('en-IN')}</td>
+            <td>${m.status === 'pending' ? `<button class="btn btn-gold" style="padding:6px 12px;font-size:12px" onclick="confirmMembership('${c._id}')">Confirm Payment</button>` : ''}</td>
+          </tr>`;
+        }).join('')}
       </tbody>
     </table>`;
 }
