@@ -438,8 +438,7 @@ function Navbar() {
             <li><Link to="/dress-materials" onClick={closeMobileMenu}>Dress Materials</Link></li>
             <li><Link to="/ready-to-wear" onClick={closeMobileMenu}>Ready to Wear</Link></li>
             <li><Link to="/western-apparels" onClick={closeMobileMenu}>Casual Western</Link></li>
-            <li><Link to="/jewelry" onClick={closeMobileMenu}>Jewelry</Link></li>
-            <li><Link to="/accessories" onClick={closeMobileMenu}>Accessories</Link></li>
+            <li><Link to="/jewelry-accessories" onClick={closeMobileMenu}>Jewelry & Accessories</Link></li>
           </ul>
         </li>
         <li><Link to="/dress-materials" onClick={closeMobileMenu}>Dress Materials</Link></li>
@@ -460,8 +459,7 @@ function Navbar() {
           </ul>
         </li>
         <li><Link to="/western-apparels" onClick={closeMobileMenu}>Casual Western</Link></li>
-        <li><Link to="/jewelry" onClick={closeMobileMenu}>Jewelry</Link></li>
-        <li><Link to="/accessories" onClick={closeMobileMenu}>Accessories</Link></li>
+        <li><Link to="/jewelry-accessories" onClick={closeMobileMenu}>Jewelry & Accessories</Link></li>
         <li className="nav-links-settings">
           <a href="#" onClick={(e) => { e.preventDefault(); closeMobileMenu(); setSettingsOpen(true); }}>Settings</a>
         </li>

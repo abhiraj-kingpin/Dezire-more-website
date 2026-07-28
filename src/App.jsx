@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { SearchProvider } from './context/SearchContext';
@@ -11,8 +11,7 @@ import Sarees from './components/Sarees';
 import DressMaterials from './components/DressMaterials';
 import ReadyToWear from './components/ReadyToWear';
 import WesternApparels from './components/WesternApparels';
-import Jewelry from './components/Jewelry';
-import Accessories from './components/Accessories';
+import JewelryAccessories from './components/JewelryAccessories';
 import Bestsellers from './components/Bestsellers';
 import NewArrivals from './components/NewArrivals';
 import OurStory from './components/OurStory';
@@ -48,8 +47,10 @@ function App() {
                     <Route path="dress-materials" element={<DressMaterials />} />
                     <Route path="ready-to-wear" element={<ReadyToWear />} />
                     <Route path="western-apparels" element={<WesternApparels />} />
-                    <Route path="jewelry" element={<Jewelry />} />
-                    <Route path="accessories" element={<Accessories />} />
+                    <Route path="jewelry-accessories" element={<JewelryAccessories />} />
+                    {/* Old separate category URLs now redirect to the merged page */}
+                    <Route path="jewelry" element={<Navigate to="/jewelry-accessories" replace />} />
+                    <Route path="accessories" element={<Navigate to="/jewelry-accessories" replace />} />
                     <Route path="bestsellers" element={<Bestsellers />} />
                     <Route path="new-arrivals" element={<NewArrivals />} />
                     <Route path="our-story" element={<OurStory />} />

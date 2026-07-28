@@ -216,12 +216,10 @@
         <select id="cat-filter" onchange="searchProducts()" style="width:180px">
           <option value="">All categories</option>
           <option value="sarees">Sarees</option>
-          <option value="blouses">Blouses</option>
-          <option value="jewelry">Jewelry</option>
-          <option value="accessories">Accessories</option>
           <option value="dress-materials">Dress Materials</option>
           <option value="ready-to-wear">Ready to Wear</option>
-          <option value="western">Western</option>
+          <option value="western">Casual Western</option>
+          <option value="jewelry-accessories">Jewelry &amp; Accessories</option>
         </select>
         <button class="btn btn-gold" onclick="showPage('add')">+ Add Product</button>
       </div>
@@ -271,12 +269,10 @@
             <select id="f-category">
               <option value="">Select category</option>
               <option value="sarees">Sarees</option>
-              <option value="blouses">Blouses</option>
-              <option value="jewelry">Jewelry</option>
-              <option value="accessories">Accessories</option>
               <option value="dress-materials">Dress Materials</option>
               <option value="ready-to-wear">Ready to Wear</option>
-              <option value="western">Western</option>
+              <option value="western">Casual Western</option>
+              <option value="jewelry-accessories">Jewelry &amp; Accessories</option>
             </select>
           </div>
           <div>
@@ -284,7 +280,7 @@
             <input type="text" id="f-subcategory" placeholder="See hint below for exact values" />
             <p style="font-size:11px;color:var(--muted);margin-top:4px">
               For Sarees use: printed-chiffon, hand-embroidered-chiffon-georgette, hand-embroidered-crepe, mul-cotton, handloom, persian, kashmiri.<br/>
-              For Ready to Wear use: suits, coords, blouses, dresses, ethnic-skirts, casual-western.<br/>
+              For Ready to Wear use: suits, coords, blouses, dresses, ethnic-skirts.<br/>
               Type it exactly as shown (lowercase, hyphens) so it matches the website's dropdown menus.
             </p>
           </div>
@@ -377,7 +373,7 @@
         <button class="btn btn-outline" style="margin-top:14px" onclick="downloadBulkTemplate()">Download CSV Template</button>
         <p style="font-size:12px;color:var(--muted);margin-top:14px;line-height:1.6">
           <strong>Columns:</strong> name, category, subcategory, price, originalPrice, fabric, sku, colors, sizes, occasion, description, tags, inStock, stockCount, images, video<br/>
-          <strong>category</strong> must be one of: sarees, blouses, jewelry, accessories, dress-materials, ready-to-wear, western<br/>
+          <strong>category</strong> must be one of: sarees, dress-materials, ready-to-wear, western, jewelry-accessories<br/>
           <strong>colors / sizes / occasion / tags</strong> — separate multiple values with a semicolon, e.g. <code>Red;Gold</code><br/>
           <strong>images</strong> — the exact photo filenames for that product, separated by a semicolon, e.g. <code>saree1.jpg;saree2.jpg</code> (must match the files you select in Step 3 exactly)<br/>
           <strong>video</strong> — optional, one filename for a showcase clip of the outfit, e.g. <code>saree1-video.mp4</code> (also selected in Step 3)

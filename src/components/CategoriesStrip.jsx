@@ -39,21 +39,13 @@ const categories = [
     ],
   },
   {
-    name: 'Jewelry',
-    link: '/jewelry',
+    name: 'Jewelry & Accessories',
+    link: '/jewelry-accessories',
     images: [
       '/assets/jewelry/jewelry1.jpeg',
+      '/assets/accessories/accessories1.png',
       '/assets/jewelry/jewelry2.jpeg',
-      '/assets/jewelry/jewelry3.jpeg',
-    ],
-  },
-  {
-    name: 'Accessories',
-    link: '/accessories',
-    images: [
-      '/assets/accessories/accessories1.jpeg',
-      '/assets/accessories/accessories2.jpeg',
-      '/assets/accessories/accessories3.jpeg',
+      '/assets/accessories/accessories2.png',
     ],
   },
 ];

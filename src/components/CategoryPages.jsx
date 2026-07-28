@@ -130,8 +130,7 @@ function CategoryPage({ title, category, subcategories }) {
 
 export function DressMaterials()      { return <CategoryPage title="Dress Materials"       category="dress-materials"     />; }
 export function ReadyToWear()         { return <CategoryPage title="Ready to Wear"         category="ready-to-wear"       subcategories={READY_TO_WEAR_SUBCATEGORIES} />; }
-export function WesternApparels()     { return <CategoryPage title="Western Apparels"      category="western"             />; }
-export function Jewelry()             { return <CategoryPage title="Jewelry"               category="jewelry"             />; }
-export function Accessories()         { return <CategoryPage title="Accessories"           category="accessories"         />; }
+export function WesternApparels()     { return <CategoryPage title="Casual Western"        category="western"             />; }
+export function JewelryAccessories()  { return <CategoryPage title="Jewelry & Accessories" category="jewelry-accessories" />; }
 
 export default CategoryPage;

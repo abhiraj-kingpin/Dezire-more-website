@@ -10,7 +10,13 @@ const productSchema = new mongoose.Schema(
     category: {
       type: String,
       required: [true, 'Category is required'],
-      enum: ['sarees', 'blouses', 'jewelry', 'accessories', 'dress-materials', 'ready-to-wear', 'western'],
+      // The storefront now only exposes 5 top-level categories (sarees,
+      // dress-materials, ready-to-wear, western, jewelry-accessories).
+      // 'blouses'/'jewelry'/'accessories' are kept valid here purely so
+      // older products already saved under them don't fail validation on
+      // future edits — routes/products.js aliases them into the merged
+      // categories so they still show up on the storefront.
+      enum: ['sarees', 'dress-materials', 'ready-to-wear', 'western', 'jewelry-accessories', 'blouses', 'jewelry', 'accessories'],
       lowercase: true,
     },
     subcategory: {

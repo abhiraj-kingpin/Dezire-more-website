@@ -79,7 +79,7 @@ function SizeGuide() {
           <p>
             Chest &amp; waist sizes are consistent as given; lengths can vary with styles. All our
             unstitched/semi-stitched products are available up to chest size 54 (7XL), and dupatta
-            lengths run 2.35–2.5 mts. Sarees, jewelry, accessories, and dress materials don't
+            lengths run 2.35–2.5 mts. Sarees, jewelry &amp; accessories, and dress materials don't
             require sizing — this chart applies to stitched items like kurtas, co-ords, and suits.
           </p>
         </div>

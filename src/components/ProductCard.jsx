@@ -16,9 +16,10 @@ const SIZE_CHART = [
 
 const STANDARD_SIZES = SIZE_CHART.map(row => row.size);
 
-// Sarees, jewelry, accessories, and dress materials are unstitched/one-size —
-// no size selector or size chart needed.
-const NO_SIZE_CATEGORIES = ['sarees', 'jewelry', 'accessories', 'dress-materials'];
+// Sarees, jewelry/accessories, and dress materials are unstitched/one-size —
+// no size selector or size chart needed. 'jewelry' and 'accessories' are kept
+// here too since older products are still saved under those pre-merge values.
+const NO_SIZE_CATEGORIES = ['sarees', 'jewelry-accessories', 'jewelry', 'accessories', 'dress-materials'];
 
 function StarRating({ rating }) {
   return (

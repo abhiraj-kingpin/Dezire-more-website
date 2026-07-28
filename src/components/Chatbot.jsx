@@ -18,12 +18,11 @@ PRODUCT CATEGORIES:
 3. Lehengas — Bridal, Festive, Party
 4. Dress Materials — Custom stitch fabric sets
 5. Ready to Wear — Easy, everyday styles
-6. Western Apparels — Modern western styles
-7. Jewelry — Earrings, necklaces, bangles, rings
-8. Accessories — Bags, belts, hair accessories, and more
-9. New Arrivals — Latest drops every week
-10. Bestsellers — Most loved pieces
-11. Sale — Up to 10% off
+6. Casual Western — Modern western styles
+7. Jewelry & Accessories — Earrings, necklaces, bangles, rings, bags, belts, hair accessories, and more
+8. New Arrivals — Latest drops every week
+9. Bestsellers — Most loved pieces
+10. Sale — Up to 10% off
 
 OCCASION GUIDE:
 - Wedding/Bridal → Lehengas, Silk Sarees, Embroidered Sarees

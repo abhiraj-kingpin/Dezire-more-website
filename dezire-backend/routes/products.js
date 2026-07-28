@@ -13,6 +13,10 @@ const paginate = (query, page, limit) => ({
 
 const buildFilter = (query) => {
   const filter = { isActive: true };
+  if (query.category) {
+    const categoryValue = categoryFilterValue(query.category);
+    filter.category = Array.isArray(categoryValue) ? { $in: categoryValue } : categoryValue;
+  }
   if (query.color)       filter.colors      = { $regex: query.color, $options: 'i' };
   if (query.occasion)    filter.occasion    = { $regex: query.occasion, $options: 'i' };
   if (query.inStock)     filter.inStock     = query.inStock === 'true';
@@ -25,6 +29,16 @@ const buildFilter = (query) => {
   }
   return filter;
 };
+
+// The storefront merged Jewelry+Accessories, and folded standalone "Blouses"
+// into Ready to Wear. Products saved under the old category values keep
+// showing up correctly on the merged pages via this alias map, so nothing
+// has to be manually re-categorized in the database.
+const CATEGORY_ALIASES = {
+  'jewelry-accessories': ['jewelry-accessories', 'jewelry', 'accessories'],
+  'ready-to-wear': ['ready-to-wear', 'blouses'],
+};
+const categoryFilterValue = (category) => CATEGORY_ALIASES[category] || category;
 
 const buildSort = (sort) => {
   const sorts = {
@@ -65,7 +79,11 @@ router.get('/', async (req, res) => {
 router.get('/category/:category', async (req, res) => {
   try {
     const { page = 1, limit = 12, sort, ...filters } = req.query;
-    const filter = { ...buildFilter(filters), category: req.params.category };
+    const categoryValue = categoryFilterValue(req.params.category);
+    const filter = {
+      ...buildFilter(filters),
+      category: Array.isArray(categoryValue) ? { $in: categoryValue } : categoryValue,
+    };
 
     const [data, total] = await Promise.all([
       Product.find(filter)
