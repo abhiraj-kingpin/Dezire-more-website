@@ -17,7 +17,7 @@ function IntroAnimation() {
       <div className="intro-glow" aria-hidden="true"></div>
       <div className="intro-content">
         <div className="intro-logo-ring">
-          <img src="/assets/logo/logo.jpg" alt="Dezire More" className="intro-logo" />
+          <img src="/assets/logo/logo.png" alt="Dezire More" className="intro-logo" />
         </div>
         <div className="intro-wordmark">
           DEZIRE <span className="intro-gold">MORE</span>

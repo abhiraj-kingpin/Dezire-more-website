@@ -543,7 +543,7 @@ function Navbar() {
 
       <Link to="/" className="nav-logo" style={{ flexShrink: 0 }}>
         <div className="logo-img-stack">
-          <img src="/assets/logo/logo.jpg" alt="Dezire More" className="logo-emblem" />
+          <img src="/assets/logo/logo.png" alt="Dezire More" className="logo-emblem" />
           <span className="logo-royal-tag">Quintessential Queens</span>
         </div>
         <div className="logo-text">
