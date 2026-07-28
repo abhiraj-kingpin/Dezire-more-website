@@ -2,3 +2,6 @@ node_modules
 dist
 .env
 dezire-backend/SETUP-GUIDE.md
+*.apk
+*.keystore
+*.jks
