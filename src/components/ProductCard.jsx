@@ -8,6 +8,7 @@ import useLockBodyScroll from '../hooks/useLockBodyScroll';
 import { recordRecentlyViewed, categoryToPath } from '../utils/recentlyViewed';
 import { BASE } from '../hooks/useProducts';
 import ReviewsSection from './ReviewsSection';
+import { highlightMatch } from '../utils/fuzzySearch';
 
 const SIZE_CHART = [
   { size: 'S',    chest: 36, waist: 36, hip: 40, kurtaLength: 47, pantsLength: 38 },
@@ -120,7 +121,7 @@ function spawnHeartBurst(btnEl) {
   });
 }
 
-function ProductCard({ product: rawProduct }) {
+function ProductCard({ product: rawProduct, highlightQuery, onOpenModal, onAfterAddToCart }) {
   const product = normalise(rawProduct);
 
   const [hovered,       setHovered]       = useState(false);
@@ -164,6 +165,7 @@ function ProductCard({ product: rawProduct }) {
   const openModal = () => {
     setActiveImg(0); setQuantity(1); setSelectedSize(null); setMainImgRatio(null); setModalOpen(true);
     recordRecentlyViewed(product);
+    onOpenModal?.();
   };
   const closeModal = () => { setModalOpen(false); setLightboxOpen(false); };
 
@@ -319,6 +321,7 @@ function ProductCard({ product: rawProduct }) {
   };
 
   const handleCardAddToCart = (e) => {
+    e.stopPropagation();
     if (needsSize) {
       showToast('Please select a size', 'info');
       openModal();
@@ -327,6 +330,7 @@ function ProductCard({ product: rawProduct }) {
     ripple(e.currentTarget);
     flyToCart(cardImgRef.current);
     addToCart(product);
+    onAfterAddToCart?.();
   };
 
   // NOTE: `id` must always stay the real MongoDB product id — it's sent
@@ -400,7 +404,7 @@ function ProductCard({ product: rawProduct }) {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        <div className="product-img-wrap">
+        <div className="product-img-wrap" onClick={openModal}>
           {product.image
             ? <img ref={cardImgRef} src={product.image} alt={product.name} loading="lazy" decoding="async" />
             : <div className="product-img-placeholder" />}
@@ -420,15 +424,23 @@ function ProductCard({ product: rawProduct }) {
           </button>
 
           {hovered && (
-            <div className="view-details-overlay" onClick={openModal}>
+            <div className="view-details-overlay">
               <span>View Details</span>
             </div>
           )}
         </div>
 
-        <div className="product-info">
-          <p className="brand-tag">{product.material || 'Dezire More'}</p>
-          <p className="product-name">{product.name}</p>
+        <div className="product-info" onClick={openModal} style={{ cursor: 'pointer' }}>
+          <p className="brand-tag">{product.material || (product.category ? product.category.replace(/-/g, ' ') : 'Dezire More')}</p>
+          <p className="product-name">
+            {highlightQuery ? highlightMatch(product.name, highlightQuery) : product.name}
+          </p>
+          {product.rating > 0 && (
+            <div className="card-rating">
+              <StarRating rating={product.rating} />
+              <span className="card-rating-num">{product.rating}{product.reviews > 0 ? ` (${product.reviews})` : ''}</span>
+            </div>
+          )}
           <div className="price-row">
             <span className="price-now">₹{product.price.toLocaleString('en-IN')}</span>
             {product.originalPrice > 0 && (

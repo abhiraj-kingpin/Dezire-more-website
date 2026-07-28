@@ -13,15 +13,15 @@ import AddressBook from './AddressBook';
 import { READY_TO_WEAR_SUBCATEGORIES } from './CategoryPages';
 import { BASE } from '../hooks/useProducts';
 import useLockBodyScroll from '../hooks/useLockBodyScroll';
-import { flyToCart, ripple } from './ProductCard';
-import { searchProducts, highlightMatch } from '../utils/fuzzySearch';
+import ProductCard, { flyToCart, ripple } from './ProductCard';
+import { searchProducts } from '../utils/fuzzySearch';
 
 const FALLBACK_SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 const SUGGESTION_LIMIT = 6;
 
+const POPULAR_SEARCH_TAGS = ['Banarasi Silk', 'Bridal Saree', 'Embroidered', 'Organza', 'Chiffon'];
+
 function SearchResults({ query, onClose, onSelectTag, showAll, onShowAll }) {
-  const { addToCart } = useCart();
-  const { toggleWishlist, isWishlisted } = useWishlist();
   const { allProducts, productsLoading } = useSearch();
 
   if (!query.trim()) {
@@ -29,7 +29,7 @@ function SearchResults({ query, onClose, onSelectTag, showAll, onShowAll }) {
       <div className="search-suggestions">
         <p className="search-suggestions-title">Popular Searches</p>
         <div className="search-tags">
-          {['Banarasi Silk', 'Bridal Saree', 'Embroidered', 'Organza', 'Chiffon'].map(tag => (
+          {POPULAR_SEARCH_TAGS.map(tag => (
             <span key={tag} className="search-tag" onClick={() => onSelectTag(tag)}>{tag}</span>
           ))}
         </div>
@@ -46,8 +46,13 @@ function SearchResults({ query, onClose, onSelectTag, showAll, onShowAll }) {
   if (matches.length === 0) {
     return (
       <div className="search-no-results">
-        <p>No results for "<strong>{query}</strong>"</p>
-        <span>Try searching for saree, silk, embroidered, etc.</span>
+        <p>No products found for "<strong>{query}</strong>"</p>
+        <span>Check the spelling, or try a broader term.</span>
+        <div className="search-tags" style={{ marginTop: '14px', justifyContent: 'center' }}>
+          {POPULAR_SEARCH_TAGS.map(tag => (
+            <span key={tag} className="search-tag" onClick={() => onSelectTag(tag)}>{tag}</span>
+          ))}
+        </div>
       </div>
     );
   }
@@ -67,50 +72,15 @@ function SearchResults({ query, onClose, onSelectTag, showAll, onShowAll }) {
         </p>
       )}
       <div className="search-results-grid">
-        {visible.map(product => {
-          const img = product.images?.[0]?.url || product.image || '';
-          const discount = product.originalPrice > product.price
-            ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-            : 0;
-          const id = product._id || product.id;
-          const wishlisted = isWishlisted(id);
-          return (
-            <div key={id} className="search-result-card">
-              <div className="search-result-img-wrap">
-                <img src={img} alt={product.name} className="search-result-img" loading="lazy" decoding="async" />
-                <button
-                  className={`wishlist-btn ${wishlisted ? 'wishlisted' : ''}`}
-                  onClick={() => toggleWishlist({ ...product, id, image: img })}
-                >
-                  <svg viewBox="0 0 24 24">
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                  </svg>
-                </button>
-              </div>
-              <div className="search-result-info">
-                <p className="search-result-material">{product.fabric || 'Dezire More'}</p>
-                <p className="search-result-name">{highlightMatch(product.name, query)}</p>
-                <div className="search-result-price">
-                  <span className="price-now">₹{product.price.toLocaleString('en-IN')}</span>
-                  {product.originalPrice > 0 && <span className="price-was">₹{product.originalPrice.toLocaleString('en-IN')}</span>}
-                  {discount > 0 && <span className="price-discount">{discount}% off</span>}
-                </div>
-                <button
-                  className="add-to-bag"
-                  onClick={(e) => {
-                    ripple(e.currentTarget);
-                    const imgEl = e.currentTarget.closest('.search-result-card')?.querySelector('.search-result-img');
-                    flyToCart(imgEl);
-                    addToCart({ ...product, id, image: img });
-                    onClose();
-                  }}
-                >
-                  Add to Bag
-                </button>
-              </div>
-            </div>
-          );
-        })}
+        {visible.map(product => (
+          <ProductCard
+            key={product._id || product.id}
+            product={product}
+            highlightQuery={query}
+            onOpenModal={onClose}
+            onAfterAddToCart={onClose}
+          />
+        ))}
       </div>
     </div>
   );
