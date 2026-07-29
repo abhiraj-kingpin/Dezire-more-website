@@ -2012,7 +2012,10 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   background: rgba(10, 14, 12, 0.68);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  z-index: 10000;
+  /* Above .search-overlay (also 10000) — a product's detail modal can now
+     open while search results stay mounted behind it (closing search used
+     to unmount the very card whose modal was opening, so it never showed). */
+  z-index: 10001;
   display: flex;
   align-items: center;
   justify-content: center;

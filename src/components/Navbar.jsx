@@ -77,7 +77,6 @@ function SearchResults({ query, onClose, onSelectTag, showAll, onShowAll }) {
             key={product._id || product.id}
             product={product}
             highlightQuery={query}
-            onOpenModal={onClose}
             onAfterAddToCart={onClose}
           />
         ))}

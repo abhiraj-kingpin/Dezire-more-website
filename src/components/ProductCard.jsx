@@ -120,7 +120,7 @@ function spawnHeartBurst(btnEl) {
   });
 }
 
-function ProductCard({ product: rawProduct, highlightQuery, onOpenModal, onAfterAddToCart }) {
+function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) {
   const product = normalise(rawProduct);
 
   const [hovered,       setHovered]       = useState(false);
@@ -164,7 +164,6 @@ function ProductCard({ product: rawProduct, highlightQuery, onOpenModal, onAfter
   const openModal = () => {
     setActiveImg(0); setQuantity(1); setSelectedSize(null); setMainImgRatio(null); setModalOpen(true);
     recordRecentlyViewed(product);
-    onOpenModal?.();
   };
   const closeModal = () => { setModalOpen(false); setLightboxOpen(false); };
 
@@ -689,7 +688,7 @@ function ProductCard({ product: rawProduct, highlightQuery, onOpenModal, onAfter
                 <p className="pd-detail-label">You May Also Like</p>
                 <div className="pd-related-grid">
                   {related.map(p => (
-                    <ProductCard key={p._id} product={p} onOpenModal={closeModal} />
+                    <ProductCard key={p._id} product={p} />
                   ))}
                 </div>
               </div>
