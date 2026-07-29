@@ -64,11 +64,21 @@ async function issueVerificationLink(email) {
   });
 
   const verifyUrl = `${FRONTEND_URL}/verify-email?token=${token}`;
-  const result = await sendVerificationEmail(email, verifyUrl);
-  // SMTP isn't configured yet — surface the link in the server log so
-  // signups aren't a hard dead-end while that's being set up. Never
-  // exposed to the client/browser.
-  if (!result.sent) console.warn(`[auth] Verification link for ${email}: ${verifyUrl} — SMTP not configured, email not sent.`);
+
+  // sendVerificationEmail throws on a hard failure (e.g. provider API
+  // rejects the request) as well as returning {sent:false} on the "not
+  // configured yet" case — both are caught here so the raw provider error
+  // (API keys, status codes, internal reasons) never reaches the client.
+  // The real error is logged server-side; the caller only ever sees a
+  // generic "temporarily unavailable" via result.sent === false.
+  let result;
+  try {
+    result = await sendVerificationEmail(email, verifyUrl);
+  } catch (err) {
+    console.error(`[auth] Failed to send verification email to ${email}:`, err.message);
+    result = { sent: false, reason: 'send-failed' };
+  }
+  if (!result.sent) console.warn(`[auth] Verification link for ${email}: ${verifyUrl} — email not sent (${result.reason}).`);
   return result;
 }
 
