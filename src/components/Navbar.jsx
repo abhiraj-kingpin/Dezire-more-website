@@ -143,7 +143,17 @@ function Navbar() {
   const [searchShowAll, setSearchShowAll] = useState(false);
   useEffect(() => { setSearchShowAll(false); }, [searchQuery]);
 
-  useLockBodyScroll(cartOpen || wishlistOpen || authOpen || settingsOpen || searchOpen);
+  const anyOverlayOpen = cartOpen || wishlistOpen || authOpen || settingsOpen || searchOpen;
+  useLockBodyScroll(anyOverlayOpen);
+
+  // Settings/Cart/Wishlist/Search/Auth are drawers layered on top of
+  // whatever page is open, not route changes — so on Home, opening any of
+  // them left the Style Assistant bubble showing underneath, since the
+  // route (and therefore the Home-only check in Layout.jsx) never changed.
+  // Chatbot listens for this to hide itself while any of them are open.
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('dm:overlay-visibility', { detail: { open: anyOverlayOpen } }));
+  }, [anyOverlayOpen]);
 
   // Esc closes whichever overlay is currently open, most-specific first.
   useEffect(() => {

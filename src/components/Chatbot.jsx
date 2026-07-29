@@ -59,9 +59,20 @@ export default function Chatbot() {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [unread, setUnread] = useState(1);
+  const [hiddenForOverlay, setHiddenForOverlay] = useState(false);
   const messagesEndRef = useRef(null);
   const conversationHistory = useRef([]);
   const inputRef = useRef(null);
+
+  // Settings/Cart/Wishlist/Search/Auth are drawers over the Home page, not
+  // route changes, so they don't affect the Home-only mount check in
+  // Layout.jsx — this hides the bubble/panel while one is open instead,
+  // without unmounting (and losing) the conversation underneath.
+  useEffect(() => {
+    const onOverlayChange = (e) => setHiddenForOverlay(!!e.detail?.open);
+    window.addEventListener('dm:overlay-visibility', onOverlayChange);
+    return () => window.removeEventListener('dm:overlay-visibility', onOverlayChange);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -132,6 +143,8 @@ export default function Chatbot() {
     "New arrivals",
     "Discount codes",
   ];
+
+  if (hiddenForOverlay) return null;
 
   return (
     <>
