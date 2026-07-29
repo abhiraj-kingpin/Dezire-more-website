@@ -1,32 +1,39 @@
-const nodemailer = require('nodemailer');
-
-// Email is fully optional — if SMTP env vars aren't set, notifications are
+// Email is fully optional — if Resend isn't configured, notifications are
 // silently skipped (logged once) rather than crashing order creation.
-// Required env vars: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
-// (SMTP_FROM defaults to SMTP_USER if not set).
-let transporter = null;
+// Required env vars: RESEND_API_KEY, RESEND_FROM_EMAIL
+//
+// Sends over Resend's HTTPS API rather than raw SMTP. Render (and most
+// PaaS hosts) block outbound SMTP ports (25/465/587) on free web services
+// as an anti-spam measure — that's a platform-level firewall rule, not
+// something fixable in app code. HTTPS (443) is never blocked, so an API-
+// based provider works regardless of hosting plan.
 let warned = false;
 
-function getTransporter() {
-  if (transporter) return transporter;
-  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
-  if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
+async function sendViaResend({ to, subject, html }) {
+  const { RESEND_API_KEY, RESEND_FROM_EMAIL } = process.env;
+  if (!RESEND_API_KEY || !RESEND_FROM_EMAIL) {
     if (!warned) {
-      console.warn('[notifications] SMTP env vars not set — order emails are disabled.');
+      console.warn('[notifications] RESEND_API_KEY/RESEND_FROM_EMAIL not set — emails are disabled.');
       warned = true;
     }
-    return null;
+    return { sent: false, reason: 'resend-not-configured' };
   }
-  transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: Number(SMTP_PORT),
-    secure: Number(SMTP_PORT) === 465,
-    auth: { user: SMTP_USER, pass: SMTP_PASS },
-    // Render's network resolves smtp.gmail.com's IPv6 address but can't
-    // actually route to it (ENETUNREACH) — forcing IPv4 avoids that dead end.
-    family: 4,
+
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ from: RESEND_FROM_EMAIL, to, subject, html }),
   });
-  return transporter;
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Resend API error (${res.status}): ${body || res.statusText}`);
+  }
+
+  return { sent: true };
 }
 
 function formatCurrency(n) {
@@ -74,9 +81,6 @@ function orderItemsHtml(order) {
 }
 
 async function sendOrderConfirmationEmail(order) {
-  const t = getTransporter();
-  if (!t) return { sent: false, reason: 'smtp-not-configured' };
-
   const html = emailShell(`
       <h2 style="color:#1e3a2f;margin:0 0 12px;font-size:20px;">Thank you for your order, ${order.customerName}!</h2>
       <p style="margin:0 0 16px;">Your order <strong>${order.orderNumber}</strong> has been placed successfully.</p>
@@ -91,19 +95,16 @@ async function sendOrderConfirmationEmail(order) {
       ${order.estimatedDelivery ? `<p style="font-size:14px;"><strong>Estimated Delivery:</strong> ${new Date(order.estimatedDelivery).toDateString()}</p>` : ''}
   `);
 
-  await t.sendMail({
-    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+  return sendViaResend({
     to: order.customerEmail,
     subject: `Order Confirmed — ${order.orderNumber} | Dezire More`,
     html,
   });
-  return { sent: true };
 }
 
 async function sendAdminOrderAlert(order) {
-  const t = getTransporter();
   const adminEmail = process.env.ADMIN_EMAIL;
-  if (!t || !adminEmail) return { sent: false, reason: 'smtp-or-admin-email-not-configured' };
+  if (!adminEmail) return { sent: false, reason: 'admin-email-not-configured' };
 
   const html = emailShell(`
       <h2 style="margin:0 0 12px;font-size:18px;">New Order — ${order.orderNumber}</h2>
@@ -118,13 +119,11 @@ async function sendAdminOrderAlert(order) {
          <strong>Payment:</strong> ${order.paymentMethod} — ${order.paymentStatus}</p>
   `);
 
-  await t.sendMail({
-    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+  return sendViaResend({
     to: adminEmail,
     subject: `🛍️ New Order ${order.orderNumber} — ${formatCurrency(order.total)}`,
     html,
   });
-  return { sent: true };
 }
 
 const STATUS_MESSAGES = {
@@ -140,9 +139,6 @@ const STATUS_MESSAGES = {
 // Sent whenever the admin panel moves an order to a customer-meaningful
 // status — not every internal state, just the ones worth an email.
 async function sendOrderStatusEmail(order) {
-  const t = getTransporter();
-  if (!t) return { sent: false, reason: 'smtp-not-configured' };
-
   const message = STATUS_MESSAGES[order.orderStatus];
   if (!message) return { sent: false, reason: 'status-not-notifiable' };
 
@@ -155,22 +151,17 @@ async function sendOrderStatusEmail(order) {
         : ''}
   `);
 
-  await t.sendMail({
-    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+  return sendViaResend({
     to: order.customerEmail,
     subject: `${order.orderStatus} — Order ${order.orderNumber} | Dezire More`,
     html,
   });
-  return { sent: true };
 }
 
 // Link-based email verification (signup). The button is the primary path;
 // the raw URL is included as a fallback for email clients that strip links
 // out of buttons or block images/styling.
 async function sendVerificationEmail(email, verifyUrl) {
-  const t = getTransporter();
-  if (!t) return { sent: false, reason: 'smtp-not-configured' };
-
   const html = emailShell(`
       <h2 style="color:#1e3a2f;margin:0 0 12px;font-size:20px;">Verify Your Email</h2>
       <p style="margin:0 0 8px;">Welcome to Dezire More! Please confirm this is your email address to activate your account.</p>
@@ -180,22 +171,17 @@ async function sendVerificationEmail(email, verifyUrl) {
       <p style="font-size:13px;color:#888;">This link expires in 24 hours. If you didn't create a Dezire More account, you can safely ignore this email.</p>
   `);
 
-  await t.sendMail({
-    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+  return sendViaResend({
     to: email,
     subject: 'Verify your email — Dezire More',
     html,
   });
-  return { sent: true };
 }
 
 // Batches every price-drop / back-in-stock alert for one user into a single
 // email (run periodically by utils/wishlistWatcher.js) rather than one email
 // per product, so a wishlist with several changes doesn't spam the inbox.
 async function sendWishlistAlertEmail(user, alerts) {
-  const t = getTransporter();
-  if (!t) return { sent: false, reason: 'smtp-not-configured' };
-
   const rows = alerts
     .map(a => `
       <tr>
@@ -217,20 +203,15 @@ async function sendWishlistAlertEmail(user, alerts) {
       ${emailButton('https://www.deziremore.com/', 'Shop Now')}
   `);
 
-  await t.sendMail({
-    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+  return sendViaResend({
     to: user.email,
     subject: alerts.some(a => a.type === 'price-drop') ? 'Price drop on your wishlist! — Dezire More' : 'Your wishlist item is back in stock! — Dezire More',
     html,
   });
-  return { sent: true };
 }
 
 // Sent when an exchange request's status changes (Approved/Rejected/Completed).
 async function sendExchangeStatusEmail(exchange) {
-  const t = getTransporter();
-  if (!t) return { sent: false, reason: 'smtp-not-configured' };
-
   const messages = {
     Approved: 'Your exchange request has been approved. We\'ll arrange a pickup of the original item shortly.',
     Rejected: 'Your exchange request could not be approved.',
@@ -247,13 +228,11 @@ async function sendExchangeStatusEmail(exchange) {
       ${exchange.adminNote ? `<p style="font-size:14px;"><strong>Note from our team:</strong> ${exchange.adminNote}</p>` : ''}
   `);
 
-  await t.sendMail({
-    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+  return sendViaResend({
     to: exchange.customerEmail,
     subject: `Exchange ${exchange.status} — ${exchange.orderNumber} | Dezire More`,
     html,
   });
-  return { sent: true };
 }
 
 module.exports = {
