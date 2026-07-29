@@ -178,6 +178,7 @@
     <button class="nav-item" onclick="showPage('exchanges')">Exchanges</button>
     <button class="nav-item" onclick="showPage('customers')">Customers</button>
     <button class="nav-item" onclick="showPage('coupons')">Coupons</button>
+    <button class="nav-item" onclick="showPage('love')">Client Love</button>
     <button class="nav-item" onclick="showPage('products')">All Products</button>
     <button class="nav-item" onclick="showPage('add')">Add Product</button>
     <button class="nav-item" onclick="showPage('bulk')">Bulk Import</button>
@@ -280,6 +281,40 @@
       </div>
       <div class="card" style="padding:0;overflow:hidden">
         <div id="coupons-list"><p class="loading" style="padding:40px">Loading…</p></div>
+      </div>
+    </div>
+
+    <!-- Client Love (testimonials) -->
+    <div class="page" id="page-love">
+      <h2>Client Love</h2>
+      <p class="subtitle">Testimonials shown on the "Our Story" page — previously hardcoded, now managed here</p>
+      <div class="card" style="margin-bottom:20px">
+        <strong id="love-form-title">Add Testimonial</strong>
+        <input type="hidden" id="love-edit-id" value="" />
+        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:14px">
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Name</label><input type="text" id="love-name" placeholder="Priya Malhotra" style="width:180px" /></div>
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Location</label><input type="text" id="love-location" placeholder="Delhi (optional)" style="width:160px" /></div>
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Rating</label>
+            <select id="love-rating" style="width:90px">
+              <option value="5">5 ★</option>
+              <option value="4">4 ★</option>
+              <option value="3">3 ★</option>
+            </select>
+          </div>
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Display Order</label><input type="number" id="love-order" placeholder="0" style="width:110px" /></div>
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Photo (optional)</label><input type="file" id="love-photo" accept="image/*" /></div>
+        </div>
+        <div style="margin-top:14px">
+          <label style="font-size:12px;display:block;margin-bottom:4px">Testimonial Text</label>
+          <textarea id="love-text" rows="3" style="width:100%" placeholder="What the customer said..."></textarea>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:10px">
+          <button class="btn btn-gold" id="love-save-btn" onclick="saveTestimonial()">+ Add Testimonial</button>
+          <button class="btn btn-outline" id="love-cancel-btn" style="display:none" onclick="resetTestimonialForm()">Cancel Edit</button>
+        </div>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="love-list"><p class="loading" style="padding:40px">Loading…</p></div>
       </div>
     </div>
 
@@ -571,6 +606,7 @@ function showPage(name) {
   if (name === 'exchanges') loadExchangesList();
   if (name === 'customers') loadCustomersList();
   if (name === 'coupons') loadCouponsList();
+  if (name === 'love') loadTestimonialsList();
   if (name === 'activity') loadAuditLog();
   if (name === 'add' && !document.getElementById('edit-product-id').value) resetForm();
 }
@@ -1057,6 +1093,149 @@ function renderCouponsTable() {
             <td style="display:flex;gap:8px">
               <button class="btn btn-outline" style="padding:6px 10px;font-size:12px" onclick="toggleCouponActive('${c._id}', ${!c.isActive})">${c.isActive ? 'Disable' : 'Enable'}</button>
               <button class="btn btn-outline" style="padding:6px 10px;font-size:12px;color:var(--danger)" onclick="deleteCoupon('${c._id}')">Delete</button>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ── Client Love (testimonials) ──────────────────────────────────────────────
+
+let allTestimonials = [];
+
+async function loadTestimonialsList() {
+  try {
+    const res = await fetch(`${API}/testimonials/admin/all`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    allTestimonials = data.data || [];
+    renderTestimonialsTable();
+  } catch (err) {
+    document.getElementById('love-list').innerHTML = `<p class="empty">Failed to load testimonials: ${err.message}</p>`;
+  }
+}
+
+function resetTestimonialForm() {
+  document.getElementById('love-edit-id').value = '';
+  document.getElementById('love-name').value = '';
+  document.getElementById('love-location').value = '';
+  document.getElementById('love-rating').value = '5';
+  document.getElementById('love-order').value = '';
+  document.getElementById('love-text').value = '';
+  document.getElementById('love-photo').value = '';
+  document.getElementById('love-form-title').textContent = 'Add Testimonial';
+  document.getElementById('love-save-btn').textContent = '+ Add Testimonial';
+  document.getElementById('love-cancel-btn').style.display = 'none';
+}
+
+function editTestimonial(id) {
+  const t = allTestimonials.find(x => x._id === id);
+  if (!t) return;
+  document.getElementById('love-edit-id').value = t._id;
+  document.getElementById('love-name').value = t.name;
+  document.getElementById('love-location').value = t.location || '';
+  document.getElementById('love-rating').value = String(t.rating);
+  document.getElementById('love-order').value = t.displayOrder ?? '';
+  document.getElementById('love-text').value = t.text;
+  document.getElementById('love-form-title').textContent = 'Edit Testimonial';
+  document.getElementById('love-save-btn').textContent = 'Save Changes';
+  document.getElementById('love-cancel-btn').style.display = 'inline-block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function saveTestimonial() {
+  const editId = document.getElementById('love-edit-id').value;
+  const name = document.getElementById('love-name').value.trim();
+  const text = document.getElementById('love-text').value.trim();
+  if (!name || !text) { toast('Name and testimonial text are required', 'error'); return; }
+
+  const fd = new FormData();
+  fd.append('name', name);
+  fd.append('location', document.getElementById('love-location').value.trim());
+  fd.append('rating', document.getElementById('love-rating').value);
+  fd.append('displayOrder', document.getElementById('love-order').value || '0');
+  fd.append('text', text);
+  const photoFile = document.getElementById('love-photo').files[0];
+  if (photoFile) fd.append('photo', photoFile);
+
+  const btn = document.getElementById('love-save-btn');
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API}/testimonials${editId ? '/' + editId : ''}`, {
+      method: editId ? 'PATCH' : 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    toast(editId ? 'Testimonial updated' : 'Testimonial added', 'success');
+    resetTestimonialForm();
+    loadTestimonialsList();
+  } catch (err) {
+    toast(err.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function toggleTestimonialActive(id, isActive) {
+  try {
+    const fd = new FormData();
+    fd.append('isActive', String(isActive));
+    const res = await fetch(`${API}/testimonials/${id}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const idx = allTestimonials.findIndex(t => t._id === id);
+    if (idx > -1) allTestimonials[idx] = data.testimonial;
+    renderTestimonialsTable();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function deleteTestimonial(id, name) {
+  if (!confirm(`Delete the testimonial from "${name}"?`)) return;
+  try {
+    const res = await fetch(`${API}/testimonials/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    toast('Testimonial deleted', 'success');
+    loadTestimonialsList();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+function renderTestimonialsTable() {
+  const el = document.getElementById('love-list');
+  if (!allTestimonials.length) {
+    el.innerHTML = '<p class="empty">No testimonials yet — add your first one above</p>';
+    return;
+  }
+  el.innerHTML = `
+    <table class="products-table">
+      <thead><tr>
+        <th></th><th>Name</th><th>Rating</th><th>Text</th><th>Status</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${allTestimonials.map(t => `
+          <tr>
+            <td>${t.photo ? `<img src="${t.photo}" class="product-thumb" onerror="this.style.display='none'" />` : '—'}</td>
+            <td><strong>${t.name}</strong>${t.location ? `<br/><span style="font-size:11px;color:var(--muted)">${t.location}</span>` : ''}</td>
+            <td>${'★'.repeat(t.rating)}</td>
+            <td style="max-width:280px;font-size:12px">${t.text.length > 100 ? t.text.slice(0, 100) + '…' : t.text}</td>
+            <td><span class="badge ${t.isActive ? 'badge-active' : 'badge-inactive'}">${t.isActive ? 'Active' : 'Hidden'}</span></td>
+            <td style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="btn btn-outline" style="padding:6px 10px;font-size:12px" onclick="editTestimonial('${t._id}')">Edit</button>
+              <button class="btn btn-outline" style="padding:6px 10px;font-size:12px" onclick="toggleTestimonialActive('${t._id}', ${!t.isActive})">${t.isActive ? 'Hide' : 'Show'}</button>
+              <button class="btn btn-outline" style="padding:6px 10px;font-size:12px;color:var(--danger)" onclick="deleteTestimonial('${t._id}', '${t.name.replace(/'/g, "\\'")}')">Delete</button>
             </td>
           </tr>
         `).join('')}
