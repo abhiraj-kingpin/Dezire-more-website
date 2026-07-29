@@ -810,23 +810,7 @@ function Navbar() {
                       <p className="cm-recommendations-title">You May Also Like</p>
                       <div className="cm-recommendations-row">
                         {cartRecommendations.map(p => (
-                          <button
-                            key={p._id}
-                            type="button"
-                            className="cm-recommendation-card"
-                            onClick={() => addToCart({
-                              id: p._id, name: p.name, price: p.price, originalPrice: p.originalPrice,
-                              image: p.images?.[0]?.url, category: p.category, sizes: p.sizes,
-                            })}
-                          >
-                            <div className="cm-recommendation-img-wrap">
-                              {p.images?.[0]?.url
-                                ? <img src={p.images[0].url} alt={p.name} loading="lazy" decoding="async" />
-                                : <div className="product-img-placeholder" />}
-                            </div>
-                            <p className="cm-recommendation-name">{p.name}</p>
-                            <p className="cm-recommendation-price">₹{p.price.toLocaleString('en-IN')}</p>
-                          </button>
+                          <ProductCard key={p._id} product={p} />
                         ))}
                       </div>
                     </div>

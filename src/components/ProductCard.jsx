@@ -3,9 +3,8 @@ import { createPortal } from 'react-dom';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
-import { Link } from 'react-router-dom';
 import useLockBodyScroll from '../hooks/useLockBodyScroll';
-import { recordRecentlyViewed, categoryToPath } from '../utils/recentlyViewed';
+import { recordRecentlyViewed } from '../utils/recentlyViewed';
 import { BASE } from '../hooks/useProducts';
 import ReviewsSection from './ReviewsSection';
 import { highlightMatch } from '../utils/fuzzySearch';
@@ -690,15 +689,7 @@ function ProductCard({ product: rawProduct, highlightQuery, onOpenModal, onAfter
                 <p className="pd-detail-label">You May Also Like</p>
                 <div className="pd-related-grid">
                   {related.map(p => (
-                    <Link to={categoryToPath(p.category)} key={p._id} className="pd-related-card">
-                      <div className="pd-related-img-wrap">
-                        {p.images?.[0]?.url
-                          ? <img src={p.images[0].url} alt={p.name} loading="lazy" decoding="async" />
-                          : <div className="product-img-placeholder" />}
-                      </div>
-                      <p className="pd-related-name">{p.name}</p>
-                      <p className="pd-related-price">₹{p.price.toLocaleString('en-IN')}</p>
-                    </Link>
+                    <ProductCard key={p._id} product={p} onOpenModal={closeModal} />
                   ))}
                 </div>
               </div>

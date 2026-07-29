@@ -36,7 +36,15 @@ function MarqueeRow({ products, reverse, secondary }) {
   // browser's own scroll handling) and — critically — does nothing at all
   // while `interactingRef` is true, so it never competes with a user's
   // touch-scroll or the arrow buttons' smooth-scroll animation.
+  //
+  // Skipped entirely on touch/coarse-pointer devices: it's a desktop "eye
+  // candy while browsing" effect, and continuously mutating scrollLeft 60x/
+  // second keeps this element's compositor layer constantly active, which
+  // on mid-range phones made the browser noticeably slower to recognize a
+  // vertical swipe as page-scroll rather than a horizontal drag on this
+  // track — felt like the page was "stuck" here specifically.
   useEffect(() => {
+    if (window.matchMedia('(hover: none), (pointer: coarse)').matches) return;
     intervalRef.current = setInterval(() => {
       const track = trackRef.current;
       if (!track || interactingRef.current) return;

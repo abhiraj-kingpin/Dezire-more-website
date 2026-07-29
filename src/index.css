@@ -2504,22 +2504,16 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   gap: 16px;
   margin-top: 14px;
 }
-.pd-related-card { text-decoration: none; color: inherit; display: block; }
-.pd-related-img-wrap {
-  aspect-ratio: 4/5;
-  background: var(--surface-alt);
-  border-radius: 6px;
-  overflow: hidden;
-  margin-bottom: 8px;
-}
-.pd-related-img-wrap img { width: 100%; height: 100%; object-fit: contain; transition: transform 0.4s; }
-.pd-related-card:hover .pd-related-img-wrap img { transform: scale(1.05); }
-.pd-related-name {
-  font-size: 0.75rem; color: var(--text-dark); line-height: 1.4;
-  overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
-  -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;
-}
-.pd-related-price { font-size: 0.8125rem; font-weight: 700; color: var(--dark-green); margin-top: 2px; }
+/* Related items render the real ProductCard (click-to-open-details +
+   independent Add to Bag, same as everywhere else) — these just keep it
+   visually compact for a secondary upsell strip. */
+.pd-related-grid .product-card { border: none; box-shadow: none; }
+.pd-related-grid .product-img-wrap { aspect-ratio: 4/5; border-radius: 6px; }
+.pd-related-grid .product-info { padding: 8px 0 0; }
+.pd-related-grid .brand-tag,
+.pd-related-grid .card-rating { display: none; }
+.pd-related-grid .product-name { font-size: 0.75rem; margin-bottom: 6px; }
+.pd-related-grid .price-row { margin-bottom: 8px; }
 
 /* ── Reviews ── */
 .reviews-summary { display: flex; gap: 40px; flex-wrap: wrap; margin: 16px 0 24px; }
@@ -5821,29 +5815,27 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   margin-bottom: 12px;
 }
 .cm-recommendations-row { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 4px; }
-.cm-recommendation-card {
+/* Cart cross-sell renders the real ProductCard (click-to-open-details +
+   independent Add to Bag) instead of a card that only ever added straight
+   to cart — these overrides just keep it compact in the cart drawer. */
+.cm-recommendations-row .product-card {
   flex: 0 0 110px;
   background: none;
   border: none;
-  cursor: pointer;
-  text-align: left;
-  padding: 0;
+  box-shadow: none;
 }
-.cm-recommendation-img-wrap {
+.cm-recommendations-row .product-img-wrap {
   aspect-ratio: 4/5;
   background: var(--cm-panel-2);
   border-radius: 6px;
-  overflow: hidden;
-  margin-bottom: 6px;
   border: 1px solid var(--cm-hair);
 }
-.cm-recommendation-img-wrap img { width: 100%; height: 100%; object-fit: contain; }
-.cm-recommendation-name {
-  font-size: 0.6875rem; color: var(--cm-text-mid); line-height: 1.3;
-  overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
-  -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;
-}
-.cm-recommendation-price { font-size: 0.75rem; font-weight: 700; color: var(--cm-gold); margin-top: 2px; }
+.cm-recommendations-row .product-info { padding: 6px 0 0; }
+.cm-recommendations-row .brand-tag,
+.cm-recommendations-row .card-rating { display: none; }
+.cm-recommendations-row .product-name { font-size: 0.6875rem; margin-bottom: 6px; }
+.cm-recommendations-row .price-row { margin-bottom: 6px; }
+.cm-recommendations-row .add-to-bag { padding: 6px; font-size: 0.5625rem; }
 
 .cm-item-img {
   width: 200px;
