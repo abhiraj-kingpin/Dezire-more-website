@@ -133,7 +133,7 @@ nav {
   justify-content: center;
 }
 
-.logo-text h1 {
+.logo-text .logo-name {
   font-family: 'Cormorant Garamond', serif;
   font-size: 1.875rem;
   font-weight: 600;
@@ -143,7 +143,7 @@ nav {
   line-height: 1;
   margin: 0;
 }
-.logo-text p {
+.logo-text .logo-tagline {
   font-size: 0.6875rem;
   letter-spacing: 2.4px;
   color: var(--gold);
@@ -4169,7 +4169,7 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     gap: 12px;
   }
 
-  .logo-text h1 {
+  .logo-text .logo-name {
     font-size: 1.625rem;
     letter-spacing: 2px;
   }
@@ -4194,12 +4194,12 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     letter-spacing: 1px;
   }
 
-  .logo-text h1 {
+  .logo-text .logo-name {
     font-size: 1.25rem;
     letter-spacing: 1.5px;
   }
 
-  .logo-text p {
+  .logo-text .logo-tagline {
     display: none;
   }
 
@@ -5012,7 +5012,7 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   }
 
   .logo-text { display: flex; min-width: 0; }
-  .logo-text h1 {
+  .logo-text .logo-name {
     font-size: 1.125rem;
     letter-spacing: 1px;
     white-space: nowrap;
@@ -5020,7 +5020,7 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     text-overflow: ellipsis;
     max-width: 100%;
   }
-  .logo-text p {
+  .logo-text .logo-tagline {
     display: block;
     font-size: 0.5625rem;
     letter-spacing: 1.2px;
@@ -5391,11 +5391,11 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   .nav-logo {
     gap: 8px;
   }
-  .logo-text h1 {
+  .logo-text .logo-name {
     font-size: 0.9688rem;
     letter-spacing: 0.5px;
   }
-  .logo-text p {
+  .logo-text .logo-tagline {
     font-size: 0.5rem;
     letter-spacing: 0.8px;
   }
@@ -6330,11 +6330,11 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   .logo-text {
     display: flex;
   }
-  .logo-text h1 {
+  .logo-text .logo-name {
     font-size: 1rem;
     letter-spacing: 1px;
   }
-  .logo-text p {
+  .logo-text .logo-tagline {
     display: none;
   }
   .logo-emblem {

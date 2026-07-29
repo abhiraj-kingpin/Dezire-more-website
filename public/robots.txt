@@ -1,4 +1,9 @@
 User-agent: *
 Allow: /
+# Private/account-gated pages — no value indexed, and content is
+# user-specific or gated behind login anyway.
+Disallow: /account
+Disallow: /orders
+Disallow: /verify-email
 
 Sitemap: https://www.deziremore.com/sitemap.xml

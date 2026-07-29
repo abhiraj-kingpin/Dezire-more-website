@@ -4,14 +4,14 @@ import AnnouncementBar from './AnnouncementBar';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import Chatbot from './Chatbot';
-import { titleForPath } from '../utils/pageTitles';
+import { updateMetaTags } from '../utils/pageTitles';
 
 function Layout() {
   const { pathname } = useLocation();
   const isHome = pathname === '/';
 
   useEffect(() => {
-    document.title = titleForPath(pathname);
+    updateMetaTags(pathname);
   }, [pathname]);
 
   return (

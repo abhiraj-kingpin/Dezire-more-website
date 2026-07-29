@@ -83,10 +83,10 @@ function Hero() {
       <div className={`hero-text ${textVisible ? "hero-text-in" : "hero-text-out"}`}>
         <button type="button" className="btn-chat-us" onClick={() => setChatModalOpen(true)}>Chat With Us</button>
         <p className="hero-eyebrow">{slide.eyebrow}</p>
-        <h2 className="hero-title">
+        <h1 className="hero-title">
           {slide.title[0]} <span className="accent">{slide.title[1]}</span>
           <br />{slide.title[2]}
-        </h2>
+        </h1>
         <p className="hero-subtitle">{slide.subtitle}</p>
         <div className="hero-btns">
           <a href="#new-arrivals" className="btn-primary" onClick={(e) => scrollToSection(e, 'new-arrivals')}>Shop New Arrivals</a>

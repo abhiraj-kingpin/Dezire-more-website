@@ -531,8 +531,10 @@ function Navbar() {
           <span className="logo-royal-tag">Quintessential Queens</span>
         </div>
         <div className="logo-text">
-          <h1>Dezire More</h1>
-          <p>Ethnic Elegance. Modern You.</p>
+          {/* Site branding, not page content — the actual page heading
+              (rendered by each route) is the document's one <h1>. */}
+          <p className="logo-name">Dezire More</p>
+          <p className="logo-tagline">Ethnic Elegance. Modern You.</p>
         </div>
       </Link>
 
