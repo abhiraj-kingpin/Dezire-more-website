@@ -3299,39 +3299,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   font-size: 0.9375rem;
 }
 
-/* ===== PAY ONLINE (QR) ===== */
-.payment-qr-card {
-  margin-top: 14px;
-  padding: 20px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: linear-gradient(180deg, var(--surface-alt) 0%, var(--surface) 100%);
-  text-align: center;
-}
-
-.payment-qr-img {
-  width: 180px;
-  height: 180px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: #fff;
-  padding: 8px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
-}
-
-.payment-qr-hint {
-  font-size: 0.75rem;
-  color: var(--text-light);
-  margin: 12px 0 16px;
-  letter-spacing: 0.2px;
-}
-
-.payment-qr-breakup {
-  text-align: left;
-  border-top: 1px dashed var(--border);
-  padding-top: 12px;
-}
-
 /* ===== ORDER SUCCESS / DISPATCH SCREEN ===== */
 .order-success {
   display: flex;

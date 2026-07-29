@@ -694,12 +694,13 @@ async function updateOrderStatus(id, orderStatus) {
   }
 }
 
-// There's no payment gateway wired in — QR/UPI orders arrive with a
-// customer-entered transaction reference. Check that reference against your
-// own bank/UPI app before clicking this; it marks the order paid and moves
-// it out of "Order Placed".
+// Razorpay orders confirm themselves automatically (signature verification
+// on checkout success, backed by a webhook) — this button is a manual
+// fallback for the rare case that fails, or for pre-Razorpay orders placed
+// under the old manual QR/UPI flow. Check the payment in your Razorpay
+// dashboard (or bank/UPI app for legacy orders) before clicking.
 async function confirmOrderPayment(id) {
-  if (!confirm('Have you verified this payment in your bank/UPI app? This will mark the order as Paid.')) return;
+  if (!confirm('Have you verified this payment? This will mark the order as Paid.')) return;
   try {
     const order = allOrders.find(o => o._id === id);
     const res = await fetch(`${API}/orders/${id}/status`, {

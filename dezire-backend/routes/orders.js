@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
+const crypto = require('crypto');
+const Razorpay = require('razorpay');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const adminAuth = require('../middleware/auth');
@@ -10,6 +12,15 @@ const Coupon = require('../models/Coupon');
 const User = require('../models/User');
 const { sendOrderConfirmationEmail, sendAdminOrderAlert, sendOrderStatusEmail } = require('../utils/notifications');
 const { logAdminAction } = require('../utils/auditLog');
+
+// Real, automatically-verified payments — replaces the old manual QR/UPI
+// reference-entry flow. Test-mode keys work immediately (no KYC needed);
+// switching to live mode later is just swapping the two env vars.
+function getRazorpay() {
+  const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET } = process.env;
+  if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) return null;
+  return new Razorpay({ key_id: RAZORPAY_KEY_ID, key_secret: RAZORPAY_KEY_SECRET });
+}
 
 // Orders placed before real accounts existed have no owning user, but their
 // email still identifies the customer — cancellable/early statuses only.
@@ -100,7 +111,10 @@ router.post('/', requireAuth, async (req, res) => {
     if (!paymentMethod) {
       return res.status(400).json({ error: 'Payment method is required' });
     }
-    if (paymentMethod !== 'COD' && !paymentReference?.trim()) {
+    // Razorpay verifies itself (signature check after checkout) — only the
+    // legacy manual QR/UPI methods need a customer-entered reference.
+    const needsManualReference = !['COD', 'Razorpay'].includes(paymentMethod);
+    if (needsManualReference && !paymentReference?.trim()) {
       return res.status(400).json({ error: 'Please enter the UPI transaction ID / reference number from your payment app.' });
     }
 
@@ -140,7 +154,7 @@ router.post('/', requireAuth, async (req, res) => {
       couponCode: appliedCoupon?.code,
       discountAmount,
       paymentMethod,
-      paymentReference: paymentMethod === 'COD' ? undefined : paymentReference.trim(),
+      paymentReference: needsManualReference ? paymentReference.trim() : undefined,
       paymentStatus: 'pending',
       orderStatus: 'Order Placed',
       estimatedDelivery: estimatedDeliveryDate(),
@@ -178,6 +192,118 @@ router.post('/', requireAuth, async (req, res) => {
     res.status(201).json({ success: true, order });
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+});
+
+// POST /api/orders/:id/razorpay/create-payment-order — creates a matching
+// Razorpay order for an existing (pending, unpaid) order, using the order's
+// own server-computed total — never a client-supplied amount, so there's
+// no way to tamper with what actually gets charged.
+router.post('/:id/razorpay/create-payment-order', requireAuth, async (req, res) => {
+  try {
+    const razorpay = getRazorpay();
+    if (!razorpay) return res.status(503).json({ error: 'Online payment is temporarily unavailable. Please try Cash on Delivery.' });
+
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    if (order.customerEmail !== req.user.email) {
+      return res.status(403).json({ error: 'This order does not belong to your account' });
+    }
+    if (order.paymentStatus === 'paid') {
+      return res.status(400).json({ error: 'This order has already been paid' });
+    }
+
+    const rzpOrder = await razorpay.orders.create({
+      amount: Math.round(order.total * 100), // Razorpay expects the amount in paise
+      currency: 'INR',
+      receipt: order.orderNumber,
+      notes: { orderId: String(order._id) },
+    });
+
+    order.razorpayOrderId = rzpOrder.id;
+    await order.save();
+
+    res.json({ razorpayOrderId: rzpOrder.id, amount: rzpOrder.amount, keyId: process.env.RAZORPAY_KEY_ID });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// PATCH /api/orders/:id/razorpay/confirm — verifies the payment signature
+// Razorpay's checkout success handler returns. This signature check is the
+// actual source of truth for "did the customer pay" — a client claiming
+// success without a valid signature is rejected, not trusted.
+router.patch('/:id/razorpay/confirm', requireAuth, async (req, res) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({ error: 'Missing payment verification details' });
+    }
+
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    if (order.customerEmail !== req.user.email) {
+      return res.status(403).json({ error: 'This order does not belong to your account' });
+    }
+    if (order.razorpayOrderId !== razorpay_order_id) {
+      return res.status(400).json({ error: 'Payment order mismatch' });
+    }
+
+    const expectedSignature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .digest('hex');
+
+    if (expectedSignature !== razorpay_signature) {
+      return res.status(400).json({ error: 'Payment verification failed' });
+    }
+
+    if (order.paymentStatus !== 'paid') {
+      order.paymentStatus = 'paid';
+      order.razorpayPaymentId = razorpay_payment_id;
+      if (order.orderStatus === 'Order Placed') order.orderStatus = 'Payment Confirmed';
+      await order.save();
+      sendOrderStatusEmail(order).catch(err => console.error('[order status email]', err.message));
+    }
+
+    res.json({ success: true, order });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// POST /api/orders/razorpay/webhook — backstop for the rare case where the
+// checkout success callback never fires client-side (browser closed/
+// crashed right after paying, network drop, etc.). Razorpay calls this
+// directly, authenticated via its own webhook signature rather than a user
+// session — configure the same URL + a webhook secret in the Razorpay
+// dashboard under Settings > Webhooks, subscribed to "payment.captured".
+router.post('/razorpay/webhook', async (req, res) => {
+  try {
+    const signature = req.headers['x-razorpay-signature'];
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    if (!secret || !signature || !req.rawBody) return res.status(400).send('Webhook not configured');
+
+    const expected = crypto.createHmac('sha256', secret).update(req.rawBody).digest('hex');
+    if (expected !== signature) return res.status(400).send('Invalid signature');
+
+    const event = req.body;
+    if (event.event === 'payment.captured') {
+      const payment = event.payload.payment.entity;
+      const order = await Order.findOne({ razorpayOrderId: payment.order_id });
+      if (order && order.paymentStatus !== 'paid') {
+        order.paymentStatus = 'paid';
+        order.razorpayPaymentId = payment.id;
+        if (order.orderStatus === 'Order Placed') order.orderStatus = 'Payment Confirmed';
+        await order.save();
+        sendOrderStatusEmail(order).catch(err => console.error('[order status email]', err.message));
+      }
+    }
+
+    res.json({ received: true });
+  } catch (err) {
+    console.error('[razorpay webhook]', err.message);
+    res.status(500).send('Webhook error');
   }
 });
 

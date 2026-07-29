@@ -35,7 +35,10 @@ const orderSchema = new mongoose.Schema(
 
     paymentMethod: {
       type: String,
-      enum: ['Pay Online (QR)', 'UPI', 'Online Banking', 'COD'],
+      // 'Pay Online (QR)'/'UPI'/'Online Banking' kept valid so historical
+      // orders placed before Razorpay still pass validation on updates —
+      // the frontend only ever offers 'Razorpay' or 'COD' going forward.
+      enum: ['Pay Online (QR)', 'UPI', 'Online Banking', 'Razorpay', 'COD'],
       required: true,
     },
     paymentStatus: {
@@ -43,10 +46,17 @@ const orderSchema = new mongoose.Schema(
       enum: ['pending', 'paid', 'failed'],
       default: 'pending',
     },
-    // UPI/UTR transaction reference the customer enters after paying via QR
-    // or UPI — there's no payment gateway wired in, so this is the evidence
-    // an admin checks against their bank/UPI app before confirming payment.
+    // UPI/UTR transaction reference the customer enters after paying via the
+    // old manual QR/UPI flow — superseded by Razorpay's own verified
+    // payment IDs below for new orders, kept for historical ones.
     paymentReference: { type: String, trim: true },
+    // Razorpay's own order for this purchase — created right after our
+    // Order exists so its amount can't be tampered with client-side.
+    razorpayOrderId: { type: String },
+    // Set once the payment signature is verified (checkout callback or
+    // webhook, whichever arrives first) — this is what actually flips
+    // paymentStatus to 'paid', not a client-asserted claim.
+    razorpayPaymentId: { type: String },
 
     orderStatus: {
       type: String,

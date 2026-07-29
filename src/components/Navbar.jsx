@@ -19,6 +19,25 @@ import { searchProducts } from '../utils/fuzzySearch';
 const FALLBACK_SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 const SUGGESTION_LIMIT = 6;
 
+// Loaded once, on demand, the first time someone actually reaches checkout —
+// keeps Razorpay's script out of the main bundle for everyone just browsing.
+let razorpayScriptPromise = null;
+function loadRazorpayScript() {
+  if (window.Razorpay) return Promise.resolve();
+  if (razorpayScriptPromise) return razorpayScriptPromise;
+  razorpayScriptPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = resolve;
+    script.onerror = () => {
+      razorpayScriptPromise = null;
+      reject(new Error('Could not load the payment gateway. Check your connection and try again.'));
+    };
+    document.body.appendChild(script);
+  });
+  return razorpayScriptPromise;
+}
+
 const POPULAR_SEARCH_TAGS = ['Banarasi Silk', 'Bridal Saree', 'Embroidered', 'Organza', 'Chiffon'];
 
 function SearchResults({ query, onClose, onSelectTag, showAll, onShowAll }) {
@@ -96,7 +115,6 @@ function Navbar() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [pendingAddress, setPendingAddress] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('');
-  const [paymentReferenceInput, setPaymentReferenceInput] = useState('');
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [lastOrderId, setLastOrderId] = useState('');
   const [readyToWearOpen, setReadyToWearOpen] = useState(false);
@@ -235,7 +253,6 @@ function Navbar() {
   const [checkoutCity, setCheckoutCity] = useState('');
   const [checkoutState, setCheckoutState] = useState('');
   const [checkoutPin, setCheckoutPin] = useState('');
-  const [upiIdInput, setUpiIdInput] = useState('');
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [orderError, setOrderError] = useState('');
   const [placedOrder, setPlacedOrder] = useState(null);
@@ -316,17 +333,6 @@ function Navbar() {
       .catch(() => setCartRecommendations([]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cart.length > 0 ? cart[0].id : null]);
-
-  // GST breakup shown on the Pay Online (QR) summary — prices are treated
-  // as GST-inclusive, so this is an informational split, not an add-on.
-  const GST_RATE = 0.05;
-  const gstAmount = Math.round(cartTotal - cartTotal / (1 + GST_RATE));
-  const taxableValue = cartTotal - gstAmount;
-
-  // Placeholder UPI ID — replace with the real business UPI ID when ready.
-  const OWNER_UPI_ID = 'deziremore@ybl';
-  const upiPayString = `upi://pay?pa=${OWNER_UPI_ID}&pn=${encodeURIComponent('Dezire More')}&am=${finalTotal}&cu=INR&tn=${encodeURIComponent('Dezire More Order')}`;
-  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiPayString)}`;
 
   // Ticks the resend-email cooldown down to 0 once a link has been (re)sent.
   // Matches the backend's own 60s rate limit on resend-verification.
@@ -445,10 +451,6 @@ function Navbar() {
       setOrderError('Please enter a valid email address for your order confirmation.');
       return;
     }
-    if (paymentMethod !== 'COD' && !paymentReferenceInput.trim()) {
-      setOrderError('Please enter the UPI transaction ID / reference number from your payment app.');
-      return;
-    }
 
     setIsPlacingOrder(true);
     try {
@@ -479,7 +481,6 @@ function Navbar() {
           total: finalTotal,
           couponCode: appliedCoupon?.code,
           paymentMethod,
-          paymentReference: paymentMethod === 'COD' ? undefined : paymentReferenceInput.trim(),
           isGift,
           giftMessage: isGift ? giftMessage.trim() : undefined,
         }),
@@ -487,19 +488,87 @@ function Navbar() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not place your order. Please try again.');
 
-      setPlacedOrder(data.order);
-      setLastOrderId(data.order.orderNumber);
-      setOrderPlaced(true);
-      clearCart();
-      setIsGift(false);
-      setGiftMessage('');
-      setAppliedCoupon(null);
-      setCouponInput('');
+      if (paymentMethod === 'Razorpay') {
+        await payWithRazorpay(data.order);
+      } else {
+        finishOrderSuccess(data.order);
+      }
     } catch (err) {
       setOrderError(err.message);
     } finally {
       setIsPlacingOrder(false);
     }
+  };
+
+  const finishOrderSuccess = (order) => {
+    setPlacedOrder(order);
+    setLastOrderId(order.orderNumber);
+    setOrderPlaced(true);
+    clearCart();
+    setIsGift(false);
+    setGiftMessage('');
+    setAppliedCoupon(null);
+    setCouponInput('');
+  };
+
+  // The order already exists at this point (created just above, status
+  // 'pending') — this only opens Razorpay's checkout for it and shows the
+  // success screen once the payment signature is verified server-side. If
+  // the customer closes the modal or the payment fails, the order stays
+  // pending rather than a second order getting created.
+  const payWithRazorpay = async (order) => {
+    await loadRazorpayScript();
+
+    const payRes = await fetch(`${BASE}/orders/${order._id}/razorpay/create-payment-order`, {
+      method: 'POST',
+      headers: authHeaders(),
+    });
+    const payData = await payRes.json();
+    if (!payRes.ok) throw new Error(payData.error || 'Could not start payment. Please try again.');
+
+    return new Promise((resolve) => {
+      const rzp = new window.Razorpay({
+        key: payData.keyId,
+        amount: payData.amount,
+        currency: 'INR',
+        name: 'Dezire More',
+        description: `Order ${order.orderNumber}`,
+        order_id: payData.razorpayOrderId,
+        prefill: {
+          name: checkoutName.trim(),
+          email: checkoutEmail.trim(),
+          contact: checkoutPhone.trim(),
+        },
+        theme: { color: '#1e3a2f' },
+        handler: async (response) => {
+          try {
+            const confirmRes = await fetch(`${BASE}/orders/${order._id}/razorpay/confirm`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json', ...authHeaders() },
+              body: JSON.stringify(response),
+            });
+            const confirmData = await confirmRes.json();
+            if (!confirmRes.ok) throw new Error(confirmData.error || 'Payment verification failed. Please contact support with your order number.');
+            finishOrderSuccess(confirmData.order);
+          } catch (err) {
+            setOrderError(err.message);
+          } finally {
+            resolve();
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setOrderError(`Payment was not completed. Order ${order.orderNumber} has been saved as pending — place it again to retry payment.`);
+            resolve();
+          },
+        },
+      });
+      rzp.on('payment.failed', (response) => {
+        setOrderError(`Payment failed: ${response.error?.description || 'please try again.'}`);
+        resolve();
+      });
+      rzp.open();
+    });
   };
 
   return (
@@ -1002,22 +1071,14 @@ function Navbar() {
                 <h4 className="payment-section-title">Payment Method</h4>
                 <div className="payment-methods">
                   {[
-                    { key: 'Pay Online (QR)', label: 'Pay Online (QR)', icon: 'qr' },
-                    { key: 'UPI', label: 'UPI', icon: 'upi' },
-                    { key: 'Online Banking', label: 'Online Banking', icon: 'bank' },
+                    { key: 'Razorpay', label: 'Pay Online — Card / UPI / Netbanking', icon: 'card' },
                     { key: 'COD', label: 'Cash on Delivery', icon: 'cod' },
                   ].map(({ key, label, icon }) => (
                     <label key={key} className={`payment-method-card ${paymentMethod === key ? 'selected' : ''}`}>
                       <input type="radio" name="payment" value={key} checked={paymentMethod === key} onChange={() => setPaymentMethod(key)} style={{ display: 'none' }} />
                       <span className="payment-method-icon">
-                        {icon === 'qr' && (
-                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v3M14 20h3M20 20v.01"/></svg>
-                        )}
-                        {icon === 'upi' && (
-                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="5" y1="18" x2="19" y2="18"/></svg>
-                        )}
-                        {icon === 'bank' && (
-                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 21h18M4 21V10M20 21V10M2 10l10-6 10 6M6 10v6M12 10v6M18 10v6"/></svg>
+                        {icon === 'card' && (
+                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
                         )}
                         {icon === 'cod' && (
                           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></svg>
@@ -1029,48 +1090,21 @@ function Navbar() {
                   ))}
                 </div>
 
-                {paymentMethod === 'Pay Online (QR)' && (
-                  <div className="payment-qr-card">
-                    <img src={qrImageUrl} alt="Scan to pay" className="payment-qr-img" />
-                    <p className="payment-qr-hint">Scan with any UPI app to pay the exact amount</p>
-                    <div className="payment-qr-breakup">
-                      <div className="payment-item"><span>Taxable Value</span><span>₹{taxableValue.toLocaleString('en-IN')}</span></div>
-                      <div className="payment-item"><span>GST (5%)</span><span>₹{gstAmount.toLocaleString('en-IN')}</span></div>
-                      <div className="payment-item"><span>Delivery</span><span>{DELIVERY_CHARGE === 0 ? 'FREE' : `₹${DELIVERY_CHARGE}`}</span></div>
-                      <div className="payment-item payment-total"><span>Total to Pay</span><span>₹{finalTotal.toLocaleString('en-IN')}</span></div>
-                    </div>
-                  </div>
-                )}
-                {paymentMethod === 'UPI' && (
-                  <input className="payment-input payment-input-spaced" type="text" placeholder="Enter UPI ID (e.g. name@upi)" value={upiIdInput} onChange={e => setUpiIdInput(e.target.value)} />
-                )}
-
-                {paymentMethod && paymentMethod !== 'COD' && (
+                {paymentMethod === 'Razorpay' && (
                   <div className="payment-verify-block">
                     <p className="payment-verify-hint">
-                      After paying, enter the UPI transaction ID / reference number (UTR) from your payment app — we use this to verify and confirm your payment.
+                      You'll be securely redirected to complete payment. Your order is confirmed automatically the moment payment succeeds — no reference number to enter.
                     </p>
-                    <input
-                      className="payment-input payment-input-spaced"
-                      type="text"
-                      placeholder="e.g. 402816734521"
-                      value={paymentReferenceInput}
-                      onChange={e => setPaymentReferenceInput(e.target.value)}
-                    />
                   </div>
                 )}
               </div>
               {orderError && <p className="payment-error">{orderError}</p>}
               <button
                 className="cart-checkout-btn"
-                disabled={!paymentMethod || (paymentMethod !== 'COD' && !paymentReferenceInput.trim()) || isPlacingOrder}
+                disabled={!paymentMethod || isPlacingOrder}
                 onClick={handlePlaceOrder}
               >
-                {isPlacingOrder
-                  ? 'Placing Order…'
-                  : paymentMethod === 'Pay Online (QR)'
-                  ? "I've Completed the Payment →"
-                  : `Place Order — ₹${finalTotal.toLocaleString('en-IN')}`}
+                {isPlacingOrder ? 'Placing Order…' : `Place Order — ₹${finalTotal.toLocaleString('en-IN')}`}
               </button>
             </div>
           </div>
@@ -1099,18 +1133,9 @@ function Navbar() {
                 <div className="order-success-row">
                   <span>Payment Status</span>
                   <span className={placedOrder.paymentStatus === 'paid' ? 'order-status-paid' : 'order-status-pending'}>
-                    {placedOrder.paymentStatus === 'paid'
-                      ? 'Paid'
-                      : placedOrder.paymentMethod === 'COD'
-                      ? 'Pending (Pay on Delivery)'
-                      : 'Pending Verification'}
+                    {placedOrder.paymentStatus === 'paid' ? 'Paid' : 'Pending (Pay on Delivery)'}
                   </span>
                 </div>
-                {placedOrder.paymentStatus !== 'paid' && placedOrder.paymentMethod !== 'COD' && (
-                  <p className="order-success-note" style={{ marginTop: '-4px' }}>
-                    We're verifying your payment (Ref: {placedOrder.paymentReference}) — you'll get a confirmation email once it's checked, usually within a few hours.
-                  </p>
-                )}
                 <div className="order-success-row"><span>Amount</span><span>₹{placedOrder.total.toLocaleString('en-IN')}</span></div>
                 {placedOrder.estimatedDelivery && (
                   <div className="order-success-row">

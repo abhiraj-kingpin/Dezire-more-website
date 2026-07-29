@@ -51,7 +51,12 @@ app.use(cors({
   ],
   credentials: true,
 }));
-app.use(express.json());
+// Stashes the raw request bytes alongside the parsed body — needed to
+// verify the Razorpay webhook's HMAC signature, which is computed over
+// the exact raw payload, not the re-serialized parsed JSON.
+app.use(express.json({
+  verify: (req, res, buf) => { req.rawBody = buf; },
+}));
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(__dirname));
