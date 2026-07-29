@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Coupon = require('../models/Coupon');
 const adminAuth = require('../middleware/auth');
+const { logAdminAction } = require('../utils/auditLog');
 
 // Computes the discount a coupon yields for a given subtotal, or an error
 // message if it can't be applied. Shared by the checkout validate endpoint
@@ -54,6 +55,7 @@ router.post('/', adminAuth, async (req, res) => {
     const { code, type, value, minOrderValue, maxDiscount, expiresAt, usageLimit } = req.body;
     if (!code || !type || !value) return res.status(400).json({ error: 'Code, type, and value are required' });
     const coupon = await Coupon.create({ code, type, value, minOrderValue, maxDiscount, expiresAt, usageLimit });
+    logAdminAction(req.admin.email, 'coupon.create', coupon._id, coupon.code);
     res.status(201).json({ success: true, coupon });
   } catch (err) {
     if (err.code === 11000) return res.status(409).json({ error: 'A coupon with this code already exists' });
@@ -68,6 +70,7 @@ router.patch('/:id', adminAuth, async (req, res) => {
     allowed.forEach(key => { if (req.body[key] !== undefined) updates[key] = req.body[key]; });
     const coupon = await Coupon.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true });
     if (!coupon) return res.status(404).json({ error: 'Coupon not found' });
+    logAdminAction(req.admin.email, 'coupon.update', coupon._id, `${coupon.code}: ${Object.keys(updates).join(', ')}`);
     res.json({ success: true, coupon });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -78,6 +81,7 @@ router.delete('/:id', adminAuth, async (req, res) => {
   try {
     const coupon = await Coupon.findByIdAndDelete(req.params.id);
     if (!coupon) return res.status(404).json({ error: 'Coupon not found' });
+    logAdminAction(req.admin.email, 'coupon.delete', coupon._id, coupon.code);
     res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: err.message });

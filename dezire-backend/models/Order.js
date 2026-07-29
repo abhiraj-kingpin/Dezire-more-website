@@ -58,6 +58,10 @@ const orderSchema = new mongoose.Schema(
     },
 
     estimatedDelivery: { type: Date },
+    // Set the moment an admin marks the order Delivered — the exchange
+    // window (3 days, per the site's Exchange Policy) is measured from this,
+    // not from createdAt/updatedAt which change for unrelated reasons.
+    deliveredAt: { type: Date },
 
     isGift:      { type: Boolean, default: false },
     giftMessage: { type: String, trim: true },

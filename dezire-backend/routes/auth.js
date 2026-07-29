@@ -4,10 +4,12 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/User');
+const Product = require('../models/Product');
 const VerificationToken = require('../models/VerificationToken');
 const adminAuth = require('../middleware/auth');
 const { authLimiter } = require('../middleware/rateLimiter');
 const { sendVerificationEmail } = require('../utils/notifications');
+const { logAdminAction } = require('../utils/auditLog');
 
 const VERIFICATION_TTL_HOURS = 24;
 const RESEND_COOLDOWN_SECONDS = 60;
@@ -277,6 +279,60 @@ router.delete('/addresses/:addressId', requireAuth, async (req, res) => {
   }
 });
 
+// ── Wishlist ─────────────────────────────────────────────────────────────────
+// Previously held only in React state on the frontend — lost on every
+// refresh. Now persisted per-account so it survives across sessions/devices,
+// and so the price-drop / back-in-stock watcher has something to check against.
+
+router.get('/wishlist', requireAuth, async (req, res) => {
+  try {
+    const productIds = req.user.wishlist.map(w => w.productId);
+    const products = await Product.find({ _id: { $in: productIds } }).lean();
+    const productMap = new Map(products.map(p => [String(p._id), p]));
+
+    const items = req.user.wishlist
+      .map(w => {
+        const product = productMap.get(String(w.productId));
+        if (!product) return null; // product deleted since being wishlisted
+        return { ...product, id: product._id, priceAtAdd: w.priceAtAdd, wishlistedAt: w.createdAt };
+      })
+      .filter(Boolean);
+
+    res.json({ data: items });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/wishlist', requireAuth, async (req, res) => {
+  try {
+    const { productId } = req.body;
+    if (!productId) return res.status(400).json({ error: 'productId is required' });
+
+    const already = req.user.wishlist.some(w => String(w.productId) === String(productId));
+    if (already) return res.json({ success: true, added: false });
+
+    const product = await Product.findById(productId).select('price inStock');
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+
+    req.user.wishlist.push({ productId, priceAtAdd: product.price, lastKnownInStock: product.inStock });
+    await req.user.save();
+    res.json({ success: true, added: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.delete('/wishlist/:productId', requireAuth, async (req, res) => {
+  try {
+    req.user.wishlist = req.user.wishlist.filter(w => String(w.productId) !== req.params.productId);
+    await req.user.save();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // ── Premium Membership ──────────────────────────────────────────────────────
 // No payment gateway is wired in yet — this mirrors the site's existing
 // checkout pattern (customer "subscribes", admin manually confirms payment
@@ -325,6 +381,7 @@ router.patch('/admin/membership/:userId/confirm', adminAuth, async (req, res) =>
     user.membership.renewalDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
     await user.save();
 
+    logAdminAction(req.admin.email, 'membership.confirm', user._id, `${user.email}: ${lastPayment.tier}`);
     res.json({ success: true, membership: user.membership });
   } catch (err) {
     res.status(400).json({ error: err.message });

@@ -9,6 +9,7 @@ const productRoutes = require('./routes/products');
 const adminRoutes   = require('./routes/admin');
 const orderRoutes   = require('./routes/orders');
 const reviewRoutes  = require('./routes/reviews');
+const exchangeRoutes = require('./routes/exchanges');
 const { router: authRoutes } = require('./routes/auth');
 const { router: couponRoutes } = require('./routes/coupons');
 
@@ -68,6 +69,12 @@ mongoose
       await Coupon.create({ code: 'DEZIRE10', type: 'percent', value: 10 });
       console.log('✅  Seeded DEZIRE10 coupon (10% off)');
     }
+
+    // Wishlist price-drop / back-in-stock watcher — no-ops quietly until
+    // SMTP is configured. Runs once shortly after boot, then every 6 hours.
+    const { checkWishlistAlerts } = require('./utils/wishlistWatcher');
+    setTimeout(() => checkWishlistAlerts().catch(err => console.error('[wishlist watcher]', err.message)), 30 * 1000);
+    setInterval(() => checkWishlistAlerts().catch(err => console.error('[wishlist watcher]', err.message)), 6 * 60 * 60 * 1000);
   })
   .catch(err => {
     console.error('❌  MongoDB connection failed:', err.message);
@@ -81,6 +88,7 @@ const chatRoute = require('./routes/chat');
 app.use('/api/products', productRoutes);
 app.use('/api/orders',   orderRoutes);
 app.use('/api/reviews',  reviewRoutes);
+app.use('/api/exchanges', exchangeRoutes);
 app.use('/api/coupons',  couponRoutes);
 app.use('/api/admin',    adminRoutes);
 app.use('/api/auth',     authRoutes);

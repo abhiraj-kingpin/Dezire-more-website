@@ -186,4 +186,78 @@ async function sendVerificationEmail(email, verifyUrl) {
   return { sent: true };
 }
 
-module.exports = { sendOrderConfirmationEmail, sendAdminOrderAlert, sendVerificationEmail, sendOrderStatusEmail };
+// Batches every price-drop / back-in-stock alert for one user into a single
+// email (run periodically by utils/wishlistWatcher.js) rather than one email
+// per product, so a wishlist with several changes doesn't spam the inbox.
+async function sendWishlistAlertEmail(user, alerts) {
+  const t = getTransporter();
+  if (!t) return { sent: false, reason: 'smtp-not-configured' };
+
+  const rows = alerts
+    .map(a => `
+      <tr>
+        <td style="padding:8px 0;">${a.product.name}</td>
+        <td style="padding:8px 0;text-align:right;">
+          ${a.type === 'price-drop'
+            ? `<span style="color:#888;text-decoration:line-through;margin-right:6px;">${formatCurrency(a.oldPrice)}</span>${formatCurrency(a.newPrice)}`
+            : '<span style="color:#1e3a2f;font-weight:bold;">Back in Stock</span>'}
+        </td>
+      </tr>`)
+    .join('');
+
+  const html = emailShell(`
+      <h2 style="color:#1e3a2f;margin:0 0 12px;font-size:20px;">Your Wishlist Just Got Better</h2>
+      <p style="margin:0 0 16px;">Hi ${user.firstName}, here's what changed on items you saved:</p>
+      <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
+        ${rows}
+      </table>
+      ${emailButton('https://www.deziremore.com/', 'Shop Now')}
+  `);
+
+  await t.sendMail({
+    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    to: user.email,
+    subject: alerts.some(a => a.type === 'price-drop') ? 'Price drop on your wishlist! — Dezire More' : 'Your wishlist item is back in stock! — Dezire More',
+    html,
+  });
+  return { sent: true };
+}
+
+// Sent when an exchange request's status changes (Approved/Rejected/Completed).
+async function sendExchangeStatusEmail(exchange) {
+  const t = getTransporter();
+  if (!t) return { sent: false, reason: 'smtp-not-configured' };
+
+  const messages = {
+    Approved: 'Your exchange request has been approved. We\'ll arrange a pickup of the original item shortly.',
+    Rejected: 'Your exchange request could not be approved.',
+    Completed: 'Your exchange has been completed. We hope you love the replacement!',
+  };
+  const message = messages[exchange.status];
+  if (!message) return { sent: false, reason: 'status-not-notifiable' };
+
+  const html = emailShell(`
+      <h2 style="color:#1e3a2f;margin:0 0 12px;font-size:20px;">Exchange ${exchange.status}</h2>
+      <p style="margin:0 0 16px;">Hi ${exchange.customerName}, ${message}</p>
+      <p style="font-size:14px;"><strong>Order:</strong> ${exchange.orderNumber}<br/>
+         <strong>Item:</strong> ${exchange.productName}</p>
+      ${exchange.adminNote ? `<p style="font-size:14px;"><strong>Note from our team:</strong> ${exchange.adminNote}</p>` : ''}
+  `);
+
+  await t.sendMail({
+    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    to: exchange.customerEmail,
+    subject: `Exchange ${exchange.status} — ${exchange.orderNumber} | Dezire More`,
+    html,
+  });
+  return { sent: true };
+}
+
+module.exports = {
+  sendOrderConfirmationEmail,
+  sendAdminOrderAlert,
+  sendVerificationEmail,
+  sendOrderStatusEmail,
+  sendWishlistAlertEmail,
+  sendExchangeStatusEmail,
+};

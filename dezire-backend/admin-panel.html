@@ -173,12 +173,15 @@
   <nav class="sidebar">
     <div class="sidebar-logo">DEZIRE MORE <span>ADMIN PANEL</span></div>
     <button class="nav-item active" onclick="showPage('dashboard')">Dashboard</button>
+    <button class="nav-item" onclick="showPage('analytics')">Analytics</button>
     <button class="nav-item" onclick="showPage('orders')">Orders</button>
+    <button class="nav-item" onclick="showPage('exchanges')">Exchanges</button>
     <button class="nav-item" onclick="showPage('customers')">Customers</button>
     <button class="nav-item" onclick="showPage('coupons')">Coupons</button>
     <button class="nav-item" onclick="showPage('products')">All Products</button>
     <button class="nav-item" onclick="showPage('add')">Add Product</button>
     <button class="nav-item" onclick="showPage('bulk')">Bulk Import</button>
+    <button class="nav-item" onclick="showPage('activity')">Activity Log</button>
     <button class="nav-item" style="margin-top:auto;position:absolute;bottom:20px;left:0;width:100%;color:rgba(255,255,255,.5)" onclick="logout()">Sign Out</button>
   </nav>
 
@@ -200,12 +203,47 @@
       </div>
     </div>
 
+    <!-- Analytics -->
+    <div class="page" id="page-analytics">
+      <h2>Analytics</h2>
+      <p class="subtitle">Revenue and sales performance</p>
+      <div class="stats-row" id="analytics-stats-row">
+        <div class="stat-box"><div class="num" id="an-revenue">—</div><div class="lbl">Total Revenue (Paid)</div></div>
+        <div class="stat-box"><div class="num" id="an-orders">—</div><div class="lbl">Paid Orders</div></div>
+        <div class="stat-box"><div class="num" id="an-aov">—</div><div class="lbl">Avg Order Value</div></div>
+        <div class="stat-box"><div class="num" id="an-customers">—</div><div class="lbl">Total Customers</div></div>
+      </div>
+      <div class="card">
+        <strong>Revenue — Last 30 Days</strong>
+        <div id="revenue-chart" style="margin-top:16px"><p class="loading">Loading…</p></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px">
+        <div class="card">
+          <strong>Order Status Breakdown</strong>
+          <div id="status-breakdown" style="margin-top:16px"><p class="loading">Loading…</p></div>
+        </div>
+        <div class="card">
+          <strong>Top 5 Products by Units Sold</strong>
+          <div id="top-products" style="margin-top:16px"><p class="loading">Loading…</p></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Orders -->
     <div class="page" id="page-orders">
       <h2>Orders</h2>
       <p class="subtitle">Every order placed on the store, newest first</p>
       <div class="card" style="padding:0;overflow:hidden">
         <div id="orders-list"><p class="loading" style="padding:40px">Loading…</p></div>
+      </div>
+    </div>
+
+    <!-- Exchanges -->
+    <div class="page" id="page-exchanges">
+      <h2>Exchanges</h2>
+      <p class="subtitle">Customer-raised exchange requests</p>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="exchanges-list"><p class="loading" style="padding:40px">Loading…</p></div>
       </div>
     </div>
 
@@ -439,6 +477,15 @@
       </div>
     </div>
 
+    <!-- Activity Log -->
+    <div class="page" id="page-activity">
+      <h2>Activity Log</h2>
+      <p class="subtitle">Recent admin actions — order/payment status, product, coupon, and membership changes</p>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="activity-list"><p class="loading" style="padding:40px">Loading…</p></div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -519,9 +566,12 @@ function showPage(name) {
 
   if (name === 'products') loadProductsList();
   if (name === 'dashboard') loadDashboard();
+  if (name === 'analytics') loadAnalytics();
   if (name === 'orders') loadOrdersList();
+  if (name === 'exchanges') loadExchangesList();
   if (name === 'customers') loadCustomersList();
   if (name === 'coupons') loadCouponsList();
+  if (name === 'activity') loadAuditLog();
   if (name === 'add' && !document.getElementById('edit-product-id').value) resetForm();
 }
 
@@ -555,6 +605,49 @@ async function loadDashboard() {
       : '<p class="empty">No products yet — <a href="#" onclick="showPage(\'add\')">add your first one</a></p>';
   } catch (err) {
     console.error(err);
+  }
+}
+
+// ── Analytics ─────────────────────────────────────────────────────────────────
+
+async function loadAnalytics() {
+  try {
+    const res = await fetch(`${API}/orders/admin/analytics`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    document.getElementById('an-revenue').textContent = `₹${data.totalRevenue.toLocaleString('en-IN')}`;
+    document.getElementById('an-orders').textContent = data.totalOrders;
+    document.getElementById('an-aov').textContent = `₹${data.avgOrderValue.toLocaleString('en-IN')}`;
+    document.getElementById('an-customers').textContent = data.totalCustomers;
+
+    // Revenue chart — plain CSS bars, no charting library needed for 30 data points.
+    const maxRevenue = Math.max(1, ...data.revenueByDay.map(d => d.revenue));
+    document.getElementById('revenue-chart').innerHTML = data.revenueByDay.length
+      ? `<div style="display:flex;align-items:flex-end;gap:4px;height:140px">
+          ${data.revenueByDay.map(d => `
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%" title="${d.date}: ₹${d.revenue.toLocaleString('en-IN')} (${d.orders} orders)">
+              <div style="width:100%;background:var(--gold);border-radius:2px 2px 0 0;height:${Math.max(3, (d.revenue / maxRevenue) * 120)}px"></div>
+            </div>`).join('')}
+        </div>
+        <p style="font-size:11px;color:var(--muted);margin-top:8px">${data.revenueByDay[0]?.date} → ${data.revenueByDay[data.revenueByDay.length - 1]?.date} · hover a bar for details</p>`
+      : '<p class="empty">No paid orders in the last 30 days yet</p>';
+
+    document.getElementById('status-breakdown').innerHTML = data.statusBreakdown.length
+      ? data.statusBreakdown.map(s => `
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+            <span>${s.status}</span><span style="font-weight:600">${s.count}</span>
+          </div>`).join('')
+      : '<p class="empty">No orders yet</p>';
+
+    document.getElementById('top-products').innerHTML = data.topProducts.length
+      ? data.topProducts.map(p => `
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+            <span>${p.name}</span><span style="font-weight:600">${p.unitsSold} sold</span>
+          </div>`).join('')
+      : '<p class="empty">No paid orders yet</p>';
+  } catch (err) {
+    toast(err.message, 'error');
   }
 }
 
@@ -714,6 +807,75 @@ function renderOrdersTable() {
     </table>`;
 }
 
+// ── Exchanges ─────────────────────────────────────────────────────────────────
+
+const EXCHANGE_STATUSES = ['Requested', 'Approved', 'Rejected', 'Completed'];
+const EXCHANGE_REASON_LABELS = {
+  'wrong-item': 'Wrong item delivered',
+  'defective': 'Defective or damaged product received',
+  'size-mismatch': 'Size mismatch (stitched items only)',
+  'other': 'Other',
+};
+let allExchanges = [];
+
+async function loadExchangesList() {
+  try {
+    const res = await fetch(`${API}/exchanges/admin/all`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    allExchanges = data.data || [];
+    renderExchangesTable();
+  } catch (err) {
+    document.getElementById('exchanges-list').innerHTML = `<p class="empty">Failed to load exchanges: ${err.message}</p>`;
+  }
+}
+
+async function updateExchangeStatus(id, status) {
+  try {
+    const res = await fetch(`${API}/exchanges/admin/${id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ status }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const idx = allExchanges.findIndex(e => e._id === id);
+    if (idx > -1) allExchanges[idx] = data.exchange;
+    renderExchangesTable();
+    toast('Exchange status updated', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+function renderExchangesTable() {
+  const el = document.getElementById('exchanges-list');
+  if (!allExchanges.length) {
+    el.innerHTML = '<p class="empty">No exchange requests yet</p>';
+    return;
+  }
+  el.innerHTML = `
+    <table class="products-table">
+      <thead><tr>
+        <th>Order</th><th>Item</th><th>Reason</th><th>Description</th><th>Status</th>
+      </tr></thead>
+      <tbody>
+        ${allExchanges.map(e => `
+          <tr>
+            <td><strong>${e.orderNumber}</strong><br/><span style="font-size:11px;color:var(--muted)">${new Date(e.createdAt).toLocaleDateString('en-IN')}</span></td>
+            <td>${e.productName}${e.size ? ` (${e.size})` : ''}<br/><span style="font-size:11px;color:var(--muted)">${e.customerEmail}</span></td>
+            <td>${EXCHANGE_REASON_LABELS[e.reason] || e.reason}</td>
+            <td style="max-width:220px;font-size:12px">${e.description}</td>
+            <td>
+              <select onchange="updateExchangeStatus('${e._id}', this.value)" style="width:auto;padding:6px 8px;font-size:12px">
+                ${EXCHANGE_STATUSES.map(s => `<option value="${s}" ${s === e.status ? 'selected' : ''}>${s}</option>`).join('')}
+              </select>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`;
+}
+
 // ── Customers ─────────────────────────────────────────────────────────────────
 
 let allCustomers = [];
@@ -774,6 +936,33 @@ function renderCustomersTable() {
         }).join('')}
       </tbody>
     </table>`;
+}
+
+// ── Activity Log ──────────────────────────────────────────────────────────────
+
+async function loadAuditLog() {
+  try {
+    const res = await fetch(`${API}/admin/audit-log`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    const logs = data.data || [];
+    document.getElementById('activity-list').innerHTML = logs.length
+      ? `<table class="products-table">
+          <thead><tr><th>When</th><th>Admin</th><th>Action</th><th>Details</th></tr></thead>
+          <tbody>
+            ${logs.map(l => `
+              <tr>
+                <td style="font-size:12px;color:var(--muted);white-space:nowrap">${new Date(l.createdAt).toLocaleString('en-IN')}</td>
+                <td style="font-size:12px">${l.adminEmail}</td>
+                <td style="font-size:12px"><span class="badge badge-active">${l.action}</span></td>
+                <td style="font-size:12px">${l.details || ''}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>`
+      : '<p class="empty">No admin activity recorded yet</p>';
+  } catch (err) {
+    document.getElementById('activity-list').innerHTML = `<p class="empty">Failed to load activity log: ${err.message}</p>`;
+  }
 }
 
 // ── Coupons ───────────────────────────────────────────────────────────────────

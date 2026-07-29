@@ -3,6 +3,7 @@ const router = express.Router();
 const Product = require('../models/Product');
 const adminAuth = require('../middleware/auth');
 const { upload, cloudinary } = require('../middleware/cloudinary');
+const { logAdminAction } = require('../utils/auditLog');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -286,6 +287,7 @@ router.post('/', adminAuth, upload.fields([
       sku,
     });
 
+    logAdminAction(req.admin.email, 'product.create', product._id, product.name);
     res.status(201).json({ success: true, product });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -311,6 +313,7 @@ router.patch('/:id', adminAuth, async (req, res) => {
     });
     if (!product) return res.status(404).json({ error: 'Product not found' });
 
+    logAdminAction(req.admin.email, 'product.update', product._id, `${product.name}: ${Object.keys(updates).join(', ')}`);
     res.json({ success: true, product });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -397,6 +400,7 @@ router.delete('/:id', adminAuth, async (req, res) => {
       { new: true }
     );
     if (!product) return res.status(404).json({ error: 'Product not found' });
+    logAdminAction(req.admin.email, 'product.delete', product._id, product.name);
     res.json({ success: true, message: 'Product removed from store' });
   } catch (err) {
     res.status(400).json({ error: err.message });

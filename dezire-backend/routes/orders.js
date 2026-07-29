@@ -9,6 +9,7 @@ const { resolveCoupon } = require('./coupons');
 const Coupon = require('../models/Coupon');
 const User = require('../models/User');
 const { sendOrderConfirmationEmail, sendAdminOrderAlert, sendOrderStatusEmail } = require('../utils/notifications');
+const { logAdminAction } = require('../utils/auditLog');
 
 // Orders placed before real accounts existed have no owning user, but their
 // email still identifies the customer — cancellable/early statuses only.
@@ -244,6 +245,52 @@ router.get('/admin/all', adminAuth, async (req, res) => {
   }
 });
 
+// GET /api/orders/admin/analytics — revenue/order breakdowns for the admin
+// dashboard. Only counts paymentStatus:'paid' orders toward revenue, since
+// pending COD/unverified-UPI orders haven't actually been paid yet.
+router.get('/admin/analytics', adminAuth, async (req, res) => {
+  try {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    const [revenueByDay, statusBreakdown, topProducts, totals, customerCount] = await Promise.all([
+      Order.aggregate([
+        { $match: { paymentStatus: 'paid', createdAt: { $gte: thirtyDaysAgo } } },
+        { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, revenue: { $sum: '$total' }, orders: { $sum: 1 } } },
+        { $sort: { _id: 1 } },
+      ]),
+      Order.aggregate([
+        { $group: { _id: '$orderStatus', count: { $sum: 1 } } },
+      ]),
+      Order.aggregate([
+        { $match: { paymentStatus: 'paid' } },
+        { $unwind: '$items' },
+        { $group: { _id: '$items.name', unitsSold: { $sum: '$items.quantity' }, revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } } } },
+        { $sort: { unitsSold: -1 } },
+        { $limit: 5 },
+      ]),
+      Order.aggregate([
+        { $match: { paymentStatus: 'paid' } },
+        { $group: { _id: null, totalRevenue: { $sum: '$total' }, totalOrders: { $sum: 1 } } },
+      ]),
+      User.countDocuments(),
+    ]);
+
+    const totalsRow = totals[0] || { totalRevenue: 0, totalOrders: 0 };
+
+    res.json({
+      revenueByDay: revenueByDay.map(r => ({ date: r._id, revenue: r.revenue, orders: r.orders })),
+      statusBreakdown: statusBreakdown.map(s => ({ status: s._id, count: s.count })),
+      topProducts: topProducts.map(p => ({ name: p._id, unitsSold: p.unitsSold, revenue: p.revenue })),
+      totalRevenue: totalsRow.totalRevenue,
+      totalOrders: totalsRow.totalOrders,
+      avgOrderValue: totalsRow.totalOrders > 0 ? Math.round(totalsRow.totalRevenue / totalsRow.totalOrders) : 0,
+      totalCustomers: customerCount,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // PATCH /api/orders/:id/status — admin updates order lifecycle status
 router.patch('/:id/status', adminAuth, async (req, res) => {
   try {
@@ -251,9 +298,12 @@ router.patch('/:id/status', adminAuth, async (req, res) => {
     const updates = {};
     if (orderStatus) updates.orderStatus = orderStatus;
     if (paymentStatus) updates.paymentStatus = paymentStatus;
+    if (orderStatus === 'Delivered') updates.deliveredAt = new Date();
 
     const order = await Order.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true });
     if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    logAdminAction(req.admin.email, 'order.status', order._id, `${order.orderNumber}: ${Object.entries(updates).map(([k, v]) => `${k}=${v}`).join(', ')}`);
 
     if (orderStatus) {
       const customer = await User.findOne({ email: order.customerEmail }).select('notificationsEnabled').lean();

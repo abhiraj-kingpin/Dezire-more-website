@@ -3,6 +3,8 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { adminLoginLimiter } = require('../middleware/rateLimiter');
+const adminAuth = require('../middleware/auth');
+const AuditLog = require('../models/AuditLog');
 
 // POST /api/admin/login
 // Body: { email, password }
@@ -45,6 +47,17 @@ router.get('/verify', (req, res) => {
     res.json({ valid: true, admin: { email: decoded.email } });
   } catch {
     res.status(401).json({ valid: false });
+  }
+});
+
+// GET /api/admin/audit-log — recent admin actions (order/product/coupon/
+// membership changes), newest first.
+router.get('/audit-log', adminAuth, async (req, res) => {
+  try {
+    const logs = await AuditLog.find().sort({ createdAt: -1 }).limit(200).lean();
+    res.json({ data: logs });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

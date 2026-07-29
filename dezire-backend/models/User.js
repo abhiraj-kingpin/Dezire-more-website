@@ -12,6 +12,21 @@ const addressSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+const wishlistItemSchema = new mongoose.Schema(
+  {
+    productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+    // Snapshot of the price when the item was wishlisted. lastNotifiedPrice
+    // only moves when an alert email actually goes out, so a price that
+    // dips and recovers doesn't get silently "used up" without a notification.
+    priceAtAdd: { type: Number, required: true },
+    lastNotifiedPrice: { type: Number },
+    // Tracked so the watcher can detect a false→true transition (genuinely
+    // "back in stock") instead of emailing about items that were never out.
+    lastKnownInStock: { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
+
 const membershipPaymentSchema = new mongoose.Schema(
   {
     tier:   { type: String, enum: ['gold', 'platinum'], required: true },
@@ -34,6 +49,7 @@ const userSchema = new mongoose.Schema(
     emailVerified: { type: Boolean, default: false },
 
     addresses: [addressSchema],
+    wishlist: [wishlistItemSchema],
 
     notificationsEnabled: { type: Boolean, default: true },
 
