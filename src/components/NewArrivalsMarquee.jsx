@@ -54,8 +54,19 @@ function MarqueeRow({ products, reverse, secondary }) {
     return () => clearInterval(intervalRef.current);
   }, [SPEED, recenterIfNeeded]);
 
-  // Pauses ambient drift immediately and keeps it paused until the user has
-  // been idle for a bit, then resyncs the loop position and resumes.
+  // Pauses ambient drift immediately and keeps it paused until scrolling has
+  // genuinely stopped, then resyncs the loop position and resumes.
+  //
+  // Recentering used to fire a fixed delay after touchend (or after a
+  // button's smooth-scroll click), guessing how long momentum/animation
+  // would take. A strong flick's native momentum can keep scrolling well
+  // past that guess, so the guessed timer fired while the track was still
+  // sliding — snapping scrollLeft by a whole loop-width mid-motion, a visible
+  // jump that read as jank. Native 'scroll' events keep firing for as long as
+  // anything is actually still moving the track (touch momentum, mouse-wheel
+  // momentum, or the arrow buttons' smooth-scroll), so debouncing off those
+  // instead of a fixed delay waits out however long the motion actually
+  // takes, whatever that turns out to be.
   const markInteracting = () => {
     interactingRef.current = true;
     clearTimeout(idleTimeoutRef.current);
@@ -69,7 +80,10 @@ function MarqueeRow({ products, reverse, secondary }) {
   };
 
   const handleTouchStart = () => markInteracting();
-  const handleTouchEnd   = () => scheduleResume(1000);
+  // Fallback for a tap with negligible movement — no further scroll events
+  // will follow to debounce off of.
+  const handleTouchEnd   = () => scheduleResume(300);
+  const handleScroll     = () => scheduleResume(120);
 
   const nudge = (dir) => {
     const track = trackRef.current;
@@ -80,7 +94,10 @@ function MarqueeRow({ products, reverse, secondary }) {
     const cardWidth = card ? card.getBoundingClientRect().width + 18 : 166;
     track.scrollBy({ left: dir * cardWidth, behavior: 'smooth' });
 
-    scheduleResume(900);
+    // handleScroll (firing throughout the smooth-scroll animation) takes
+    // over from here; this is just a fallback in case it's already at an
+    // edge and the browser coalesces this into zero scroll events.
+    scheduleResume(500);
   };
 
   useEffect(() => {
@@ -97,6 +114,7 @@ function MarqueeRow({ products, reverse, secondary }) {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchEnd}
+        onScroll={handleScroll}
       >
         {loopProducts.map((product, i) => (
           <div className="marquee-card" key={`${product._id || product.id}-${i}`}>
