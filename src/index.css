@@ -70,6 +70,7 @@ nav {
   grid-column: 1 / -1;
   grid-row: 1;
   position: absolute;
+  inset: 0;
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
