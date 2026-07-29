@@ -1,0 +1,12 @@
+{
+  "functions": {
+    "source": "dezire-backend",
+    "runtime": "nodejs20",
+    "ignore": [
+      "node_modules",
+      ".git",
+      "*.log",
+      "uploads"
+    ]
+  }
+}

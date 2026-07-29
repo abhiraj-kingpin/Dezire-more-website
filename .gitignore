@@ -5,3 +5,4 @@ dezire-backend/SETUP-GUIDE.md
 *.apk
 *.keystore
 *.jks
+.firebase
