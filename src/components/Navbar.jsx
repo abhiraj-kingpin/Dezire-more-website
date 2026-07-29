@@ -575,41 +575,6 @@ function Navbar() {
     <nav style={{ position: 'relative' }}>
       <FlowingThreads />
 
-      {/* Decorative gold background for just the logo/search/icons row —
-          grid-placed to row 1 only so it doesn't bleed into the category
-          links row below, which keeps its own plain background. */}
-      <div className="nav-header-bg" aria-hidden="true">
-        <svg className="nav-header-bg-svg" viewBox="0 0 1440 200" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <radialGradient id="navGlow1" cx="10%" cy="30%" r="75%">
-              <stop offset="0%" stopColor="#f2e2bb" stopOpacity="0.9" />
-              <stop offset="100%" stopColor="#f2e2bb" stopOpacity="0" />
-            </radialGradient>
-            <radialGradient id="navGlow2" cx="90%" cy="70%" r="75%">
-              <stop offset="0%" stopColor="#f2e2bb" stopOpacity="0.85" />
-              <stop offset="100%" stopColor="#f2e2bb" stopOpacity="0" />
-            </radialGradient>
-          </defs>
-          <rect width="1440" height="200" fill="url(#navGlow1)" />
-          <rect width="1440" height="200" fill="url(#navGlow2)" />
-          <g stroke="#C9973A" strokeWidth="1.1" fill="none" opacity="0.4">
-            <path d="M-60,90 Q300,20 660,90 Q1020,160 1380,90 Q1500,60 1560,90" />
-            <path d="M-60,130 Q300,60 660,130 Q1020,200 1380,130 Q1500,100 1560,130" />
-            <path d="M-60,50 Q300,-20 660,50 Q1020,120 1380,50 Q1500,20 1560,50" />
-          </g>
-          <g stroke="#b8964e" strokeWidth="2" fill="none" opacity="0.65">
-            <path d="M0,50 Q70,80 45,130 Q100,120 75,170" />
-            <path d="M1440,50 Q1370,80 1395,130 Q1340,120 1365,170" />
-          </g>
-          <g fill="#b8964e" opacity="0.7">
-            <path d="M0,70 Q45,45 65,80 Q38,98 0,70Z" />
-            <path d="M55,115 Q92,94 112,124 Q88,142 55,115Z" />
-            <path d="M1440,70 Q1395,45 1375,80 Q1402,98 1440,70Z" />
-            <path d="M1385,115 Q1348,94 1328,124 Q1352,142 1385,115Z" />
-          </g>
-        </svg>
-      </div>
-
       <button
         className="nav-hamburger"
         aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
