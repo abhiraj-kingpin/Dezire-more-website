@@ -22,6 +22,9 @@ function getTransporter() {
     port: Number(SMTP_PORT),
     secure: Number(SMTP_PORT) === 465,
     auth: { user: SMTP_USER, pass: SMTP_PASS },
+    // Render's network resolves smtp.gmail.com's IPv6 address but can't
+    // actually route to it (ENETUNREACH) — forcing IPv4 avoids that dead end.
+    family: 4,
   });
   return transporter;
 }
