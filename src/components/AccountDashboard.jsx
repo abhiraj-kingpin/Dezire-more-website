@@ -173,7 +173,7 @@ function AccountDashboard() {
               <span className="account-nav-icon">🛍</span>Cart {cart.length > 0 ? `(${cart.length})` : ''}
             </button>
             <button className="account-nav-item" onClick={() => navigate('/membership')}>
-              <span className="account-nav-icon">✦</span>Premium Membership
+              <span className="account-nav-icon">👑</span>Premium Membership
             </button>
             <button className="account-nav-item" onClick={() => navigate('/help-support')}>
               <span className="account-nav-icon">❓</span>Support

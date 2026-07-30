@@ -34,14 +34,24 @@ export function AuthProvider({ children }) {
     setUser(userData);
   };
 
-  // Restore session on app load by validating the stored token against the server.
+  // Restore session on app load by validating the stored token against the
+  // server. Only an explicit 401 (token actually rejected) clears it — a
+  // network error, timeout, or the backend cold-starting (this project's
+  // Render free-tier API can take 30-50s to wake up) must NOT log the user
+  // out, since the token itself is still perfectly valid; it just couldn't
+  // be checked this time. Those cases keep the stored token and simply
+  // retry validation on the next load.
   useEffect(() => {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) { setLoading(false); return; }
     fetch(`${BASE}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(async res => { if (!res.ok) throw new Error(); return parseJson(res); })
-      .then(data => setUser(data.user))
-      .catch(() => localStorage.removeItem(TOKEN_KEY))
+      .then(async res => {
+        if (res.status === 401) { localStorage.removeItem(TOKEN_KEY); return; }
+        if (!res.ok) return; // transient server error — keep the token, don't touch user
+        const data = await parseJson(res);
+        setUser(data.user);
+      })
+      .catch(() => {}) // network error — keep the token, don't touch user
       .finally(() => setLoading(false));
   }, []);
 

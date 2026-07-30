@@ -4,6 +4,17 @@ import ProductCard from './ProductCard';
 import SortDropdown from './SortDropdown';
 import FilterPanel from './FilterPanel';
 import { useCategory, useFacets } from '../hooks/useProducts';
+import { useSearch } from '../context/SearchContext';
+import { searchSubstring } from '../utils/fuzzySearch';
+
+// Mirrors the backend's own category aliases (routes/products.js) so a
+// pinned search match is looked up against every raw category value that
+// actually lands on this page, not just the page's primary slug.
+const CATEGORY_ALIASES = {
+  'jewelry-accessories': ['jewelry-accessories', 'jewelry', 'accessories'],
+  'ready-to-wear': ['ready-to-wear', 'blouses'],
+};
+const PIN_LIMIT = 8;
 
 const FILTERS = [
   { label: 'All',          value: '' },
@@ -61,6 +72,20 @@ function CategoryPage({ title, category, subcategories }) {
   if (activeSubcategory) filters.subcategory = activeSubcategory;
 
   const { products, total, totalPages, loading, error } = useCategory(category, filters);
+
+  // A product picked from the search dropdown lands here with ?q= set —
+  // pin/highlight it (and any other matches) at the front of page 1 rather
+  // than opening a separate results view.
+  const pinnedQuery = searchParams.get('q') || '';
+  const { allProducts } = useSearch();
+  const categoryValues = CATEGORY_ALIASES[category] || [category];
+  const pinnedMatches = (page === 1 && pinnedQuery)
+    ? searchSubstring(allProducts.filter(p => categoryValues.includes(p.category)), pinnedQuery).slice(0, PIN_LIMIT)
+    : [];
+  const pinnedIds = new Set(pinnedMatches.map(p => p._id || p.id));
+  const displayProducts = pinnedMatches.length > 0
+    ? [...pinnedMatches, ...products.filter(p => !pinnedIds.has(p._id || p.id))]
+    : products;
 
   const handleFilter = (val) => { setActiveFilter(val); setPage(1); };
   const handleSort   = (val) => { setSort(val);         setPage(1); };
@@ -129,10 +154,21 @@ function CategoryPage({ title, category, subcategories }) {
               ? <p className="page-empty">No {title.toLowerCase()} found matching these filters.</p>
               : (
                 <>
+                  {pinnedMatches.length > 0 && (
+                    <p className="category-search-pin-note">Showing results for "<strong>{pinnedQuery}</strong>" first</p>
+                  )}
                   <div className="products-grid products-grid-3col">
-                    {products.map(product => (
-                      <ProductCard key={product._id || product.id} product={product} />
-                    ))}
+                    {displayProducts.map(product => {
+                      const id = product._id || product.id;
+                      const isPinned = pinnedIds.has(id);
+                      return isPinned ? (
+                        <div key={id} className="product-search-pin">
+                          <ProductCard product={product} />
+                        </div>
+                      ) : (
+                        <ProductCard key={id} product={product} />
+                      );
+                    })}
                   </div>
                   <Pagination page={page} totalPages={totalPages} onPage={setPage} />
                 </>

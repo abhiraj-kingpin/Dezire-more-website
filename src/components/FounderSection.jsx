@@ -28,7 +28,7 @@ function FounderSection() {
         </div>
 
         <div className="founder-content">
-          <p className="founder-eyebrow">✦ The Vision Behind Dezire More</p>
+          <p className="founder-eyebrow">The Vision Behind Dezire More</p>
           <h2 className="founder-name">Roop Kamal Taneja</h2>
           <p className="founder-title">Founder &amp; CEO</p>
           <p className="founder-quote">

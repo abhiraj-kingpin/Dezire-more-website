@@ -122,6 +122,31 @@ export function searchProducts(products, query) {
     .map(({ product }) => product);
 }
 
+// Plain case-insensitive substring search for the search-as-you-type
+// dropdown — deliberately not the fuzzy/typo-tolerant scorer above, so a
+// single letter like "s" immediately surfaces every product containing it,
+// refining further with each additional character. Name matches (what the
+// dropdown actually displays) rank above matches found only in other
+// fields, so the most relevant items lead.
+export function searchSubstring(products, query) {
+  const needle = normalize(query);
+  if (!needle || !Array.isArray(products)) return [];
+
+  const nameMatches = [];
+  const otherMatches = [];
+  for (const product of products) {
+    const name = normalize(product.name);
+    if (name.includes(needle)) { nameMatches.push(product); continue; }
+    const other = normalize(
+      [product.category, product.subcategory, product.fabric, ...(product.tags || [])]
+        .filter(Boolean)
+        .join(' ')
+    );
+    if (other.includes(needle)) otherMatches.push(product);
+  }
+  return [...nameMatches, ...otherMatches];
+}
+
 // Wraps substrings of `text` that match a query token in <mark> for highlighting.
 export function highlightMatch(text, query) {
   const tokens = [...new Set(tokenize(query).filter(t => t.length >= 2))];

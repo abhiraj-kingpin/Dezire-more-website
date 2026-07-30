@@ -27,7 +27,7 @@ const buildFilter = (query) => {
   if (query.occasion)    filter.occasion    = { $in: query.occasion.split(',') };
   if (query.inStock)     filter.inStock     = query.inStock === 'true';
   if (query.tag)         filter.tags        = query.tag;
-  if (query.subcategory) filter.subcategory = query.subcategory;
+  if (query.subcategory) filter.subcategory = subcategoryFilterValue(query.subcategory);
   if (query.minRating)   filter.rating      = { $gte: Number(query.minRating) };
   if (query.minPrice || query.maxPrice) {
     filter.price = {};
@@ -55,6 +55,20 @@ const CATEGORY_ALIASES = {
   'ready-to-wear': ['ready-to-wear', 'blouses'],
 };
 const categoryFilterValue = (category) => CATEGORY_ALIASES[category] || category;
+
+// Subcategory is free text typed by an admin (no enum, unlike category), so
+// "Blouse" vs the storefront's fixed filter slug "blouses" never matched
+// under a plain equality check. Normalize both sides to a trimmed,
+// lowercase, singular base form — with '-' and ' ' treated as the same
+// separator — and match with a case-insensitive regex instead of requiring
+// an exact string.
+const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const normalizeSubcategory = (value) =>
+  value.toString().trim().toLowerCase().replace(/[-\s]+/g, ' ').replace(/s$/, '');
+const subcategoryFilterValue = (value) => {
+  const base = escapeRegex(normalizeSubcategory(value)).replace(/ /g, '[-\\s]');
+  return new RegExp(`^${base}s?$`, 'i');
+};
 
 const buildSort = (sort) => {
   const sorts = {

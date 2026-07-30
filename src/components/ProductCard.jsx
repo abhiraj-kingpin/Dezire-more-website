@@ -99,10 +99,10 @@ export function ripple(btnEl) {
   setTimeout(() => btnEl.classList.remove('rippling'), 500);
 }
 
-// Spawns a tiny burst of floating hearts/sparkles from the wishlist button.
+// Spawns a tiny burst of floating hearts from the wishlist button.
 function spawnHeartBurst(btnEl) {
   if (!btnEl) return;
-  const particles = ['♥', '✦', '♥', '✧', '♥'];
+  const particles = ['♥', '♥', '♥', '♥', '♥'];
   particles.forEach((glyph, i) => {
     const span = document.createElement('span');
     span.className = 'heart-burst-particle';
@@ -578,7 +578,8 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
               </div>
 
               <p className="pd-delivery-estimate">
-                🚚 Estimated delivery in 7–10 business days · Free shipping above ₹1,699
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="pd-delivery-icon"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="7.5" cy="18" r="1.5"/><circle cx="17.5" cy="18" r="1.5"/></svg>
+                Estimated delivery in 7–10 business days · Free shipping above ₹1,699
               </p>
 
               {needsSize && (
@@ -679,7 +680,7 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
               </button>
 
               <p className="pd-footer-note">
-                ✦ Free shipping above ₹1699 &nbsp;|&nbsp; Easy 3-day returns
+                Free shipping above ₹1699 &nbsp;|&nbsp; Easy 3-day returns
               </p>
             </div>
 

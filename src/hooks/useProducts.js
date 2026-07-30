@@ -127,31 +127,3 @@ export function useHomeData() {
   };
 }
 
-// ─── useSearch ────────────────────────────────────────────────────────────────
-// const { results, total, loading } = useSearch('kanjivaram silk')
-export function useSearch(query, page = 1) {
-  const [data,    setData]    = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState(null);
-
-  useEffect(() => {
-    if (!query || query.trim().length < 2) { setData(null); return; }
-
-    const ctrl = new AbortController();
-    setLoading(true);
-    fetcher(`/products/search?q=${encodeURIComponent(query)}&page=${page}`, ctrl.signal)
-      .then(setData)
-      .catch(e => { if (e.name !== 'AbortError') setError(e.message); })
-      .finally(() => setLoading(false));
-
-    return () => ctrl.abort();
-  }, [query, page]);
-
-  return {
-    results:    data?.data       || [],
-    total:      data?.total      || 0,
-    totalPages: data?.totalPages || 1,
-    loading,
-    error,
-  };
-}

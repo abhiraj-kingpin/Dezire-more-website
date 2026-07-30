@@ -58,7 +58,7 @@ function Membership() {
   return (
     <div className="policy-page">
       <div className="policy-hero">
-        <span className="policy-eyebrow">✦ Exclusively Yours</span>
+        <span className="policy-eyebrow">Exclusively Yours</span>
         <h1>Premium Membership</h1>
         <p>Unlock member pricing, early access, and a more personal shopping experience with Dezire More.</p>
       </div>

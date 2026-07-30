@@ -4,6 +4,10 @@ import ProductCard from './ProductCard';
 import SortDropdown from './SortDropdown';
 import FilterPanel from './FilterPanel';
 import { useCategory, useFacets } from '../hooks/useProducts';
+import { useSearch } from '../context/SearchContext';
+import { searchSubstring } from '../utils/fuzzySearch';
+
+const PIN_LIMIT = 8;
 
 const FILTERS = [
   { label: 'All',          value: '' },
@@ -64,6 +68,19 @@ function Sarees() {
   if (activeSubcategory) filters.subcategory = activeSubcategory;
 
   const { products, total, totalPages, loading, error } = useCategory('sarees', filters);
+
+  // A product picked from the search dropdown lands here with ?q= set —
+  // pin/highlight it (and any other matches) at the front of page 1 rather
+  // than opening a separate results view.
+  const pinnedQuery = searchParams.get('q') || '';
+  const { allProducts } = useSearch();
+  const pinnedMatches = (page === 1 && pinnedQuery)
+    ? searchSubstring(allProducts.filter(p => p.category === 'sarees'), pinnedQuery).slice(0, PIN_LIMIT)
+    : [];
+  const pinnedIds = new Set(pinnedMatches.map(p => p._id || p.id));
+  const displayProducts = pinnedMatches.length > 0
+    ? [...pinnedMatches, ...products.filter(p => !pinnedIds.has(p._id || p.id))]
+    : products;
 
   const handleFilter = (val) => { setActiveFilter(val); setPage(1); };
   const handleSort   = (val) => { setSort(val);         setPage(1); };
@@ -130,10 +147,21 @@ function Sarees() {
               ? <p className="page-empty">No sarees found matching these filters.</p>
               : (
                 <>
+                  {pinnedMatches.length > 0 && (
+                    <p className="category-search-pin-note">Showing results for "<strong>{pinnedQuery}</strong>" first</p>
+                  )}
                   <div className="products-grid products-grid-3col">
-                    {products.map(product => (
-                      <ProductCard key={product._id || product.id} product={product} />
-                    ))}
+                    {displayProducts.map(product => {
+                      const id = product._id || product.id;
+                      const isPinned = pinnedIds.has(id);
+                      return isPinned ? (
+                        <div key={id} className="product-search-pin">
+                          <ProductCard product={product} />
+                        </div>
+                      ) : (
+                        <ProductCard key={id} product={product} />
+                      );
+                    })}
                   </div>
                   <Pagination page={page} totalPages={totalPages} onPage={setPage} />
                 </>

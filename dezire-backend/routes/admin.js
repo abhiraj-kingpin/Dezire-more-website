@@ -15,8 +15,11 @@ router.post('/login', adminLoginLimiter, async (req, res) => {
     return res.status(400).json({ error: 'Email and password required' });
   }
 
-  // Check against env vars (for now — Point 5 adds a proper User model)
-  const validEmail    = email    === process.env.ADMIN_EMAIL;
+  // Check against env vars (for now — Point 5 adds a proper User model).
+  // Normalized the same way customer login treats its email (auth.js), so
+  // an admin typing a different case than what's in .env isn't rejected.
+  const normalizedEmail = email.toLowerCase().trim();
+  const validEmail    = normalizedEmail === (process.env.ADMIN_EMAIL || '').toLowerCase().trim();
   const validPassword = password === process.env.ADMIN_PASSWORD;
 
   if (!validEmail || !validPassword) {
@@ -25,7 +28,7 @@ router.post('/login', adminLoginLimiter, async (req, res) => {
 
   // Issue a JWT valid for 7 days
   const token = jwt.sign(
-    { email, isAdmin: true },
+    { email: normalizedEmail, isAdmin: true },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
   );

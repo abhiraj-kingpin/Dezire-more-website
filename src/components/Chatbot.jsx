@@ -710,7 +710,7 @@ export default function Chatbot() {
             {/* Gold divider */}
             <div className="dz-divider">
               <div className="dz-div-line" />
-              <span className="dz-div-text">✦ Ethnic Elegance. Modern You. ✦</span>
+              <span className="dz-div-text">Ethnic Elegance. Modern You.</span>
               <div className="dz-div-line" />
             </div>
 
@@ -777,7 +777,7 @@ export default function Chatbot() {
             </div>
 
             {/* Footer */}
-            <div className="dz-foot">✦ Dezire More — Quintessential Queens ✦</div>
+            <div className="dz-foot">Dezire More — Quintessential Queens</div>
           </div>
         )}
 

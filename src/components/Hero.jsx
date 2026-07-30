@@ -4,13 +4,13 @@ import { Link } from "react-router-dom";
 const heroSlides = [
   {
     image: "/assets/hero/hero1.png",
-    eyebrow: "✦ Summer Luxury Edit 2026",
+    eyebrow: "Summer Luxury Edit 2026",
     title: ["Wear Your", "Culture", "With Grace"],
     subtitle: "Elegant ethnic silhouettes designed for the modern Indian woman who loves timeless fashion.",
   },
   {
     image: "/assets/hero/hero2.png",
-    eyebrow: "✦ New Arrivals 2026",
+    eyebrow: "New Arrivals 2026",
     title: ["Drape Yourself", "In", "Tradition"],
     subtitle: "Handcrafted sarees and kurtas that celebrate the artistry of Indian weavers.",
   },
@@ -159,7 +159,7 @@ function Hero() {
           <div className="chatus-card" onClick={(e) => e.stopPropagation()}>
             <button className="chatus-close" onClick={() => setChatModalOpen(false)} aria-label="Close">×</button>
 
-            <p className="chatus-eyebrow">✦ Let's Talk Business</p>
+            <p className="chatus-eyebrow">Let's Talk Business</p>
             <h2 className="chatus-title">Chat With Us</h2>
 
             <ul className="chatus-list">

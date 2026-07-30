@@ -7,21 +7,34 @@ import { useState, useEffect } from 'react';
 const ANIMATION_END_MS = 3000;
 const HOLD_MS = 2000;
 const FADE_MS = 600;
+const INTRO_SEEN_KEY = 'introSeen';
 
 function IntroAnimation() {
-  const [visible, setVisible] = useState(true);
+  // Plays once per browser, not once per page load — a returning visitor
+  // (even after a hard refresh) skips straight to the site.
+  const alreadySeen = (() => {
+    try { return localStorage.getItem(INTRO_SEEN_KEY) === 'true'; }
+    catch { return false; }
+  })();
+
+  const [visible, setVisible] = useState(!alreadySeen);
   const [running, setRunning] = useState(false);
   const [fadingOut, setFadingOut] = useState(false);
 
   useEffect(() => {
+    if (alreadySeen) return;
     const raf = requestAnimationFrame(() => setRunning(true));
     const fadeTimer = setTimeout(() => setFadingOut(true), ANIMATION_END_MS + HOLD_MS);
-    const removeTimer = setTimeout(() => setVisible(false), ANIMATION_END_MS + HOLD_MS + FADE_MS);
+    const removeTimer = setTimeout(() => {
+      setVisible(false);
+      try { localStorage.setItem(INTRO_SEEN_KEY, 'true'); } catch { /* private browsing, etc. */ }
+    }, ANIMATION_END_MS + HOLD_MS + FADE_MS);
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(fadeTimer);
       clearTimeout(removeTimer);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!visible) return null;

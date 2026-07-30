@@ -14,7 +14,7 @@ function Home() {
 
       <section className="home-story-teaser">
         <div className="home-story-teaser-inner">
-          <span className="policy-eyebrow">✦ Our Story</span>
+          <span className="policy-eyebrow">Our Story</span>
           <h2>Crafted With Purpose, Worn With Pride</h2>
           <p>Every Dezire More piece is designed for the modern Indian woman — timeless silhouettes, contemporary spirit.</p>
           <Link to="/our-story" className="btn-outline">Discover Our Story</Link>

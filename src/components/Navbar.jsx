@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
 import { useSearch } from '../context/SearchContext';
@@ -14,11 +14,28 @@ import { READY_TO_WEAR_SUBCATEGORIES } from './CategoryPages';
 import { BASE } from '../hooks/useProducts';
 import useLockBodyScroll from '../hooks/useLockBodyScroll';
 import ProductCard, { flyToCart, ripple } from './ProductCard';
-import { searchProducts } from '../utils/fuzzySearch';
+import { searchSubstring, highlightMatch } from '../utils/fuzzySearch';
 import QRCode from 'react-qr-code';
 
 const FALLBACK_SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
-const SUGGESTION_LIMIT = 6;
+const SUGGESTION_LIMIT = 8;
+
+// Category values stored on a product don't always match the storefront's
+// own route slugs (e.g. the "western" category lives at /western-apparels),
+// so a search result navigates through this map rather than guessing.
+const CATEGORY_ROUTES = {
+  sarees: '/sarees',
+  'dress-materials': '/dress-materials',
+  'ready-to-wear': '/ready-to-wear',
+  blouses: '/ready-to-wear',
+  western: '/western-apparels',
+  'jewelry-accessories': '/jewelry-accessories',
+  jewelry: '/jewelry-accessories',
+  accessories: '/jewelry-accessories',
+};
+function categoryRouteFor(product) {
+  return CATEGORY_ROUTES[product.category] || '/';
+}
 
 // Loaded once, on demand, the first time someone actually reaches checkout —
 // keeps Razorpay's script out of the main bundle for everyone just browsing.
@@ -39,68 +56,48 @@ function loadRazorpayScript() {
   return razorpayScriptPromise;
 }
 
-const POPULAR_SEARCH_TAGS = ['Banarasi Silk', 'Bridal Saree', 'Embroidered', 'Organza', 'Chiffon'];
-
-function SearchResults({ query, onClose, onSelectTag, showAll, onShowAll }) {
+// Amazon-style search-as-you-type: thumbnail + name only, substring-matched,
+// refined on every keystroke. Selecting a row navigates to that product's
+// category page (with the query pinned/highlighted there) instead of
+// opening a separate results view.
+function SearchResults({ query, onNavigate }) {
   const { allProducts, productsLoading } = useSearch();
+  const trimmed = query.trim();
 
-  if (!query.trim()) {
-    return (
-      <div className="search-suggestions">
-        <p className="search-suggestions-title">Popular Searches</p>
-        <div className="search-tags">
-          {POPULAR_SEARCH_TAGS.map(tag => (
-            <span key={tag} className="search-tag" onClick={() => onSelectTag(tag)}>{tag}</span>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  if (!trimmed) return null;
 
   if (productsLoading && allProducts.length === 0) {
-    return <div className="search-suggestions"><p style={{padding:'20px',color:'var(--text-light)'}}>Searching…</p></div>;
+    return <div className="search-empty-hint">Searching…</div>;
   }
 
-  const matches = searchProducts(allProducts, query);
+  const matches = searchSubstring(allProducts, trimmed).slice(0, SUGGESTION_LIMIT);
 
   if (matches.length === 0) {
     return (
       <div className="search-no-results">
-        <p>No products found for "<strong>{query}</strong>"</p>
+        <p>No products found for "<strong>{trimmed}</strong>"</p>
         <span>Check the spelling, or try a broader term.</span>
-        <div className="search-tags" style={{ marginTop: '14px', justifyContent: 'center' }}>
-          {POPULAR_SEARCH_TAGS.map(tag => (
-            <span key={tag} className="search-tag" onClick={() => onSelectTag(tag)}>{tag}</span>
-          ))}
-        </div>
       </div>
     );
   }
 
-  const visible = showAll ? matches : matches.slice(0, SUGGESTION_LIMIT);
-
   return (
     <div className="search-results">
-      {showAll ? (
-        <p className="search-results-count">{matches.length} result{matches.length !== 1 ? 's' : ''} for "{query}"</p>
-      ) : (
-        <p className="search-results-count">
-          Top {visible.length} of {matches.length} match{matches.length !== 1 ? 'es' : ''} for "{query}"
-          {matches.length > visible.length && (
-            <button type="button" className="search-view-all" onClick={onShowAll}>View all {matches.length} results</button>
-          )}
-        </p>
-      )}
-      <div className="search-results-grid">
-        {visible.map(product => (
-          <ProductCard
-            key={product._id || product.id}
-            product={product}
-            highlightQuery={query}
-            onAfterAddToCart={onClose}
-          />
-        ))}
-      </div>
+      <ul className="search-results-list">
+        {matches.map(product => {
+          const thumb = product.images?.[0]?.url || product.images?.[0] || product.image || '';
+          return (
+            <li key={product._id || product.id}>
+              <button type="button" className="search-result-row" onClick={() => onNavigate(product)}>
+                {thumb
+                  ? <img src={thumb} alt="" className="search-result-thumb" loading="lazy" />
+                  : <span className="search-result-thumb" />}
+                <span className="search-result-name">{highlightMatch(product.name, trimmed)}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
@@ -160,9 +157,23 @@ function Navbar() {
     cart, addToCart, removeFromCart, updateQuantity, updateSize, clearCart, cartTotal, cartCount,
     cartOpen, setCartOpen, paymentStep, setPaymentStep, lastAddedId: cartLastAddedId,
   } = useCart();
-  const { searchOpen, setSearchOpen, searchQuery, setSearchQuery } = useSearch();
-  const [searchShowAll, setSearchShowAll] = useState(false);
-  useEffect(() => { setSearchShowAll(false); }, [searchQuery]);
+  const { searchOpen, setSearchOpen, searchQuery, setSearchQuery, allProducts } = useSearch();
+  const navigate = useNavigate();
+
+  const closeSearch = () => { setSearchOpen(false); setSearchQuery(''); };
+
+  const goToSearchResult = (product) => {
+    const term = searchQuery.trim();
+    closeSearch();
+    navigate(`${categoryRouteFor(product)}?q=${encodeURIComponent(term)}`);
+  };
+
+  // Enter jumps straight to the top match's category page, same as clicking it.
+  const handleSearchEnter = (e) => {
+    if (e.key !== 'Enter') return;
+    const [top] = searchSubstring(allProducts, searchQuery.trim());
+    if (top) goToSearchResult(top);
+  };
 
   const anyOverlayOpen = cartOpen || wishlistOpen || authOpen || settingsOpen || searchOpen;
   useLockBodyScroll(anyOverlayOpen);
@@ -180,7 +191,7 @@ function Navbar() {
   useEffect(() => {
     const onKeyDown = (e) => {
       if (e.key !== 'Escape') return;
-      if (searchOpen) { setSearchOpen(false); setSearchQuery(''); return; }
+      if (searchOpen) { closeSearch(); return; }
       if (authOpen) { closeAuthModal(); return; }
       if (settingsOpen) { setSettingsOpen(false); return; }
       if (cartOpen) {
@@ -320,9 +331,6 @@ function Navbar() {
   const estimatedDeliveryDate = new Date(Date.now() + 9 * 24 * 60 * 60 * 1000)
     .toLocaleDateString('en-IN', { day: 'numeric', month: 'long' });
 
-  const [isGift, setIsGift] = useState(false);
-  const [giftMessage, setGiftMessage] = useState('');
-
   // "You may also like" — a light cross-sell strip in the cart, based on
   // the category of whatever's already in the bag.
   const [cartRecommendations, setCartRecommendations] = useState([]);
@@ -431,7 +439,7 @@ function Navbar() {
 
   const handleShareWishlist = async () => {
     const lines = wishlist.map(p => `• ${p.name} — ₹${p.price.toLocaleString('en-IN')}`);
-    const text = `My Dezire More Wishlist ✦\n\n${lines.join('\n')}\n\nShop at ${window.location.origin}`;
+    const text = `My Dezire More Wishlist\n\n${lines.join('\n')}\n\nShop at ${window.location.origin}`;
 
     if (navigator.share) {
       try { await navigator.share({ title: 'My Dezire More Wishlist', text }); }
@@ -479,7 +487,7 @@ function Navbar() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({
-          customerEmail: checkoutEmail.trim(),
+          customerEmail: checkoutEmail.trim().toLowerCase(),
           customerName: checkoutName.trim(),
           customerPhone: checkoutPhone.trim(),
           items: cart.map(p => ({
@@ -503,8 +511,6 @@ function Navbar() {
           couponCode: appliedCoupon?.code,
           paymentMethod,
           paymentReference: paymentMethod === 'UPI' ? paymentReferenceInput.trim() : undefined,
-          isGift,
-          giftMessage: isGift ? giftMessage.trim() : undefined,
         }),
       });
       const data = await res.json();
@@ -527,8 +533,6 @@ function Navbar() {
     setLastOrderId(order.orderNumber);
     setOrderPlaced(true);
     clearCart();
-    setIsGift(false);
-    setGiftMessage('');
     setAppliedCoupon(null);
     setCouponInput('');
     setPaymentReferenceInput('');
@@ -654,7 +658,7 @@ function Navbar() {
         </button>
 
         <button aria-label="Cart" id="nav-cart-icon" onClick={() => { setCartOpen(true); setPaymentStep(false); }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
             <line x1="3" y1="6" x2="21" y2="6" />
             <path d="M16 10a4 4 0 01-8 0" />
@@ -705,7 +709,7 @@ function Navbar() {
         </li>
         <li><Link to="/western-apparels" onClick={closeMobileMenu}>Casual Western</Link></li>
         <li><Link to="/jewelry-accessories" onClick={closeMobileMenu}>Jewelry & Accessories</Link></li>
-        <li><Link to="/membership" className="nav-link-membership" onClick={closeMobileMenu}>✦ Premium Membership</Link></li>
+        <li><Link to="/membership" className="nav-link-membership" onClick={closeMobileMenu}>Premium Membership</Link></li>
         <li className="nav-links-settings">
           <a href="#" onClick={(e) => { e.preventDefault(); closeMobileMenu(); setSettingsOpen(true); }}>Settings</a>
         </li>
@@ -714,7 +718,7 @@ function Navbar() {
       {/* Search Overlay — portalled to document.body so it always covers the
           true viewport, regardless of any transformed/stacked ancestor. */}
       {searchOpen && createPortal(
-        <div className="search-overlay" onClick={() => { setSearchOpen(false); setSearchQuery(''); }}>
+        <div className="search-overlay" onClick={closeSearch}>
           <div className="search-box" onClick={e => e.stopPropagation()}>
             <div className="search-header">
               <div className="search-input-wrap">
@@ -728,22 +732,16 @@ function Navbar() {
                   placeholder="Search for sarees, dress materials, co-ords..."
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') setSearchShowAll(true); }}
+                  onKeyDown={handleSearchEnter}
                   autoFocus
                 />
                 {searchQuery && (
                   <button className="search-clear" onClick={() => setSearchQuery('')} aria-label="Clear search">✕</button>
                 )}
               </div>
-              <button className="search-close" onClick={() => { setSearchOpen(false); setSearchQuery(''); }}>Cancel</button>
+              <button className="search-close" onClick={closeSearch}>Cancel</button>
             </div>
-            <SearchResults
-              query={searchQuery}
-              onClose={() => { setSearchOpen(false); setSearchQuery(''); }}
-              onSelectTag={setSearchQuery}
-              showAll={searchShowAll}
-              onShowAll={() => setSearchShowAll(true)}
-            />
+            <SearchResults query={searchQuery} onNavigate={goToSearchResult} />
           </div>
         </div>,
         document.body
@@ -1075,22 +1073,6 @@ function Navbar() {
                 <AddressBook compact selectedId={selectedAddressId} onSelect={applyAddress} />
               </div>
               <div className="payment-section">
-                <label className="filter-availability-check">
-                  <input type="checkbox" checked={isGift} onChange={e => setIsGift(e.target.checked)} />
-                  🎁 This is a gift
-                </label>
-                {isGift && (
-                  <textarea
-                    className="payment-input review-textarea"
-                    style={{ marginTop: '10px' }}
-                    placeholder="Add a gift message (optional)"
-                    rows={2}
-                    value={giftMessage}
-                    onChange={e => setGiftMessage(e.target.value)}
-                  />
-                )}
-              </div>
-              <div className="payment-section">
                 <h4 className="payment-section-title">Payment Method</h4>
                 <div className="payment-methods">
                   {[
@@ -1257,7 +1239,7 @@ function Navbar() {
             {authStep === 'check-email' ? (
               <div className="auth-panel">
                 <div className="auth-check-email-icon">✉</div>
-                <div className="auth-eyebrow">✦ Check your email</div>
+                <div className="auth-eyebrow">Check your email</div>
                 <div className="auth-heading">We sent a verification link to <em>{pendingEmail}</em></div>
                 <p className="auth-check-email-note">
                   Click the link in that email to activate your account. It expires in 24 hours.
@@ -1274,7 +1256,7 @@ function Navbar() {
               </div>
             ) : activeTab === 'login' ? (
               <div className="auth-panel">
-                <div className="auth-eyebrow">✦ Welcome back</div>
+                <div className="auth-eyebrow">Welcome back</div>
                 <div className="auth-heading">Sign into <em>your account</em></div>
                 <label className="auth-label">Email address</label>
                 <input className="auth-input" type="email" placeholder="you@example.com" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} />
@@ -1285,7 +1267,7 @@ function Navbar() {
               </div>
             ) : (
               <div className="auth-panel">
-                <div className="auth-eyebrow">✦ Join us</div>
+                <div className="auth-eyebrow">Join us</div>
                 <div className="auth-heading">Create your <em>Dezire More account</em></div>
                 <div className="auth-name-row">
                   <div>

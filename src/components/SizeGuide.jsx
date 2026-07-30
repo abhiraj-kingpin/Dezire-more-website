@@ -75,7 +75,6 @@ function SizeGuide() {
         </div>
 
         <div className="size-note">
-          <div className="note-icon">✦</div>
           <p>
             Chest &amp; waist sizes are consistent as given; lengths can vary with styles. All our
             unstitched/semi-stitched products are available up to chest size 54 (7XL), and dupatta

@@ -432,7 +432,8 @@ router.patch('/:id/status', adminAuth, async (req, res) => {
     logAdminAction(req.admin.email, 'order.status', order._id, `${order.orderNumber}: ${Object.entries(updates).map(([k, v]) => `${k}=${v}`).join(', ')}`);
 
     if (orderStatus) {
-      const customer = await User.findOne({ email: order.customerEmail }).select('notificationsEnabled').lean();
+      const customerEmail = (order.customerEmail || '').toLowerCase().trim();
+      const customer = await User.findOne({ email: customerEmail }).select('notificationsEnabled').lean();
       if (!customer || customer.notificationsEnabled !== false) {
         sendOrderStatusEmail(order).catch(err => console.error('[order status email]', err.message));
       }

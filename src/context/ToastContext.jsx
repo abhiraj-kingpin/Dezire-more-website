@@ -34,7 +34,7 @@ export function ToastProvider({ children }) {
             <span className="toast-icon">
               {t.type === 'cart' && '🛒'}
               {t.type === 'wishlist' && '❤️'}
-              {t.type === 'checkout' && '✦'}
+              {t.type === 'checkout' && '🔒'}
               {t.type === 'success' && '✓'}
               {t.type === 'info' && 'ℹ'}
             </span>

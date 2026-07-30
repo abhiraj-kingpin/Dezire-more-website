@@ -10,10 +10,12 @@ export function SearchProvider({ children }) {
   const [productsLoading, setProductsLoading] = useState(false);
   const fetchedRef = useRef(false);
 
-  // Fetch the full catalog once, the first time the search overlay is opened,
-  // so every keystroke afterwards can be scored instantly on the client.
+  // Fetch the full catalog once, on app load, so every keystroke in the
+  // search dropdown can be scored instantly on the client — and so category
+  // pages can also pin a searched-for product to the top of their grid
+  // without waiting on the search overlay ever having been opened.
   useEffect(() => {
-    if (!searchOpen || fetchedRef.current) return;
+    if (fetchedRef.current) return;
     fetchedRef.current = true;
     setProductsLoading(true);
     fetch(`${BASE}/products?limit=500`)
@@ -21,7 +23,7 @@ export function SearchProvider({ children }) {
       .then(data => setAllProducts(data?.data || []))
       .catch(() => { fetchedRef.current = false; })
       .finally(() => setProductsLoading(false));
-  }, [searchOpen]);
+  }, []);
 
   return (
     <SearchContext.Provider value={{
