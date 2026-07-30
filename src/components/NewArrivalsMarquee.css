@@ -274,7 +274,14 @@
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   scroll-behavior: auto;
-  touch-action: pan-x;
+  /* No touch-action override -- every other horizontal-scroll row on the
+     site (.home-product-row-track, .cm-recommendations-row) relies on the
+     browser's default (auto), which correctly routes a touch to this row's
+     horizontal scroll or lets it pass through to page scroll depending on
+     the gesture's actual direction. An earlier touch-action: pan-x here
+     hard-disabled that routing for any touch starting on this row -- fine
+     in some desktop-browser touch emulation, but broke finger-scroll
+     entirely in the real Android app's WebView. */
   overscroll-behavior-x: contain;
   will-change: scroll-position;
 }
