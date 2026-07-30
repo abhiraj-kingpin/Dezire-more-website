@@ -322,17 +322,12 @@
     <!-- Payment Settings -->
     <div class="page" id="page-payment">
       <h2>Payment Settings</h2>
-      <p class="subtitle">Powers the "Pay via UPI" checkout option — a direct-to-bank-account alternative to Razorpay with no gateway fee. This option only appears at checkout once a QR image is uploaded here.</p>
+      <p class="subtitle">Powers the "Pay via UPI" checkout option — a direct-to-bank-account alternative to Razorpay with no gateway fee. The QR code is generated automatically from this UPI ID plus each order's actual total, so it's never a stale image and always shows the right amount. This option only appears at checkout once a UPI ID is set here.</p>
       <div class="card" style="max-width:480px">
         <div style="margin-bottom:14px">
-          <label style="font-size:12px;display:block;margin-bottom:4px">UPI ID (optional)</label>
+          <label style="font-size:12px;display:block;margin-bottom:4px">UPI ID</label>
           <input type="text" id="payment-upi-id" placeholder="yourbusiness@okhdfcbank" style="width:100%" />
         </div>
-        <div style="margin-bottom:14px">
-          <label style="font-size:12px;display:block;margin-bottom:4px">QR Code Image</label>
-          <input type="file" id="payment-qr-file" accept="image/*" />
-        </div>
-        <div id="payment-qr-preview" style="margin-bottom:14px"></div>
         <button class="btn btn-gold" id="payment-save-btn" onclick="savePaymentSettings()">Save Payment Settings</button>
       </div>
     </div>
@@ -1270,33 +1265,23 @@ async function loadPaymentSettings() {
     const res = await fetch(`${API}/payment-settings`);
     const data = await res.json();
     document.getElementById('payment-upi-id').value = data.upiId || '';
-    const preview = document.getElementById('payment-qr-preview');
-    preview.innerHTML = data.qrImage
-      ? `<img src="${data.qrImage}" alt="Current QR code" style="width:140px;height:140px;object-fit:contain;border:1px solid var(--border);border-radius:8px;padding:6px;background:#fff" />`
-      : `<p style="font-size:12px;color:var(--text-light)">No QR code uploaded yet — the "Pay via UPI" option won't appear at checkout until one is.</p>`;
   } catch (err) {
     toast('Failed to load payment settings: ' + err.message, 'error');
   }
 }
 
 async function savePaymentSettings() {
-  const fd = new FormData();
-  fd.append('upiId', document.getElementById('payment-upi-id').value.trim());
-  const qrFile = document.getElementById('payment-qr-file').files[0];
-  if (qrFile) fd.append('qrImage', qrFile);
-
   const btn = document.getElementById('payment-save-btn');
   btn.disabled = true;
   try {
     const res = await fetch(`${API}/payment-settings`, {
       method: 'PATCH',
-      headers: { Authorization: `Bearer ${token}` },
-      body: fd,
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ upiId: document.getElementById('payment-upi-id').value.trim() }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
     toast('Payment settings saved', 'success');
-    document.getElementById('payment-qr-file').value = '';
     loadPaymentSettings();
   } catch (err) {
     toast('Failed to save: ' + err.message, 'error');

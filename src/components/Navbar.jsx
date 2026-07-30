@@ -15,6 +15,7 @@ import { BASE } from '../hooks/useProducts';
 import useLockBodyScroll from '../hooks/useLockBodyScroll';
 import ProductCard, { flyToCart, ripple } from './ProductCard';
 import { searchProducts } from '../utils/fuzzySearch';
+import QRCode from 'react-qr-code';
 
 const FALLBACK_SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 const SUGGESTION_LIMIT = 6;
@@ -116,7 +117,7 @@ function Navbar() {
   const [pendingAddress, setPendingAddress] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [paymentReferenceInput, setPaymentReferenceInput] = useState('');
-  const [upiSettings, setUpiSettings] = useState({ upiId: '', qrImage: '' });
+  const [upiSettings, setUpiSettings] = useState({ upiId: '' });
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [lastOrderId, setLastOrderId] = useState('');
   const [readyToWearOpen, setReadyToWearOpen] = useState(false);
@@ -405,13 +406,15 @@ function Navbar() {
 
   // Powers the "Pay via UPI" checkout option — fetched once at mount rather
   // than on cart open, since it rarely changes and this way it's already
-  // available the instant checkout renders. The option itself only shows up
-  // once an admin has actually uploaded a QR image (see the payment methods
-  // list below), so an unconfigured site just silently has one less option.
+  // available the instant checkout renders. The QR shown at checkout is
+  // generated fresh from this UPI ID plus the real order total (see the
+  // upiLink built below), not a static image. The option only shows up once
+  // an admin has set a UPI ID, so an unconfigured site just silently has one
+  // less option.
   useEffect(() => {
     fetch(`${BASE}/payment-settings`)
       .then(res => res.json())
-      .then(data => setUpiSettings({ upiId: data.upiId || '', qrImage: data.qrImage || '' }))
+      .then(data => setUpiSettings({ upiId: data.upiId || '' }))
       .catch(() => {});
   }, []);
 
@@ -1092,7 +1095,7 @@ function Navbar() {
                 <div className="payment-methods">
                   {[
                     { key: 'Razorpay', label: 'Pay Online — Card / UPI / Netbanking', icon: 'card' },
-                    ...(upiSettings.qrImage ? [{ key: 'UPI', label: 'Pay via UPI (Scan QR / UPI ID)', icon: 'upi' }] : []),
+                    ...(upiSettings.upiId ? [{ key: 'UPI', label: 'Pay via UPI (Scan QR / UPI ID)', icon: 'upi' }] : []),
                     { key: 'COD', label: 'Cash on Delivery', icon: 'cod' },
                   ].map(({ key, label, icon }) => (
                     <label key={key} className={`payment-method-card ${paymentMethod === key ? 'selected' : ''}`}>
@@ -1123,15 +1126,18 @@ function Navbar() {
                 )}
 
                 {paymentMethod === 'UPI' && (
-                  <div className="payment-verify-block payment-upi-block">
-                    <img src={upiSettings.qrImage} alt="Scan to pay via UPI" className="payment-upi-qr" />
-                    {upiSettings.upiId && (
-                      <p className="payment-upi-id">
-                        or pay to UPI ID: <strong>{upiSettings.upiId}</strong>
-                      </p>
-                    )}
+                  <div className="payment-upi-card">
+                    <p className="payment-upi-amount">₹{finalTotal.toLocaleString('en-IN')}</p>
+                    <div className="payment-upi-qr-box">
+                      <QRCode
+                        value={`upi://pay?pa=${encodeURIComponent(upiSettings.upiId)}&pn=${encodeURIComponent('Dezire More')}&am=${finalTotal.toFixed(2)}&cu=INR&tn=${encodeURIComponent('Dezire More order')}`}
+                        size={176}
+                        fgColor="#1E3A2D"
+                      />
+                    </div>
+                    <p className="payment-upi-id">UPI ID: <strong>{upiSettings.upiId}</strong></p>
                     <p className="payment-verify-hint">
-                      After paying, enter the UPI transaction reference / UTR number below. We'll confirm your payment manually — this can take a few hours.
+                      Scan with any UPI app — the amount is pre-filled, but please don't change it. After paying, enter the transaction reference / UTR number below; we'll confirm your payment manually, which can take a few hours.
                     </p>
                     <input
                       type="text"
