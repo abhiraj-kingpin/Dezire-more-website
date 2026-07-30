@@ -179,6 +179,7 @@
     <button class="nav-item" onclick="showPage('customers')">Customers</button>
     <button class="nav-item" onclick="showPage('coupons')">Coupons</button>
     <button class="nav-item" onclick="showPage('love')">Client Love</button>
+    <button class="nav-item" onclick="showPage('payment')">Payment Settings</button>
     <button class="nav-item" onclick="showPage('products')">All Products</button>
     <button class="nav-item" onclick="showPage('add')">Add Product</button>
     <button class="nav-item" onclick="showPage('bulk')">Bulk Import</button>
@@ -315,6 +316,24 @@
       </div>
       <div class="card" style="padding:0;overflow:hidden">
         <div id="love-list"><p class="loading" style="padding:40px">Loading…</p></div>
+      </div>
+    </div>
+
+    <!-- Payment Settings -->
+    <div class="page" id="page-payment">
+      <h2>Payment Settings</h2>
+      <p class="subtitle">Powers the "Pay via UPI" checkout option — a direct-to-bank-account alternative to Razorpay with no gateway fee. This option only appears at checkout once a QR image is uploaded here.</p>
+      <div class="card" style="max-width:480px">
+        <div style="margin-bottom:14px">
+          <label style="font-size:12px;display:block;margin-bottom:4px">UPI ID (optional)</label>
+          <input type="text" id="payment-upi-id" placeholder="yourbusiness@okhdfcbank" style="width:100%" />
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="font-size:12px;display:block;margin-bottom:4px">QR Code Image</label>
+          <input type="file" id="payment-qr-file" accept="image/*" />
+        </div>
+        <div id="payment-qr-preview" style="margin-bottom:14px"></div>
+        <button class="btn btn-gold" id="payment-save-btn" onclick="savePaymentSettings()">Save Payment Settings</button>
       </div>
     </div>
 
@@ -607,6 +626,7 @@ function showPage(name) {
   if (name === 'customers') loadCustomersList();
   if (name === 'coupons') loadCouponsList();
   if (name === 'love') loadTestimonialsList();
+  if (name === 'payment') loadPaymentSettings();
   if (name === 'activity') loadAuditLog();
   if (name === 'add' && !document.getElementById('edit-product-id').value) resetForm();
 }
@@ -1241,6 +1261,48 @@ function renderTestimonialsTable() {
         `).join('')}
       </tbody>
     </table>`;
+}
+
+// ── Payment Settings ──────────────────────────────────────────────────────────
+
+async function loadPaymentSettings() {
+  try {
+    const res = await fetch(`${API}/payment-settings`);
+    const data = await res.json();
+    document.getElementById('payment-upi-id').value = data.upiId || '';
+    const preview = document.getElementById('payment-qr-preview');
+    preview.innerHTML = data.qrImage
+      ? `<img src="${data.qrImage}" alt="Current QR code" style="width:140px;height:140px;object-fit:contain;border:1px solid var(--border);border-radius:8px;padding:6px;background:#fff" />`
+      : `<p style="font-size:12px;color:var(--text-light)">No QR code uploaded yet — the "Pay via UPI" option won't appear at checkout until one is.</p>`;
+  } catch (err) {
+    toast('Failed to load payment settings: ' + err.message, 'error');
+  }
+}
+
+async function savePaymentSettings() {
+  const fd = new FormData();
+  fd.append('upiId', document.getElementById('payment-upi-id').value.trim());
+  const qrFile = document.getElementById('payment-qr-file').files[0];
+  if (qrFile) fd.append('qrImage', qrFile);
+
+  const btn = document.getElementById('payment-save-btn');
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API}/payment-settings`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    toast('Payment settings saved', 'success');
+    document.getElementById('payment-qr-file').value = '';
+    loadPaymentSettings();
+  } catch (err) {
+    toast('Failed to save: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // ── Products List ─────────────────────────────────────────────────────────────

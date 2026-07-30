@@ -3681,6 +3681,26 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   margin: 0;
 }
 
+.payment-upi-block { text-align: center; }
+.payment-upi-qr {
+  width: 160px;
+  height: 160px;
+  object-fit: contain;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  margin: 0 auto 10px;
+  display: block;
+}
+.payment-upi-id {
+  font-size: 0.8125rem;
+  color: var(--text-dark);
+  margin: 0 0 10px;
+}
+.payment-upi-block .payment-verify-hint { text-align: left; margin-bottom: 10px; }
+.payment-upi-block .payment-input { margin-top: 0; }
+
 @media (max-width: 640px) {
   .checkout-overlay {
     padding: 14px;

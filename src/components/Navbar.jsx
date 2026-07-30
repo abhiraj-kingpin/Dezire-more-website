@@ -115,6 +115,8 @@ function Navbar() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [pendingAddress, setPendingAddress] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('');
+  const [paymentReferenceInput, setPaymentReferenceInput] = useState('');
+  const [upiSettings, setUpiSettings] = useState({ upiId: '', qrImage: '' });
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [lastOrderId, setLastOrderId] = useState('');
   const [readyToWearOpen, setReadyToWearOpen] = useState(false);
@@ -401,6 +403,18 @@ function Navbar() {
     }
   }, [pendingAddress, pendingEmail]);
 
+  // Powers the "Pay via UPI" checkout option — fetched once at mount rather
+  // than on cart open, since it rarely changes and this way it's already
+  // available the instant checkout renders. The option itself only shows up
+  // once an admin has actually uploaded a QR image (see the payment methods
+  // list below), so an unconfigured site just silently has one less option.
+  useEffect(() => {
+    fetch(`${BASE}/payment-settings`)
+      .then(res => res.json())
+      .then(data => setUpiSettings({ upiId: data.upiId || '', qrImage: data.qrImage || '' }))
+      .catch(() => {});
+  }, []);
+
   const handleResendVerification = async () => {
     if (resendCooldown > 0) return;
     setVerifyError('');
@@ -451,6 +465,10 @@ function Navbar() {
       setOrderError('Please enter a valid email address for your order confirmation.');
       return;
     }
+    if (paymentMethod === 'UPI' && !paymentReferenceInput.trim()) {
+      setOrderError('Please enter the UPI transaction reference / UTR number after paying.');
+      return;
+    }
 
     setIsPlacingOrder(true);
     try {
@@ -481,6 +499,7 @@ function Navbar() {
           total: finalTotal,
           couponCode: appliedCoupon?.code,
           paymentMethod,
+          paymentReference: paymentMethod === 'UPI' ? paymentReferenceInput.trim() : undefined,
           isGift,
           giftMessage: isGift ? giftMessage.trim() : undefined,
         }),
@@ -509,6 +528,7 @@ function Navbar() {
     setGiftMessage('');
     setAppliedCoupon(null);
     setCouponInput('');
+    setPaymentReferenceInput('');
   };
 
   // The order already exists at this point (created just above, status
@@ -1072,6 +1092,7 @@ function Navbar() {
                 <div className="payment-methods">
                   {[
                     { key: 'Razorpay', label: 'Pay Online — Card / UPI / Netbanking', icon: 'card' },
+                    ...(upiSettings.qrImage ? [{ key: 'UPI', label: 'Pay via UPI (Scan QR / UPI ID)', icon: 'upi' }] : []),
                     { key: 'COD', label: 'Cash on Delivery', icon: 'cod' },
                   ].map(({ key, label, icon }) => (
                     <label key={key} className={`payment-method-card ${paymentMethod === key ? 'selected' : ''}`}>
@@ -1079,6 +1100,9 @@ function Navbar() {
                       <span className="payment-method-icon">
                         {icon === 'card' && (
                           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                        )}
+                        {icon === 'upi' && (
+                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="14" y1="14" x2="21" y2="14"/><line x1="14" y1="18" x2="21" y2="18"/><line x1="17" y1="14" x2="17" y2="21"/></svg>
                         )}
                         {icon === 'cod' && (
                           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></svg>
@@ -1095,6 +1119,27 @@ function Navbar() {
                     <p className="payment-verify-hint">
                       You'll be securely redirected to complete payment. Your order is confirmed automatically the moment payment succeeds — no reference number to enter.
                     </p>
+                  </div>
+                )}
+
+                {paymentMethod === 'UPI' && (
+                  <div className="payment-verify-block payment-upi-block">
+                    <img src={upiSettings.qrImage} alt="Scan to pay via UPI" className="payment-upi-qr" />
+                    {upiSettings.upiId && (
+                      <p className="payment-upi-id">
+                        or pay to UPI ID: <strong>{upiSettings.upiId}</strong>
+                      </p>
+                    )}
+                    <p className="payment-verify-hint">
+                      After paying, enter the UPI transaction reference / UTR number below. We'll confirm your payment manually — this can take a few hours.
+                    </p>
+                    <input
+                      type="text"
+                      className="payment-input"
+                      placeholder="UPI transaction reference / UTR number"
+                      value={paymentReferenceInput}
+                      onChange={e => setPaymentReferenceInput(e.target.value)}
+                    />
                   </div>
                 )}
               </div>
@@ -1133,7 +1178,11 @@ function Navbar() {
                 <div className="order-success-row">
                   <span>Payment Status</span>
                   <span className={placedOrder.paymentStatus === 'paid' ? 'order-status-paid' : 'order-status-pending'}>
-                    {placedOrder.paymentStatus === 'paid' ? 'Paid' : 'Pending (Pay on Delivery)'}
+                    {placedOrder.paymentStatus === 'paid'
+                      ? 'Paid'
+                      : placedOrder.paymentMethod === 'UPI'
+                        ? 'Pending Verification'
+                        : 'Pending (Pay on Delivery)'}
                   </span>
                 </div>
                 <div className="order-success-row"><span>Amount</span><span>₹{placedOrder.total.toLocaleString('en-IN')}</span></div>

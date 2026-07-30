@@ -35,9 +35,12 @@ const orderSchema = new mongoose.Schema(
 
     paymentMethod: {
       type: String,
-      // 'Pay Online (QR)'/'UPI'/'Online Banking' kept valid so historical
-      // orders placed before Razorpay still pass validation on updates —
-      // the frontend only ever offers 'Razorpay' or 'COD' going forward.
+      // 'Pay Online (QR)'/'Online Banking' kept valid only so historical
+      // orders placed before Razorpay still pass validation on updates.
+      // 'UPI' is frontend-selectable again as the manual bank-transfer
+      // option (scan QR / pay to a UPI ID, customer enters a reference,
+      // admin confirms manually) -- a zero-gateway-fee alternative to
+      // Razorpay, admin-configured via PaymentSettings.
       enum: ['Pay Online (QR)', 'UPI', 'Online Banking', 'Razorpay', 'COD'],
       required: true,
     },
