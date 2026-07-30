@@ -172,6 +172,18 @@ function OrderCard({ order, onCancelled, exchange, onExchangeSubmitted }) {
             </div>
           )}
 
+          {!isCancelled && (
+            order.orderStatus === 'Delivered' && order.deliveredAt ? (
+              <p className="order-delivery-note">
+                Delivered on {new Date(order.deliveredAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </p>
+            ) : order.estimatedDelivery ? (
+              <p className="order-delivery-note">
+                Estimated delivery: {new Date(order.estimatedDelivery).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </p>
+            ) : null
+          )}
+
           <div className="order-success-summary">
             <h4>Items</h4>
             {order.items.map((item, i) => (

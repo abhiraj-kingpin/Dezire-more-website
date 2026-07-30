@@ -195,11 +195,22 @@ export function AuthProvider({ children }) {
     return { success: res.ok, ...data };
   };
 
+  const submitMembershipReference = async (reference) => {
+    const res = await fetch(`${BASE}/auth/membership/reference`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ reference }),
+    });
+    const data = await parseJson(res);
+    if (res.ok) setUser(u => ({ ...u, membership: data.membership }));
+    return { success: res.ok, ...data };
+  };
+
   return (
     <AuthContext.Provider value={{
       user, loading, error, setError,
       signup, verifyEmailToken, resendVerification, login, logout, updateUser,
-      addAddress, updateAddress, deleteAddress, subscribeMembership,
+      addAddress, updateAddress, deleteAddress, subscribeMembership, submitMembershipReference,
       authOpen, setAuthOpen, authPrompt, promptLogin, authHeaders,
     }}>
       {children}

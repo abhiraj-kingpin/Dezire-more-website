@@ -363,6 +363,30 @@ router.post('/membership/subscribe', requireAuth, async (req, res) => {
   }
 });
 
+// PATCH /api/auth/membership/reference — customer submits the UTR/reference
+// for their most recent pending membership payment, after paying via the
+// UPI QR shown on the membership page. Purely informational for the admin
+// to check before confirming (mirrors Order.paymentReference) — doesn't
+// change payment status itself.
+router.patch('/membership/reference', requireAuth, async (req, res) => {
+  try {
+    const { reference } = req.body;
+    if (!reference || !reference.trim()) return res.status(400).json({ error: 'Please enter a transaction reference' });
+
+    const payments = req.user.membership.payments;
+    const lastPayment = payments[payments.length - 1];
+    if (!lastPayment || lastPayment.status !== 'pending') {
+      return res.status(400).json({ error: 'No pending membership payment to attach a reference to' });
+    }
+
+    lastPayment.paymentReference = reference.trim();
+    await req.user.save();
+    res.json({ success: true, membership: req.user.membership });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // ── Admin ────────────────────────────────────────────────────────────────────
 
 router.get('/admin/all', adminAuth, async (req, res) => {

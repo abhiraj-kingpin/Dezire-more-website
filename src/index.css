@@ -3498,6 +3498,12 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   overflow-x: auto;
   gap: 4px;
 }
+.order-delivery-note {
+  font-size: 0.75rem;
+  color: var(--text-mid);
+  margin: -12px 0 20px;
+  font-weight: 600;
+}
 .order-progress-step {
   flex: 1;
   min-width: 74px;

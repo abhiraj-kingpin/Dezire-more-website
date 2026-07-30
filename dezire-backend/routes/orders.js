@@ -378,7 +378,7 @@ router.get('/admin/analytics', adminAuth, async (req, res) => {
   try {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-    const [revenueByDay, statusBreakdown, topProducts, totals, customerCount] = await Promise.all([
+    const [revenueByDay, statusBreakdown, topProducts, totals, customerCount, signupsByDay] = await Promise.all([
       Order.aggregate([
         { $match: { paymentStatus: 'paid', createdAt: { $gte: thirtyDaysAgo } } },
         { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, revenue: { $sum: '$total' }, orders: { $sum: 1 } } },
@@ -399,6 +399,11 @@ router.get('/admin/analytics', adminAuth, async (req, res) => {
         { $group: { _id: null, totalRevenue: { $sum: '$total' }, totalOrders: { $sum: 1 } } },
       ]),
       User.countDocuments(),
+      User.aggregate([
+        { $match: { createdAt: { $gte: thirtyDaysAgo } } },
+        { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 } } },
+        { $sort: { _id: 1 } },
+      ]),
     ]);
 
     const totalsRow = totals[0] || { totalRevenue: 0, totalOrders: 0 };
@@ -411,6 +416,7 @@ router.get('/admin/analytics', adminAuth, async (req, res) => {
       totalOrders: totalsRow.totalOrders,
       avgOrderValue: totalsRow.totalOrders > 0 ? Math.round(totalsRow.totalRevenue / totalsRow.totalOrders) : 0,
       totalCustomers: customerCount,
+      signupsByDay: signupsByDay.map(s => ({ date: s._id, count: s.count })),
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

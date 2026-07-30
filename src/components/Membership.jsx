@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import QRCode from 'react-qr-code';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { BASE } from '../hooks/useProducts';
 
 const MEMBERSHIP_PLANS = [
   {
@@ -35,10 +37,23 @@ const MEMBERSHIP_PLANS = [
 ];
 
 function Membership() {
-  const { user, subscribeMembership, promptLogin } = useAuth();
+  const { user, subscribeMembership, submitMembershipReference, promptLogin } = useAuth();
   const { showToast } = useToast();
   const [subscribing, setSubscribing] = useState('');
+  const [upiId, setUpiId] = useState('');
+  const [referenceInput, setReferenceInput] = useState('');
+  const [submittingReference, setSubmittingReference] = useState(false);
   const membership = user?.membership || { tier: 'none', status: 'inactive' };
+  const lastPayment = membership.payments?.[membership.payments.length - 1];
+  const awaitingReference = membership.status === 'pending' && lastPayment && !lastPayment.paymentReference;
+  const awaitingConfirmation = membership.status === 'pending' && lastPayment?.paymentReference;
+
+  useEffect(() => {
+    fetch(`${BASE}/payment-settings`)
+      .then(res => res.json())
+      .then(data => setUpiId(data.upiId || ''))
+      .catch(() => {});
+  }, []);
 
   const handleSubscribe = async (tier) => {
     if (!user) {
@@ -49,9 +64,25 @@ function Membership() {
     const result = await subscribeMembership(tier);
     setSubscribing('');
     if (result.success) {
-      showToast(`${tier === 'gold' ? 'Gold' : 'Platinum'} membership request received — we'll confirm once payment is verified.`, 'success');
+      showToast(`${tier === 'gold' ? 'Gold' : 'Platinum'} membership request received — scan the QR below to pay.`, 'success');
     } else {
       showToast(result.error || 'Could not start membership', 'info');
+    }
+  };
+
+  const handleSubmitReference = async () => {
+    if (!referenceInput.trim()) {
+      showToast('Please enter the UPI transaction reference / UTR number', 'info');
+      return;
+    }
+    setSubmittingReference(true);
+    const result = await submitMembershipReference(referenceInput.trim());
+    setSubmittingReference(false);
+    if (result.success) {
+      setReferenceInput('');
+      showToast('Reference submitted — we\'ll confirm your payment shortly', 'success');
+    } else {
+      showToast(result.error || 'Could not submit your reference', 'info');
     }
   };
 
@@ -86,6 +117,44 @@ function Membership() {
                 </div>
               )}
             </div>
+          )}
+
+          {awaitingReference && upiId && (
+            <div className="payment-upi-card">
+              <p className="payment-upi-amount">₹{lastPayment.amount.toLocaleString('en-IN')}</p>
+              <div className="payment-upi-qr-box">
+                <QRCode
+                  value={`upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent('Dezire More')}&am=${lastPayment.amount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`Membership ${lastPayment.tier}`)}`}
+                  size={176}
+                  fgColor="#1E3A2D"
+                />
+              </div>
+              <p className="payment-upi-id">UPI ID: <strong>{upiId}</strong></p>
+              <p className="payment-verify-hint">
+                Scan with any UPI app — the amount is pre-filled, but please don't change it. After paying, enter the transaction reference / UTR number below; we'll confirm your payment manually, which can take a few hours.
+              </p>
+              <input
+                type="text"
+                className="payment-input"
+                placeholder="UPI transaction reference / UTR number"
+                value={referenceInput}
+                onChange={e => setReferenceInput(e.target.value)}
+              />
+              <button
+                className="membership-subscribe-btn"
+                style={{ marginTop: '10px' }}
+                onClick={handleSubmitReference}
+                disabled={submittingReference}
+              >
+                {submittingReference ? 'Submitting...' : 'Submit Reference'}
+              </button>
+            </div>
+          )}
+
+          {awaitingConfirmation && (
+            <p className="membership-note">
+              Reference <strong>{lastPayment.paymentReference}</strong> submitted — we're confirming your payment and will activate your membership shortly.
+            </p>
           )}
 
           <div className="membership-plans">

@@ -85,6 +85,45 @@ app.use('/api/admin',    adminRoutes);
 app.use('/api/auth',     authRoutes);
 app.use('/api/chat',     chatRoute);
 
+// GET /sitemap.xml — generated from the storefront's static/category routes
+// (mirrors src/App.jsx's route table) instead of a hand-maintained file that
+// silently goes stale. lastmod is just "today" on every request since none
+// of these pages track a real per-page modification date — good enough for
+// crawl priority/discovery, which is what actually matters here. Product
+// detail pages don't have their own URL yet (they only ever open in a modal
+// over a category page), so there's nothing to add for them until that
+// changes — deliberately out of scope for now.
+const SITE_URL = 'https://www.deziremore.com';
+const SITEMAP_ROUTES = [
+  { path: '/', priority: '1.0' },
+  { path: '/sarees', priority: '0.9' },
+  { path: '/dress-materials', priority: '0.9' },
+  { path: '/ready-to-wear', priority: '0.9' },
+  { path: '/western-apparels', priority: '0.9' },
+  { path: '/jewelry-accessories', priority: '0.9' },
+  { path: '/bestsellers', priority: '0.8' },
+  { path: '/new-arrivals', priority: '0.8' },
+  { path: '/membership', priority: '0.7' },
+  { path: '/our-story', priority: '0.6' },
+  { path: '/faq', priority: '0.5' },
+  { path: '/help-support', priority: '0.5' },
+  { path: '/contact', priority: '0.5' },
+  { path: '/size-guide', priority: '0.4' },
+  { path: '/shipping-policy', priority: '0.3' },
+  { path: '/exchange-policy', priority: '0.3' },
+  { path: '/privacy-policy', priority: '0.2' },
+  { path: '/terms-conditions', priority: '0.2' },
+];
+app.get('/sitemap.xml', (req, res) => {
+  const lastmod = new Date().toISOString().slice(0, 10);
+  const urls = SITEMAP_ROUTES.map(r =>
+    `  <url><loc>${SITE_URL}${r.path}</loc><lastmod>${lastmod}</lastmod><priority>${r.priority}</priority></url>`
+  ).join('\n');
+  res.type('application/xml').send(
+    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`
+  );
+});
+
 // Health check
 app.get('/api/health', async (req, res) => {
   const count = await require('./models/Product').countDocuments({ isActive: true });

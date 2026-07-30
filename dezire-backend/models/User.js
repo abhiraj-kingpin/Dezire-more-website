@@ -33,6 +33,9 @@ const membershipPaymentSchema = new mongoose.Schema(
     amount: { type: Number, required: true },
     status: { type: String, enum: ['pending', 'paid', 'failed'], default: 'pending' },
     paidAt: { type: Date },
+    // UTR/transaction reference the customer submits after paying via the
+    // manual UPI QR flow — same purpose as Order.paymentReference.
+    paymentReference: { type: String, trim: true },
   },
   { timestamps: true }
 );
