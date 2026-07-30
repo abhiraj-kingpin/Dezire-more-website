@@ -6363,6 +6363,21 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     width: 16px;
     height: 16px;
   }
+  /* Logged-in state is a pill (avatar + first name + chevron) sized for
+     desktop — squeezing that same content into a 32px box just let it
+     overflow and overlap the settings icon next to it instead of actually
+     shrinking. Collapse to the avatar circle alone on mobile; tapping it
+     still opens the full dropdown (name, email, profile/orders/wishlist/
+     sign out), so nothing becomes unreachable. */
+  .auth-trigger-btn.user-logged-in {
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+  }
+  .auth-trigger-btn.user-logged-in span,
+  .auth-trigger-btn.user-logged-in > svg {
+    display: none;
+  }
   .nav-hamburger {
     grid-column: 1;
     grid-row: 2;
