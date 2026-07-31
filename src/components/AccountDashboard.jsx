@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import {
+  User, MapPin, Package, Heart, Crown, Bell, Clock, Gift, CreditCard,
+  ShoppingBag, HelpCircle, LogOut,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -136,15 +140,15 @@ export function AccountWishlist() {
 }
 
 const NAV_ITEMS = [
-  { key: 'profile', label: 'My Profile', icon: '👤' },
-  { key: 'addresses', label: 'Saved Addresses', icon: '📍' },
-  { key: 'orders', label: 'My Orders', icon: '📦' },
-  { key: 'wishlist', label: 'Wishlist', icon: '♡' },
-  { key: 'membership', label: 'Premium Membership', icon: '👑' },
-  { key: 'notifications', label: 'Notifications', icon: '🔔' },
-  { key: 'recently-viewed', label: 'Recently Viewed', icon: '🕐' },
-  { key: 'coupons', label: 'Coupons & Rewards', icon: '🎁' },
-  { key: 'payment-methods', label: 'Payment Methods', icon: '💳' },
+  { key: 'profile', label: 'My Profile', icon: User },
+  { key: 'addresses', label: 'Saved Addresses', icon: MapPin },
+  { key: 'orders', label: 'My Orders', icon: Package },
+  { key: 'wishlist', label: 'Wishlist', icon: Heart },
+  { key: 'membership', label: 'Premium Membership', icon: Crown },
+  { key: 'notifications', label: 'Notifications', icon: Bell },
+  { key: 'recently-viewed', label: 'Recently Viewed', icon: Clock },
+  { key: 'coupons', label: 'Coupons & Rewards', icon: Gift },
+  { key: 'payment-methods', label: 'Payment Methods', icon: CreditCard },
 ];
 
 function AccountDashboard() {
@@ -197,18 +201,22 @@ function AccountDashboard() {
                 to={`/account/${item.key}`}
                 className={({ isActive }) => `account-nav-item ${isActive ? 'active' : ''}`}
               >
-                <span className="account-nav-icon">{item.icon}</span>{item.label}
+                <item.icon className="account-nav-icon" size={20} strokeWidth={1.8} />
+                {item.label}
                 {item.key === 'wishlist' && wishlist.length > 0 ? ` (${wishlist.length})` : ''}
               </NavLink>
             ))}
             <button className="account-nav-item" onClick={() => setCartOpen(true)}>
-              <span className="account-nav-icon">🛍</span>Cart {cart.length > 0 ? `(${cart.length})` : ''}
+              <ShoppingBag className="account-nav-icon" size={20} strokeWidth={1.8} />
+              Cart {cart.length > 0 ? `(${cart.length})` : ''}
             </button>
             <button className="account-nav-item" onClick={() => navigate('/help-support')}>
-              <span className="account-nav-icon">❓</span>Support
+              <HelpCircle className="account-nav-icon" size={20} strokeWidth={1.8} />
+              Support
             </button>
             <button className="account-nav-item account-nav-logout" onClick={logout}>
-              <span className="account-nav-icon">↪</span>Logout
+              <LogOut className="account-nav-icon" size={20} strokeWidth={1.8} />
+              Logout
             </button>
           </nav>
         </aside>

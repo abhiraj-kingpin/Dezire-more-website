@@ -1578,8 +1578,11 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 }
 .account-nav-item:hover { background: var(--warm-white); color: var(--text-dark); }
 .account-nav-item.active { background: var(--dark-green); color: #fff; }
-.account-nav-icon { font-size: 0.9375rem; width: 20px; text-align: center; flex-shrink: 0; }
+.account-nav-icon { flex-shrink: 0; color: var(--dark-green); transition: color 0.15s ease; }
+.account-nav-item:hover .account-nav-icon,
+.account-nav-item.active .account-nav-icon { color: var(--gold); }
 .account-nav-logout { color: #b0433a; margin-top: 8px; border-top: 1px solid var(--border); padding-top: 14px; border-radius: 0; }
+.account-nav-logout .account-nav-icon { color: inherit; }
 
 .account-main {
   background: var(--surface);

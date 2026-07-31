@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { Package } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
@@ -353,7 +354,7 @@ function MyOrders() {
         {!loading && !error && orders.length === 0 && (
           <>
             <div className="wl-empty" style={{ maxWidth: 480, margin: '0 auto' }}>
-              <span className="wl-empty-icon">🛍</span>
+              <span className="wl-empty-icon"><Package size={40} strokeWidth={1.5} /></span>
               <p>You haven't placed any orders yet</p>
               <span>Once you place an order, it will show up here for easy tracking.</span>
             </div>
