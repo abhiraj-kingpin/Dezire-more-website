@@ -3442,12 +3442,22 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 }
 
 /* ===== My Orders page ===== */
+.orders-month-group {
+  max-width: 720px;
+  margin: 0 auto 28px;
+}
+.orders-month-heading {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--text-light);
+  margin: 0 0 12px 4px;
+}
 .orders-list {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-width: 720px;
-  margin: 0 auto;
 }
 .order-card {
   background: var(--surface);
@@ -3459,30 +3469,101 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 .order-card-header {
   width: 100%;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 18px 20px;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px;
   background: none;
   border: none;
   cursor: pointer;
   text-align: left;
   font-family: inherit;
 }
+.order-card-header-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.order-card-thumbs {
+  display: flex;
+  flex-shrink: 0;
+}
+.order-card-thumb {
+  width: 40px;
+  height: 48px;
+  object-fit: contain;
+  background: var(--surface-alt);
+  border-radius: 5px;
+  border: 2px solid var(--surface);
+  flex-shrink: 0;
+}
+.order-card-thumb-placeholder { background: var(--surface-alt); }
+.order-card-thumbs .order-card-thumb + .order-card-thumb { margin-left: -14px; }
+.order-card-thumb-more {
+  width: 40px; height: 48px; margin-left: -14px;
+  border-radius: 5px; border: 2px solid var(--surface);
+  background: var(--dark-green); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.6875rem; font-weight: 700; flex-shrink: 0;
+}
+.order-card-id-block { flex: 1; min-width: 0; }
 .order-card-id {
   font-size: 0.875rem;
   font-weight: 700;
   color: var(--text-dark);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .order-card-date {
   font-size: 0.75rem;
   color: var(--text-light);
   margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .order-card-header-right {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
 }
+.order-card-total-mini {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+.order-card-status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.order-mini-stepper {
+  display: flex;
+  align-items: center;
+  padding-left: 2px;
+}
+.order-mini-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border);
+  flex-shrink: 0;
+  position: relative;
+}
+.order-mini-dot + .order-mini-dot { margin-left: 5px; }
+.order-mini-dot + .order-mini-dot::before {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 5px;
+  height: 2px;
+  background: inherit;
+}
+.order-mini-dot.done { background: var(--gold); }
 .order-card-status {
   font-size: 0.6875rem;
   font-weight: 700;
@@ -3616,6 +3697,12 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 
 @media (max-width: 640px) {
   .order-progress { justify-content: flex-start; }
+}
+@media (max-width: 400px) {
+  .order-card-thumb, .order-card-thumb-more { width: 32px; height: 40px; }
+  .order-card-id { font-size: 0.8125rem; }
+  .order-card-header { padding: 14px 14px; gap: 10px; }
+  .order-card-header-top { gap: 8px; }
 }
 
 /* ===== DRAWER ENTRANCE ANIMATIONS (Cart / Wishlist / Settings) ===== */

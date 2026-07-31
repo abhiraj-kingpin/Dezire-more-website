@@ -20,6 +20,22 @@ const EXCHANGE_REASONS = [
   { value: 'other', label: 'Other' },
 ];
 
+// Orders arrive newest-first from the API — grouping just needs to notice
+// month boundaries as it walks the list, not re-sort anything.
+function groupOrdersByMonth(orders) {
+  const groups = [];
+  let current = null;
+  for (const order of orders) {
+    const label = new Date(order.createdAt).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+    if (!current || current.label !== label) {
+      current = { label, orders: [] };
+      groups.push(current);
+    }
+    current.orders.push(order);
+  }
+  return groups;
+}
+
 function ExchangeModal({ order, onClose, onSubmitted }) {
   const { authHeaders } = useAuth();
   const { showToast } = useToast();
@@ -145,18 +161,39 @@ function OrderCard({ order, onCancelled, exchange, onExchangeSubmitted }) {
   return (
     <div className="order-card">
       <button className="order-card-header" onClick={() => setExpanded(v => !v)}>
-        <div>
-          <p className="order-card-id">Order {order.orderNumber}</p>
-          <p className="order-card-date">
-            {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
-          </p>
+        <div className="order-card-header-top">
+          <div className="order-card-thumbs">
+            {order.items.slice(0, 3).map((item, i) => (
+              item.image
+                ? <img key={i} src={item.image} alt="" className="order-card-thumb" loading="lazy" decoding="async" />
+                : <div key={i} className="order-card-thumb order-card-thumb-placeholder" />
+            ))}
+            {order.items.length > 3 && <span className="order-card-thumb-more">+{order.items.length - 3}</span>}
+          </div>
+          <div className="order-card-id-block">
+            <p className="order-card-id">Order {order.orderNumber}</p>
+            <p className="order-card-date">
+              {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+          </div>
+          <div className="order-card-header-right">
+            <span className="order-card-total-mini">₹{order.total.toLocaleString('en-IN')}</span>
+            <div className="order-card-status-row">
+              <span className={`order-card-status ${isCancelled ? 'order-card-status-cancelled' : ''}`}>
+                {order.orderStatus}
+              </span>
+              <span className="order-card-chevron">{expanded ? '▲' : '▼'}</span>
+            </div>
+          </div>
         </div>
-        <div className="order-card-header-right">
-          <span className={`order-card-status ${isCancelled ? 'order-card-status-cancelled' : ''}`}>
-            {order.orderStatus}
-          </span>
-          <span className="order-card-chevron">{expanded ? '▲' : '▼'}</span>
-        </div>
+
+        {!isCancelled && (
+          <div className="order-mini-stepper">
+            {STATUS_STEPS.map((step, i) => (
+              <span key={step} className={`order-mini-dot ${i <= stepIndex ? 'done' : ''}`} title={step} />
+            ))}
+          </div>
+        )}
       </button>
 
       {expanded && (
@@ -326,19 +363,22 @@ function MyOrders() {
           </>
         )}
 
-        {!loading && orders.length > 0 && (
-          <div className="orders-list">
-            {orders.map(order => (
-              <OrderCard
-                key={order._id}
-                order={order}
-                onCancelled={handleCancelled}
-                exchange={exchanges[order._id]}
-                onExchangeSubmitted={handleExchangeSubmitted}
-              />
-            ))}
+        {!loading && orders.length > 0 && groupOrdersByMonth(orders).map(group => (
+          <div key={group.label} className="orders-month-group">
+            <h3 className="orders-month-heading">{group.label}</h3>
+            <div className="orders-list">
+              {group.orders.map(order => (
+                <OrderCard
+                  key={order._id}
+                  order={order}
+                  onCancelled={handleCancelled}
+                  exchange={exchanges[order._id]}
+                  onExchangeSubmitted={handleExchangeSubmitted}
+                />
+              ))}
+            </div>
           </div>
-        )}
+        ))}
       </div>
     </div>
   );
