@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -7,7 +7,7 @@ import { useToast } from '../context/ToastContext';
 import AddressBook from './AddressBook';
 import { getRecentlyViewed, categoryToPath } from '../utils/recentlyViewed';
 
-function ProfileSection() {
+export function ProfileSection() {
   const { user, updateUser } = useAuth();
   const { showToast } = useToast();
   const [firstName, setFirstName] = useState(user.firstName || '');
@@ -46,7 +46,7 @@ function ProfileSection() {
   );
 }
 
-function NotificationsSection() {
+export function NotificationsSection() {
   const { user, updateUser } = useAuth();
   const toggle = () => updateUser({ notificationsEnabled: !user.notificationsEnabled });
 
@@ -70,7 +70,7 @@ function NotificationsSection() {
   );
 }
 
-function RecentlyViewedSection() {
+export function RecentlyViewedSection() {
   const items = getRecentlyViewed();
   if (items.length === 0) {
     return <p className="address-empty">Products you view will show up here.</p>;
@@ -90,7 +90,7 @@ function RecentlyViewedSection() {
   );
 }
 
-function ComingSoonSection({ label }) {
+export function ComingSoonSection({ label }) {
   return (
     <div className="account-coming-soon">
       <p>{label} is on its way — check back soon.</p>
@@ -98,23 +98,60 @@ function ComingSoonSection({ label }) {
   );
 }
 
+export function AccountWishlist() {
+  const { wishlist, toggleWishlist } = useWishlist();
+  const { addToCart } = useCart();
+  const { showToast } = useToast();
+
+  if (wishlist.length === 0) {
+    return <p className="address-empty">Items you save with the heart icon will show up here.</p>;
+  }
+
+  return (
+    <div className="recently-viewed-grid">
+      {wishlist.map(product => (
+        <div key={product.id} className="recently-viewed-card">
+          <div className="recently-viewed-img-wrap">
+            {product.image ? <img src={product.image} alt={product.name} loading="lazy" decoding="async" /> : <div className="product-img-placeholder" />}
+          </div>
+          <p className="recently-viewed-name">{product.name}</p>
+          <p className="recently-viewed-price">₹{Number(product.price).toLocaleString('en-IN')}</p>
+          <div className="account-wishlist-actions">
+            <button
+              className="account-wishlist-move"
+              onClick={() => {
+                addToCart(product);
+                toggleWishlist(product);
+                showToast('Moved to cart', 'cart');
+              }}
+            >
+              Move to Cart
+            </button>
+            <button className="account-wishlist-remove" onClick={() => toggleWishlist(product)} aria-label="Remove from wishlist">✕</button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const NAV_ITEMS = [
   { key: 'profile', label: 'My Profile', icon: '👤' },
   { key: 'addresses', label: 'Saved Addresses', icon: '📍' },
+  { key: 'orders', label: 'My Orders', icon: '📦' },
+  { key: 'wishlist', label: 'Wishlist', icon: '♡' },
+  { key: 'membership', label: 'Premium Membership', icon: '👑' },
   { key: 'notifications', label: 'Notifications', icon: '🔔' },
-  { key: 'recent', label: 'Recently Viewed', icon: '🕐' },
+  { key: 'recently-viewed', label: 'Recently Viewed', icon: '🕐' },
   { key: 'coupons', label: 'Coupons & Rewards', icon: '🎁' },
-  { key: 'payments', label: 'Payment Methods', icon: '💳' },
+  { key: 'payment-methods', label: 'Payment Methods', icon: '💳' },
 ];
 
 function AccountDashboard() {
   const { user, logout } = useAuth();
   const { cart, setCartOpen } = useCart();
-  const { wishlist, setWishlistOpen } = useWishlist();
+  const { wishlist } = useWishlist();
   const navigate = useNavigate();
-  const [section, setSection] = useState('profile');
-
-  useEffect(() => { window.scrollTo(0, 0); }, [section]);
 
   if (!user) {
     return (
@@ -155,25 +192,17 @@ function AccountDashboard() {
 
           <nav className="account-nav">
             {NAV_ITEMS.map(item => (
-              <button
+              <NavLink
                 key={item.key}
-                className={`account-nav-item ${section === item.key ? 'active' : ''}`}
-                onClick={() => setSection(item.key)}
+                to={`/account/${item.key}`}
+                className={({ isActive }) => `account-nav-item ${isActive ? 'active' : ''}`}
               >
                 <span className="account-nav-icon">{item.icon}</span>{item.label}
-              </button>
+                {item.key === 'wishlist' && wishlist.length > 0 ? ` (${wishlist.length})` : ''}
+              </NavLink>
             ))}
-            <button className="account-nav-item" onClick={() => navigate('/orders')}>
-              <span className="account-nav-icon">📦</span>My Orders
-            </button>
-            <button className="account-nav-item" onClick={() => setWishlistOpen(true)}>
-              <span className="account-nav-icon">♡</span>Wishlist {wishlist.length > 0 ? `(${wishlist.length})` : ''}
-            </button>
             <button className="account-nav-item" onClick={() => setCartOpen(true)}>
               <span className="account-nav-icon">🛍</span>Cart {cart.length > 0 ? `(${cart.length})` : ''}
-            </button>
-            <button className="account-nav-item" onClick={() => navigate('/membership')}>
-              <span className="account-nav-icon">👑</span>Premium Membership
             </button>
             <button className="account-nav-item" onClick={() => navigate('/help-support')}>
               <span className="account-nav-icon">❓</span>Support
@@ -185,12 +214,7 @@ function AccountDashboard() {
         </aside>
 
         <div className="account-main">
-          {section === 'profile' && <ProfileSection />}
-          {section === 'addresses' && <AddressBook />}
-          {section === 'notifications' && <NotificationsSection />}
-          {section === 'recent' && <RecentlyViewedSection />}
-          {section === 'coupons' && <ComingSoonSection label="Coupons & Rewards" />}
-          {section === 'payments' && <ComingSoonSection label="Saved payment methods" />}
+          <Outlet />
         </div>
       </div>
     </div>

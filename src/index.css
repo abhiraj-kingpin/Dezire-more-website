@@ -1571,6 +1571,7 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   font-weight: 600;
   color: var(--text-mid);
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
   border-radius: 6px;
   transition: background 0.15s ease, color 0.15s ease;
@@ -1620,6 +1621,20 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;
 }
 .recently-viewed-price { font-size: 0.8125rem; font-weight: 700; color: var(--dark-green); margin-top: 2px; }
+
+.account-wishlist-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.account-wishlist-move {
+  flex: 1; font-size: 0.75rem; font-weight: 600; padding: 7px 10px;
+  border: 1px solid var(--dark-green); border-radius: 6px;
+  background: transparent; color: var(--dark-green); cursor: pointer;
+}
+.account-wishlist-move:hover { background: var(--dark-green); color: #fff; }
+.account-wishlist-remove {
+  width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border-color, #ddd);
+  background: transparent; color: var(--text-dark); cursor: pointer; font-size: 0.75rem;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.account-wishlist-remove:hover { border-color: #c0392b; color: #c0392b; }
 
 /* ── Membership ── */
 .membership-section { display: flex; flex-direction: column; gap: 32px; }

@@ -13,6 +13,7 @@ import AddressBook from './AddressBook';
 import { READY_TO_WEAR_SUBCATEGORIES } from './CategoryPages';
 import { BASE } from '../hooks/useProducts';
 import useLockBodyScroll from '../hooks/useLockBodyScroll';
+import { useBackDismiss } from '../hooks/useBackDismiss';
 import ProductCard, { flyToCart, ripple } from './ProductCard';
 import { searchSubstring, highlightMatch } from '../utils/fuzzySearch';
 import QRCode from 'react-qr-code';
@@ -204,6 +205,16 @@ function Navbar() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   });
+
+  // Phone/Android-app hardware back button (or a browser back click) closes
+  // whichever overlay is open, mirroring the Escape-key behavior above —
+  // mobile has no Escape key, so without this back-swipe used to do nothing
+  // (or leave the page entirely) instead of dismissing the drawer.
+  useBackDismiss(searchOpen, closeSearch);
+  useBackDismiss(authOpen, () => closeAuthModal());
+  useBackDismiss(settingsOpen, () => setSettingsOpen(false));
+  useBackDismiss(cartOpen, () => { if (paymentStep) setPaymentStep(false); else setCartOpen(false); });
+  useBackDismiss(wishlistOpen, () => setWishlistOpen(false));
 
   // Listens for the "fly to cart" signal dispatched by product cards/modals
   // on Add to Cart, and animates a clone of the product image flying into

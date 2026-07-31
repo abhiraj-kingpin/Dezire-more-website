@@ -15,7 +15,11 @@ import JewelryAccessories from './components/JewelryAccessories';
 import Bestsellers from './components/Bestsellers';
 import NewArrivals from './components/NewArrivals';
 import OurStory from './components/OurStory';
-import AccountDashboard from './components/AccountDashboard';
+import AccountDashboard, {
+  ProfileSection, NotificationsSection, RecentlyViewedSection,
+  ComingSoonSection, AccountWishlist,
+} from './components/AccountDashboard';
+import AddressBook from './components/AddressBook';
 import Membership from './components/Membership';
 import MyOrders from './components/MyOrders';
 import VerifyEmail from './components/VerifyEmail';
@@ -57,7 +61,18 @@ function App() {
                     <Route path="bestsellers" element={<Bestsellers />} />
                     <Route path="new-arrivals" element={<NewArrivals />} />
                     <Route path="our-story" element={<OurStory />} />
-                    <Route path="account" element={<AccountDashboard />} />
+                    <Route path="account" element={<AccountDashboard />}>
+                      <Route index element={<Navigate to="profile" replace />} />
+                      <Route path="profile" element={<ProfileSection />} />
+                      <Route path="addresses" element={<AddressBook />} />
+                      <Route path="orders" element={<MyOrders />} />
+                      <Route path="wishlist" element={<AccountWishlist />} />
+                      <Route path="membership" element={<Membership />} />
+                      <Route path="notifications" element={<NotificationsSection />} />
+                      <Route path="recently-viewed" element={<RecentlyViewedSection />} />
+                      <Route path="coupons" element={<ComingSoonSection label="Coupons & Rewards" />} />
+                      <Route path="payment-methods" element={<ComingSoonSection label="Saved payment methods" />} />
+                    </Route>
                     <Route path="membership" element={<Membership />} />
                     <Route path="orders" element={<MyOrders />} />
                     <Route path="verify-email" element={<VerifyEmail />} />
