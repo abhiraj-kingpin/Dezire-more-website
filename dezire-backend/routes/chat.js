@@ -41,9 +41,13 @@ async function callGemini(contents, systemPrompt, forceFinal) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents,
-      tools: [{ functionDeclarations: TOOLS }],
       systemInstruction: { parts: [{ text: systemPrompt }] },
-      ...(forceFinal && { toolConfig: { functionCallingConfig: { mode: 'NONE' } } }),
+      // Verified live: once the conversation has accumulated functionCall/
+      // functionResponse turns, Gemini ignores toolConfig.functionCallingConfig
+      // .mode:'NONE' and keeps calling tools anyway on the "forced final"
+      // iteration. Omitting `tools` from the request entirely is what
+      // actually, reliably forces a text-only final answer.
+      ...(!forceFinal && { tools: [{ functionDeclarations: TOOLS }] }),
     }),
   });
   const data = await res.json();
