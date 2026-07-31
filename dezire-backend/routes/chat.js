@@ -10,12 +10,15 @@ const MAX_HISTORY_TURNS = 10;
 const MAX_MESSAGE_LENGTH = 1000;
 const FALLBACK_REPLY = "I'm sorry, please try again in a moment! 😊";
 
-// gemini-flash-latest is Google's own self-updating alias to their current
-// recommended flash model — deliberately not a dated model name, since a
-// specific dated model (gemini-2.5-flash) turned out to already be blocked
-// for new API keys ("no longer available to new users") by the time this
-// was tested live, just minutes after being picked as the default.
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
+// gemini-flash-lite-latest is Google's self-updating alias to their current
+// lightweight flash model. Deliberately NOT gemini-flash-latest (currently
+// gemini-3.6-flash) — that one hit a hard free-tier cap of 20 REQUESTS PER
+// DAY within minutes of real testing (quotaId
+// GenerateRequestsPerDayPerProjectPerModel-FreeTier), which would make the
+// live chat unusable under any real traffic. gemini-flash-lite-latest
+// (currently gemini-3.5-flash-lite) supports the same function-calling and
+// survived 6 rapid consecutive requests with no quota error in testing.
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-lite-latest';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 // The client only ever sends/receives plain {role, content} text turns —
