@@ -1,50 +1,103 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { BASE } from "../hooks/useProducts";
 
-const SYSTEM_PROMPT = `You are a warm, helpful, and knowledgeable personal style assistant for "Dezire More" — a premium Indian ethnic fashion store with the tagline "Ethnic Elegance. Modern You."
+// Escape first, format second — every substitution below only ever emits
+// from a fixed template applied to already-escaped text, so raw HTML in
+// model output (or a prompt-injected reply) can never become live markup
+// through the dangerouslySetInnerHTML render below.
+const escapeHtml = (s) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-STORE DETAILS:
-- Store Name: Dezire More
-- Tagline: Ethnic Elegance. Modern You.
-- Free shipping on orders above ₹1699
-- 3-day exchange policy (no refunds, exchange only) — customers should ideally reach out within 24–48 hours of delivery for fastest resolution
-- Delivery: 7–10 business days depending on the area (pieces are made by professional tailors, so quality takes a little time)
-- Discount code: DEZIRE10 (10% off)
-- Sale: Up to 10% off on sale items
-- Customer Rating: 4.8 stars
-
-PRODUCT CATEGORIES:
-1. Sarees — Banarasi Silk, Chiffon, Organza Silk, Embroidered, Printed
-2. Kurtas — Casual, Festive, Office-wear styles
-3. Lehengas — Bridal, Festive, Party
-4. Dress Materials — Custom stitch fabric sets
-5. Ready to Wear — Easy, everyday styles
-6. Casual Western — Modern western styles
-7. Jewelry & Accessories — Earrings, necklaces, bangles, rings, bags, belts, hair accessories, and more
-8. New Arrivals — Latest drops every week
-9. Bestsellers — Most loved pieces
-10. Sale — Up to 10% off
-
-OCCASION GUIDE:
-- Wedding/Bridal → Lehengas, Silk Sarees, Embroidered Sarees
-- Mehendi/Sangeet → Kurtas, Dress Materials
-- Festive/Diwali/Navratri → Sarees, Lehengas
-- Casual/Daily/Office → Kurtas, Ready to Wear, Dress Materials
-- Party/Birthday → Western Apparels, Lehengas
-
-YOUR PERSONALITY:
-- Warm, friendly, like a personal stylist friend
-- Use emojis naturally but not excessively
-- Keep replies concise — 3 to 5 lines max
-- You can understand Hindi + English mixed messages
-- Always guide customers toward visiting the relevant section
-- Never make up prices — say check the website for latest prices`;
-
-const formatMessage = (text) => {
-  return text
+const formatMessage = (text) =>
+  escapeHtml(text)
     .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.*?)\*/g, "<strong>$1</strong>")
     .replace(/\n/g, "<br/>");
-};
+
+// Mirrors MyOrders.jsx's own STATUS_STEPS/done concept, at a scale that fits
+// a ~340px chat bubble instead of a full-width page card.
+const STATUS_STEPS = [
+  "Order Placed", "Payment Confirmed", "Processing",
+  "Packed", "Shipped", "Out for Delivery", "Delivered",
+];
+
+function ChatProductCard({ product, onNavigate }) {
+  return (
+    <button type="button" className="dz-pcard" onClick={() => onNavigate(product.url)}>
+      {product.image
+        ? <img src={product.image} alt="" className="dz-pcard-thumb" loading="lazy" />
+        : <span className="dz-pcard-thumb" />}
+      <span className="dz-pcard-info">
+        <span className="dz-pcard-name">{product.name}</span>
+        <span className="dz-pcard-price">₹{product.price?.toLocaleString("en-IN")}</span>
+      </span>
+    </button>
+  );
+}
+
+function ChatOrderStatus({ order }) {
+  const isCancelled = order.status === "Cancelled";
+  const stepIndex = STATUS_STEPS.indexOf(order.status);
+  return (
+    <div className="dz-ostep-card">
+      <div className="dz-ostep-head">
+        <span className="dz-ostep-num">{order.orderNumber}</span>
+        <span className="dz-ostep-status">{order.status}</span>
+      </div>
+      {!isCancelled && (
+        <div className="dz-ostep-dots">
+          {STATUS_STEPS.map((step, i) => (
+            <span key={step} className={`dz-ostep-dot ${i <= stepIndex ? "done" : ""}`} title={step} />
+          ))}
+        </div>
+      )}
+      {order.status === "Delivered" && order.deliveredAt ? (
+        <p className="dz-ostep-eta">Delivered {new Date(order.deliveredAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</p>
+      ) : !isCancelled && order.estimatedDelivery ? (
+        <p className="dz-ostep-eta">Est. delivery: {new Date(order.estimatedDelivery).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function ChatLoginPrompt({ onLogin }) {
+  return (
+    <button type="button" className="dz-login-prompt" onClick={onLogin}>
+      Log in to check your order →
+    </button>
+  );
+}
+
+function ChatToolResults({ toolResults, onNavigate, onLogin }) {
+  if (!toolResults?.length) return null;
+  return (
+    <>
+      {toolResults.map((tr, i) => {
+        if (tr.type === "products" && tr.data?.products?.length > 0) {
+          return (
+            <div key={i} className="dz-pcard-row">
+              {tr.data.products.map((p, pi) => (
+                <ChatProductCard key={pi} product={p} onNavigate={onNavigate} />
+              ))}
+            </div>
+          );
+        }
+        if (tr.type === "order_status" && tr.data?.requiresAuth) {
+          return <ChatLoginPrompt key={i} onLogin={onLogin} />;
+        }
+        if (tr.type === "order_status" && tr.data?.found) {
+          return (
+            <div key={i} className="dz-ostep-list">
+              {tr.data.orders.map((o, oi) => <ChatOrderStatus key={oi} order={o} />)}
+            </div>
+          );
+        }
+        return null;
+      })}
+    </>
+  );
+}
 
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
@@ -63,6 +116,11 @@ export default function Chatbot() {
   const messagesEndRef = useRef(null);
   const conversationHistory = useRef([]);
   const inputRef = useRef(null);
+  const navigate = useNavigate();
+  const { authHeaders, promptLogin } = useAuth();
+
+  const handleProductNav = (url) => navigate(url);
+  const handleLoginPrompt = () => promptLogin("Log in to check your order");
 
   // Settings/Cart/Wishlist/Search/Auth are drawers over the Home page, not
   // route changes, so they don't affect the Home-only mount check in
@@ -97,22 +155,19 @@ export default function Chatbot() {
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setIsTyping(true);
+
+    const historyForRequest = [...conversationHistory.current];
     conversationHistory.current.push({ role: "user", content: trimmed });
 
     try {
-      const response = await fetch("https://dezire-more-website.onrender.com/api/chat", {
+      const response = await fetch(`${BASE}/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            ...conversationHistory.current,
-          ],
-        }),
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ message: trimmed, history: historyForRequest }),
       });
 
       const data = await response.json();
-      const reply = data.choices?.[0]?.message?.content || "I'm sorry, please try again! 😊";
+      const reply = data.reply || "I'm sorry, please try again! 😊";
 
       conversationHistory.current.push({ role: "assistant", content: reply });
       if (conversationHistory.current.length > 10) {
@@ -123,6 +178,7 @@ export default function Chatbot() {
         from: "bot",
         text: reply,
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        toolResults: data.toolResults || [],
       }]);
     } catch {
       setMessages((prev) => [...prev, {
@@ -652,6 +708,135 @@ export default function Chatbot() {
           border-top: 1px solid #f0e8d5;
         }
 
+        /* ── Product cards (search_products results) ── */
+        .dz-pcard-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-top: 8px;
+        }
+
+        .dz-pcard {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          width: 100%;
+          padding: 6px;
+          background: #fdf9f0;
+          border: 1px solid #ede4cc;
+          border-radius: 10px;
+          cursor: pointer;
+          text-align: left;
+          font-family: 'Jost', sans-serif;
+          transition: all 0.2s ease;
+        }
+
+        .dz-pcard:hover {
+          border-color: #c9a84c;
+          background: #fff;
+        }
+
+        .dz-pcard-thumb {
+          width: 40px;
+          height: 40px;
+          border-radius: 8px;
+          object-fit: cover;
+          background: #ede4cc;
+          flex-shrink: 0;
+        }
+
+        .dz-pcard-info {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          min-width: 0;
+        }
+
+        .dz-pcard-name {
+          font-size: 12px;
+          color: #2a3528;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .dz-pcard-price {
+          font-size: 12px;
+          font-weight: 700;
+          color: #1f3d2e;
+        }
+
+        /* ── Order status (check_order_status results) ── */
+        .dz-ostep-list { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+
+        .dz-ostep-card {
+          background: #fdf9f0;
+          border: 1px solid #ede4cc;
+          border-radius: 10px;
+          padding: 10px 12px;
+        }
+
+        .dz-ostep-head {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 8px;
+        }
+
+        .dz-ostep-num {
+          font-size: 11.5px;
+          font-weight: 700;
+          color: #1f3d2e;
+        }
+
+        .dz-ostep-status {
+          font-size: 10.5px;
+          letter-spacing: 0.3px;
+          color: #7a5a20;
+          text-transform: uppercase;
+        }
+
+        .dz-ostep-dots {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .dz-ostep-dot {
+          flex: 1;
+          height: 5px;
+          border-radius: 3px;
+          background: #ede4cc;
+        }
+
+        .dz-ostep-dot.done { background: #c9a84c; }
+
+        .dz-ostep-eta {
+          margin: 8px 0 0;
+          font-size: 11px;
+          color: #7a6a50;
+        }
+
+        .dz-login-prompt {
+          margin-top: 8px;
+          padding: 8px 14px;
+          border-radius: 20px;
+          border: 1px solid #c9a84c;
+          background: transparent;
+          color: #7a5a20;
+          font-family: 'Jost', sans-serif;
+          font-size: 12px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.22s ease;
+        }
+
+        .dz-login-prompt:hover {
+          background: #1f3d2e;
+          color: #e8c97a;
+          border-color: #1f3d2e;
+        }
+
         @media (max-width: 440px) {
           /* Chat window — full width, taller */
           .dz-window { width: calc(100vw - 20px); height: 74vh; border-radius: 18px; }
@@ -727,6 +912,7 @@ export default function Chatbot() {
                   )}
                   <div className="dz-mcol">
                     <div className="dz-bubble" dangerouslySetInnerHTML={{ __html: formatMessage(msg.text) }} />
+                    <ChatToolResults toolResults={msg.toolResults} onNavigate={handleProductNav} onLogin={handleLoginPrompt} />
                     <span className="dz-mtime">{msg.time}</span>
                   </div>
                 </div>

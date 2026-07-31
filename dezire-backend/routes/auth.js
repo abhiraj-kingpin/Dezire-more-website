@@ -99,6 +99,24 @@ async function requireAuth(req, res, next) {
   }
 }
 
+// Same JWT check as requireAuth, but for routes usable by both guests and
+// logged-in customers (Priya chat) — a missing or invalid token just means
+// "anonymous", never a 401. Sets req.user when a valid session is present.
+async function optionalAuth(req, res, next) {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return next();
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.userId) {
+      const user = await User.findById(decoded.userId);
+      if (user) req.user = user;
+    }
+  } catch {
+    // invalid/expired token — proceed as anonymous rather than failing the request
+  }
+  next();
+}
+
 // POST /api/auth/signup — creates/updates an unverified account and emails
 // a verification link. The account can't log in until that link is clicked.
 router.post('/signup', authLimiter, async (req, res) => {
@@ -422,4 +440,4 @@ router.patch('/admin/membership/:userId/confirm', adminAuth, async (req, res) =>
   }
 });
 
-module.exports = { router, requireAuth };
+module.exports = { router, requireAuth, optionalAuth };

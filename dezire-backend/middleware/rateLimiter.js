@@ -20,4 +20,16 @@ const adminLoginLimiter = rateLimit({
   message: { error: 'Too many login attempts. Please try again in a few minutes.' },
 });
 
-module.exports = { authLimiter, adminLoginLimiter };
+// Priya chat — real sessions send many messages back and forth, so this is
+// much looser than the auth limiters, but still bounded against spam/LLM
+// cost abuse (each message triggers at least one, sometimes several, real
+// Gemini calls).
+const chatLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Priya's a little busy right now — please try again in a few minutes." },
+});
+
+module.exports = { authLimiter, adminLoginLimiter, chatLimiter };
