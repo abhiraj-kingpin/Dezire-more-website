@@ -12,6 +12,7 @@ const Coupon = require('../models/Coupon');
 const User = require('../models/User');
 const { sendOrderConfirmationEmail, sendAdminOrderAlert, sendOrderStatusEmail } = require('../utils/notifications');
 const { logAdminAction } = require('../utils/auditLog');
+const shiprocket = require('../services/shiprocket');
 
 // Real, automatically-verified payments — replaces the old manual QR/UPI
 // reference-entry flow. Test-mode keys work immediately (no KYC needed);
@@ -452,6 +453,93 @@ router.patch('/:id/status', adminAuth, async (req, res) => {
     res.json({ success: true, order });
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+});
+
+// POST /api/orders/:id/create-shipment — admin creates a real Shiprocket
+// shipment for this order and gets back a live AWB/tracking number. Package
+// weight/dimensions aren't tracked per-product anywhere in this app, so
+// they're entered here at shipment time rather than assumed — defaults are
+// pre-filled in the admin UI for a typical apparel package but always
+// admin-editable per order.
+router.post('/:id/create-shipment', adminAuth, async (req, res) => {
+  try {
+    if (!shiprocket.isConfigured()) {
+      return res.status(503).json({ error: 'Shiprocket is not configured — add SHIPROCKET_EMAIL/PASSWORD/PICKUP_LOCATION to enable real shipment tracking.' });
+    }
+
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    if (order.shipment?.awbCode) {
+      return res.status(400).json({ error: `This order already has a shipment (AWB ${order.shipment.awbCode}).` });
+    }
+
+    const { weight = 0.5, length = 30, breadth = 20, height = 5 } = req.body || {};
+    const result = await shiprocket.createShipment(order, { weight, length, breadth, height });
+
+    order.shipment = {
+      shiprocketOrderId: result.shiprocketOrderId,
+      shiprocketShipmentId: result.shiprocketShipmentId,
+      awbCode: result.awbCode,
+      courierName: result.courierName,
+      trackingUrl: result.trackingUrl,
+    };
+    if (result.awbAssigned) order.orderStatus = 'Shipped';
+    await order.save();
+
+    logAdminAction(req.admin.email, 'order.create-shipment', order._id, `${order.orderNumber}: ${result.awbAssigned ? `AWB ${result.awbCode} (${result.courierName})` : `order created, AWB pending — ${result.error}`}`);
+
+    if (result.awbAssigned) {
+      const customer = await User.findOne({ email: order.customerEmail }).select('notificationsEnabled').lean();
+      if (!customer || customer.notificationsEnabled !== false) {
+        sendOrderStatusEmail(order).catch(err => console.error('[order status email]', err.message));
+      }
+    }
+
+    res.json({ success: true, order, awbAssigned: result.awbAssigned, error: result.awbAssigned ? undefined : result.error });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// POST /api/orders/shiprocket/webhook — real-time shipment status updates
+// (out for delivery, delivered, RTO, etc.) instead of the static "+9 days"
+// estimate. Verified via a shared secret (set the same value here and in
+// Shiprocket's Settings > API > Webhook config) rather than the HMAC
+// signing Razorpay's webhook uses — Shiprocket's webhook auth is a plain
+// shared token, not a per-payload signature.
+router.post('/shiprocket/webhook', async (req, res) => {
+  try {
+    const secret = process.env.SHIPROCKET_WEBHOOK_SECRET;
+    const provided = req.headers['x-api-key'] || req.headers['x-webhook-secret'];
+    if (!secret || provided !== secret) return res.status(401).json({ error: 'Invalid webhook secret' });
+
+    const { awb, current_status, order_id } = req.body || {};
+    const order = awb
+      ? await Order.findOne({ 'shipment.awbCode': awb })
+      : await Order.findOne({ 'shipment.shiprocketOrderId': order_id });
+    if (!order) return res.status(404).json({ error: 'No matching order for this shipment' });
+
+    order.shipment.lastTrackingStatus = current_status;
+    order.shipment.lastTrackingUpdate = new Date();
+
+    const mappedStatus = shiprocket.mapTrackingStatus(current_status);
+    if (mappedStatus && mappedStatus !== order.orderStatus) {
+      order.orderStatus = mappedStatus;
+      if (mappedStatus === 'Delivered') order.deliveredAt = new Date();
+      await order.save();
+      const customer = await User.findOne({ email: order.customerEmail }).select('notificationsEnabled').lean();
+      if (!customer || customer.notificationsEnabled !== false) {
+        sendOrderStatusEmail(order).catch(err => console.error('[order status email]', err.message));
+      }
+    } else {
+      await order.save();
+    }
+
+    res.json({ received: true });
+  } catch (err) {
+    console.error('[shiprocket webhook]', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 

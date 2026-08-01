@@ -82,6 +82,20 @@ const orderSchema = new mongoose.Schema(
     // Optional, customer-provided when they cancel their own order —
     // useful for admin analytics, never required to actually cancel.
     cancellationReason: { type: String, trim: true },
+
+    // Populated once an admin creates a real Shiprocket shipment for this
+    // order (see services/shiprocket.js) — absent for orders shipped
+    // before this existed, or for a site that hasn't configured
+    // SHIPROCKET_EMAIL/PASSWORD at all.
+    shipment: {
+      shiprocketOrderId:   { type: String },
+      shiprocketShipmentId: { type: String },
+      awbCode:             { type: String },
+      courierName:         { type: String },
+      trackingUrl:         { type: String },
+      lastTrackingStatus:  { type: String },
+      lastTrackingUpdate:  { type: Date },
+    },
   },
   { timestamps: true }
 );

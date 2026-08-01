@@ -875,6 +875,53 @@ function sendWhatsAppUpdate(id) {
   window.open(waLinkForOrder(order), '_blank', 'noreferrer');
 }
 
+// Weight/dimensions aren't tracked per-product anywhere in this app, so
+// they're entered once here at shipment time — defaults are a reasonable
+// guess for a typical single-saree/kurta package, always editable per order.
+function renderShipmentSection(o) {
+  if (o.shipment?.awbCode) {
+    return `
+      <p style="font-size:13px;margin-top:4px">
+        <strong>${o.shipment.courierName || 'Courier'}</strong> — AWB <span style="font-family:monospace">${o.shipment.awbCode}</span><br/>
+        ${o.shipment.lastTrackingStatus ? `Last update: ${o.shipment.lastTrackingStatus} (${new Date(o.shipment.lastTrackingUpdate).toLocaleString('en-IN')})<br/>` : ''}
+        <a href="${o.shipment.trackingUrl}" target="_blank" rel="noreferrer">Track shipment →</a>
+      </p>`;
+  }
+  if (o.shipment?.shiprocketOrderId) {
+    return `<p style="font-size:13px;margin-top:4px;color:var(--muted)">Order created on Shiprocket, but no courier could be auto-assigned yet (check the Shiprocket dashboard — usually a serviceability/pincode issue).</p>`;
+  }
+  return `
+    <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin-top:4px">
+      <label style="font-size:11px;color:var(--muted)">Weight (kg)<br/><input type="number" step="0.1" value="0.5" id="ship-weight-${o._id}" style="width:70px;padding:5px"/></label>
+      <label style="font-size:11px;color:var(--muted)">L (cm)<br/><input type="number" value="30" id="ship-l-${o._id}" style="width:60px;padding:5px"/></label>
+      <label style="font-size:11px;color:var(--muted)">B (cm)<br/><input type="number" value="20" id="ship-b-${o._id}" style="width:60px;padding:5px"/></label>
+      <label style="font-size:11px;color:var(--muted)">H (cm)<br/><input type="number" value="5" id="ship-h-${o._id}" style="width:60px;padding:5px"/></label>
+      <button class="btn btn-gold" style="padding:6px 14px;font-size:12px" onclick="createShipment('${o._id}')">Create Shipment</button>
+    </div>`;
+}
+
+async function createShipment(id) {
+  const weight = parseFloat(document.getElementById(`ship-weight-${id}`).value) || 0.5;
+  const length = parseFloat(document.getElementById(`ship-l-${id}`).value) || 30;
+  const breadth = parseFloat(document.getElementById(`ship-b-${id}`).value) || 20;
+  const height = parseFloat(document.getElementById(`ship-h-${id}`).value) || 5;
+  try {
+    const res = await fetch(`${API}/orders/${id}/create-shipment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ weight, length, breadth, height }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const idx = allOrders.findIndex(o => o._id === id);
+    if (idx > -1) allOrders[idx] = data.order;
+    renderOrdersTable();
+    toast(data.awbAssigned ? 'Shipment created — AWB assigned' : `Order created on Shiprocket, but: ${data.error}`, data.awbAssigned ? 'success' : 'error');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
 function renderOrdersTable() {
   const el = document.getElementById('orders-list');
   if (!allOrders.length) {
@@ -917,6 +964,8 @@ function renderOrdersTable() {
               </div>`).join('')}
               <strong style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);display:block;margin-top:12px">Delivery Address</strong>
               <p style="font-size:13px;margin-top:4px">${o.customerEmail}<br/>${o.address.line1}, ${o.address.city}, ${o.address.state} - ${o.address.pin}</p>
+              <strong style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);display:block;margin-top:12px">Shipment Tracking</strong>
+              ${renderShipmentSection(o)}
             </td></tr>
           ` : ''}
         `).join('')}

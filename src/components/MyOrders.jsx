@@ -256,6 +256,14 @@ function OrderCard({ order, onCancelled, exchange, onExchangeSubmitted }) {
             ) : null
           )}
 
+          {!isCancelled && order.shipment?.awbCode && (
+            <p className="order-delivery-note">
+              {order.shipment.courierName || 'Courier'} — AWB {order.shipment.awbCode}
+              {' · '}
+              <a href={order.shipment.trackingUrl} target="_blank" rel="noreferrer">Track shipment →</a>
+            </p>
+          )}
+
           <div className="order-success-summary">
             <h4>Items</h4>
             {order.items.map((item, i) => (
