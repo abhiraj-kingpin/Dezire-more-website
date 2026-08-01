@@ -91,6 +91,20 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // Lightweight poll used by the "Check your email" screen — a plain
+  // boolean, not a session; see the backend route for why actually logging
+  // in still goes through the normal password-checked login() below once
+  // this returns true.
+  const checkVerifyStatus = async (email) => {
+    try {
+      const res = await fetch(`${BASE}/auth/verify-status?email=${encodeURIComponent(email)}`);
+      const data = await parseJson(res);
+      return !!data.verified;
+    } catch {
+      return false;
+    }
+  };
+
   const resendVerification = async (email) => {
     try {
       const res = await fetch(`${BASE}/auth/resend-verification`, {
@@ -209,7 +223,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{
       user, loading, error, setError,
-      signup, verifyEmailToken, resendVerification, login, logout, updateUser,
+      signup, verifyEmailToken, checkVerifyStatus, resendVerification, login, logout, updateUser,
       addAddress, updateAddress, deleteAddress, subscribeMembership, submitMembershipReference,
       authOpen, setAuthOpen, authPrompt, promptLogin, authHeaders,
     }}>

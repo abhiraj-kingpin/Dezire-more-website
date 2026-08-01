@@ -187,6 +187,25 @@ router.post('/verify-email', async (req, res) => {
   }
 });
 
+// GET /api/auth/verify-status?email=... — lets the "Check your email" screen
+// poll for completion instead of requiring the user to notice and come back
+// manually. Deliberately returns only a boolean, never a token — actually
+// logging in still goes through the normal password-checked POST /login
+// once this flips true, so a session can't be obtained by knowing someone's
+// email alone (no authLimiter here either, since this does nothing more
+// sensitive or expensive than a single indexed lookup — unlike /login,
+// polling it every few seconds isn't a brute-force/spam concern).
+router.get('/verify-status', async (req, res) => {
+  try {
+    const email = (req.query.email || '').toLowerCase().trim();
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+    const user = await User.findOne({ email }).select('emailVerified').lean();
+    res.json({ verified: !!user?.emailVerified });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /api/auth/resend-verification
 router.post('/resend-verification', authLimiter, async (req, res) => {
   try {

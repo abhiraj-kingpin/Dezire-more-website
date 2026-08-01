@@ -95,6 +95,10 @@ function Navbar() {
   // unverified login attempt.
   const [authStep, setAuthStep] = useState('login');
   const [pendingEmail, setPendingEmail] = useState('');
+  // Held only long enough to auto-complete login once verify-status polling
+  // (below) detects the email got verified — never sent anywhere except
+  // that one follow-up login() call, cleared with the rest on modal close.
+  const [pendingPassword, setPendingPassword] = useState('');
   const [verifyError, setVerifyError] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
   const [pendingAddress, setPendingAddress] = useState(null);
@@ -119,7 +123,7 @@ function Navbar() {
 
   const {
     user, login, loading, error, setError,
-    signup, resendVerification, addAddress, authHeaders,
+    signup, resendVerification, checkVerifyStatus, addAddress, authHeaders,
     authOpen, setAuthOpen, authPrompt, promptLogin,
   } = useAuth();
   const { showToast } = useToast();
@@ -356,7 +360,7 @@ function Navbar() {
     setSignupFirstName(''); setSignupLastName(''); setSignupEmail(''); setSignupPhone(''); setSignupPassword('');
     setSignupAddress(''); setSignupCity(''); setSignupState(''); setSignupPin('');
     setAgreedToTerms(false);
-    setPendingEmail(''); setVerifyError(''); setPendingAddress(null); setResendCooldown(0);
+    setPendingEmail(''); setPendingPassword(''); setVerifyError(''); setPendingAddress(null); setResendCooldown(0);
     setAuthStep('login'); setActiveTab('login');
   };
 
@@ -373,6 +377,7 @@ function Navbar() {
     if (result.needsVerification) {
       setError('');
       setPendingEmail(result.email);
+      setPendingPassword(loginPassword);
       setAuthStep('check-email');
       const resend = await resendVerification(result.email);
       if (resend.success) setResendCooldown(RESEND_COOLDOWN_SECONDS);
@@ -394,10 +399,39 @@ function Navbar() {
         setPendingAddress({ line1: signupAddress, city: signupCity, state: signupState, pin: signupPin });
       }
       setPendingEmail(signupEmail);
+      setPendingPassword(signupPassword);
       setAuthStep('check-email');
       setResendCooldown(RESEND_COOLDOWN_SECONDS);
     }
   };
+
+  // Auto-detects verification instead of requiring the user to notice the
+  // email landed and come back to manually log in again — polls a cheap
+  // status-only endpoint, then completes the real (password-checked) login
+  // exactly once verification is actually confirmed.
+  useEffect(() => {
+    if (!authOpen || authStep !== 'check-email' || !pendingEmail || !pendingPassword) return;
+    const interval = setInterval(async () => {
+      const verified = await checkVerifyStatus(pendingEmail);
+      if (!verified) return;
+      clearInterval(interval);
+      const result = await login(pendingEmail, pendingPassword);
+      if (result.success) {
+        setAuthOpen(false);
+        resetAuthFields();
+        showToast("Email verified — you're logged in!", 'success');
+      } else {
+        // Extremely unlikely (password changed mid-poll, etc.) — fall back
+        // to letting them complete it manually instead of leaving the
+        // "check your email" screen showing a stale, dead-end message.
+        setPendingPassword('');
+        setLoginEmail(pendingEmail);
+        setAuthStep('login');
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authOpen, authStep, pendingEmail, pendingPassword]);
 
   // The pending address (if any) is saved once verification actually
   // completes — but that happens on the separate /verify-email page, not
