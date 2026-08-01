@@ -5,6 +5,8 @@ const helmet  = require('helmet');
 const mongoose = require('mongoose');
 const { connectDB } = require('./db');
 
+const Product = require('./models/Product');
+const { productUrl } = require('./services/chatTools');
 const productRoutes = require('./routes/products');
 const adminRoutes   = require('./routes/admin');
 const orderRoutes   = require('./routes/orders');
@@ -89,10 +91,12 @@ app.use('/api/chat',     chatRoute);
 // (mirrors src/App.jsx's route table) instead of a hand-maintained file that
 // silently goes stale. lastmod is just "today" on every request since none
 // of these pages track a real per-page modification date — good enough for
-// crawl priority/discovery, which is what actually matters here. Product
-// detail pages don't have their own URL yet (they only ever open in a modal
-// over a category page), so there's nothing to add for them until that
-// changes — deliberately out of scope for now.
+// crawl priority/discovery, which is what actually matters here. Products
+// don't have their own route either (they only ever open in a modal over a
+// category page), so each one is listed as that category page pinned via
+// ?q=<name> — the same URL shape chatTools.js's productUrl() already
+// produces for Priya's product-search results, reused here rather than
+// invented twice.
 const SITE_URL = 'https://www.deziremore.com';
 const SITEMAP_ROUTES = [
   { path: '/', priority: '1.0' },
@@ -114,14 +118,48 @@ const SITEMAP_ROUTES = [
   { path: '/privacy-policy', priority: '0.2' },
   { path: '/terms-conditions', priority: '0.2' },
 ];
-app.get('/sitemap.xml', (req, res) => {
+// Regenerating this on every crawl hit means a DB query per request for
+// something that changes at most a few times a day — cached in memory for a
+// few hours, with a matching Cache-Control header so Vercel/browsers/crawlers
+// don't even need to ask again within that window.
+const SITEMAP_CACHE_MS = 3 * 60 * 60 * 1000; // 3 hours
+let sitemapCache = { xml: null, generatedAt: 0 };
+
+async function buildSitemapXml() {
   const lastmod = new Date().toISOString().slice(0, 10);
-  const urls = SITEMAP_ROUTES.map(r =>
+  const staticUrls = SITEMAP_ROUTES.map(r =>
     `  <url><loc>${SITE_URL}${r.path}</loc><lastmod>${lastmod}</lastmod><priority>${r.priority}</priority></url>`
-  ).join('\n');
-  res.type('application/xml').send(
-    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`
   );
+
+  const products = await Product.find({ isActive: true }).select('name category updatedAt').lean();
+  const productUrls = products.map(p => {
+    const productLastmod = (p.updatedAt || new Date()).toISOString().slice(0, 10);
+    return `  <url><loc>${SITE_URL}${productUrl(p)}</loc><lastmod>${productLastmod}</lastmod><priority>0.6</priority></url>`;
+  });
+
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[...staticUrls, ...productUrls].join('\n')}\n</urlset>\n`;
+}
+
+app.get('/sitemap.xml', async (req, res) => {
+  try {
+    const isStale = !sitemapCache.xml || (Date.now() - sitemapCache.generatedAt) > SITEMAP_CACHE_MS;
+    if (isStale) {
+      sitemapCache = { xml: await buildSitemapXml(), generatedAt: Date.now() };
+    }
+    res.set('Cache-Control', `public, max-age=${Math.floor(SITEMAP_CACHE_MS / 1000)}`);
+    res.type('application/xml').send(sitemapCache.xml);
+  } catch (err) {
+    console.error('[sitemap]', err.message);
+    // Serve the static routes alone rather than a hard failure if the DB
+    // query fails — a sitemap missing products is far better than no sitemap.
+    const lastmod = new Date().toISOString().slice(0, 10);
+    const urls = SITEMAP_ROUTES.map(r =>
+      `  <url><loc>${SITE_URL}${r.path}</loc><lastmod>${lastmod}</lastmod><priority>${r.priority}</priority></url>`
+    ).join('\n');
+    res.type('application/xml').send(
+      `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`
+    );
+  }
 });
 
 // Health check

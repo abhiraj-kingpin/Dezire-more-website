@@ -16,27 +16,11 @@ import useLockBodyScroll from '../hooks/useLockBodyScroll';
 import { useBackDismiss } from '../hooks/useBackDismiss';
 import ProductCard, { flyToCart, ripple } from './ProductCard';
 import { searchSubstring, highlightMatch } from '../utils/fuzzySearch';
+import { categoryRouteFor } from '../utils/categoryRoutes';
 import QRCode from 'react-qr-code';
 
 const FALLBACK_SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 const SUGGESTION_LIMIT = 8;
-
-// Category values stored on a product don't always match the storefront's
-// own route slugs (e.g. the "western" category lives at /western-apparels),
-// so a search result navigates through this map rather than guessing.
-const CATEGORY_ROUTES = {
-  sarees: '/sarees',
-  'dress-materials': '/dress-materials',
-  'ready-to-wear': '/ready-to-wear',
-  blouses: '/ready-to-wear',
-  western: '/western-apparels',
-  'jewelry-accessories': '/jewelry-accessories',
-  jewelry: '/jewelry-accessories',
-  accessories: '/jewelry-accessories',
-};
-function categoryRouteFor(product) {
-  return CATEGORY_ROUTES[product.category] || '/';
-}
 
 // Loaded once, on demand, the first time someone actually reaches checkout —
 // keeps Razorpay's script out of the main bundle for everyone just browsing.

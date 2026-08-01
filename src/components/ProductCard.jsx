@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { Helmet } from 'react-helmet-async';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
+import { productUrl } from '../utils/categoryRoutes';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
@@ -9,6 +11,8 @@ import { recordRecentlyViewed } from '../utils/recentlyViewed';
 import { BASE } from '../hooks/useProducts';
 import ReviewsSection from './ReviewsSection';
 import { highlightMatch } from '../utils/fuzzySearch';
+
+const SITE_URL = 'https://www.deziremore.com';
 
 const SIZE_CHART = [
   { size: 'S',    chest: 36, waist: 36, hip: 40, kurtaLength: 47, pantsLength: 38 },
@@ -390,6 +394,29 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
           <button className="add-to-bag" onClick={handleCardAddToCart}>Add to Bag</button>
         </div>
       </div>
+
+      {/* Real per-product title/description/OG tags while the modal is open —
+          there's no per-product route (every product only ever opens in a
+          modal over its category page), so this is the one place that
+          actually knows which product is being viewed. react-helmet-async
+          lets a nested Helmet override specific tags from Layout.jsx's
+          category-level one; closing the modal unmounts this and Layout's
+          tags apply again automatically. Note: since this is a
+          client-rendered SPA with no SSR, a raw WhatsApp/social link paste
+          still can't see these — only real browsers and JS-rendering
+          crawlers like Googlebot do. */}
+      {modalOpen && (
+        <Helmet>
+          <title>{product.name} | Dezire More</title>
+          <meta name="description" content={(product.description || `Shop ${product.name} at Dezire More.`).slice(0, 160)} />
+          <link rel="canonical" href={`${SITE_URL}${productUrl(product)}`} />
+          <meta property="og:title" content={product.name} />
+          <meta property="og:description" content={(product.description || `Shop ${product.name} at Dezire More.`).slice(0, 160)} />
+          <meta property="og:url" content={`${SITE_URL}${productUrl(product)}`} />
+          {product.image && <meta property="og:image" content={product.image} />}
+          <meta property="og:type" content="product" />
+        </Helmet>
+      )}
 
       {/* ── Product Detail Modal ── */}
       {/* Portalled to document.body: this card can sit inside a marquee/

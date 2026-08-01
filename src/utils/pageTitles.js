@@ -1,6 +1,6 @@
-const SUFFIX = ' | Dezire More';
-const SITE_URL = 'https://www.deziremore.com';
-const DEFAULT_DESCRIPTION = 'Dezire More — premium Indian ethnic wear: sarees, dress materials, ready-to-wear, casual western, and jewelry & accessories. Ethnic elegance, modern you.';
+export const SUFFIX = ' | Dezire More';
+export const SITE_URL = 'https://www.deziremore.com';
+export const DEFAULT_DESCRIPTION = 'Dezire More — premium Indian ethnic wear: sarees, dress materials, ready-to-wear, casual western, and jewelry & accessories. Ethnic elegance, modern you.';
 
 const TITLES = {
   '/': 'Dezire More – Ethnic Elegance. Modern You.',
@@ -53,7 +53,11 @@ const DESCRIPTIONS = {
 
 // Private/account-gated routes intentionally excluded from robots.txt —
 // no reason to spend effort giving them unique social-share copy.
-const NOINDEX_PATHS = new Set(['/account', '/orders', '/verify-email']);
+// /account/* is a prefix match since it's a nested route (/account/profile,
+// /account/addresses, etc.) — an exact match on '/account' alone stopped
+// covering any of them the moment those became real sub-routes.
+const NOINDEX_PATHS = new Set(['/orders', '/verify-email']);
+const NOINDEX_PREFIXES = ['/account'];
 
 export function titleForPath(pathname) {
   if (pathname === '/') return TITLES['/'];
@@ -61,30 +65,15 @@ export function titleForPath(pathname) {
   return label ? `${label}${SUFFIX}` : TITLES['/'];
 }
 
-function setMeta(selector, attr, value) {
-  const el = document.querySelector(selector);
-  if (el) el.setAttribute(attr, value);
+export function descriptionForPath(pathname) {
+  return DESCRIPTIONS[pathname] || DEFAULT_DESCRIPTION;
 }
 
-// Keeps <title>, description, canonical, and Open Graph/Twitter tags in
-// sync with the current route. This is a client-side-only SPA (no SSR), so
-// crawlers/bots that don't execute JavaScript will still only ever see the
-// homepage's static tags from index.html — this helps real browsers,
-// Googlebot (which does render JS), and any share action taken from
-// within the app itself, but not a non-JS link-preview bot hitting a deep
-// URL directly. True per-route tags for those would require SSR/prerendering.
-export function updateMetaTags(pathname) {
-  const title = titleForPath(pathname);
-  const description = DESCRIPTIONS[pathname] || DEFAULT_DESCRIPTION;
-  const url = `${SITE_URL}${pathname === '/' ? '' : pathname}`;
+export function robotsForPath(pathname) {
+  const noindex = NOINDEX_PATHS.has(pathname) || NOINDEX_PREFIXES.some(p => pathname.startsWith(p));
+  return noindex ? 'noindex, follow' : 'index, follow';
+}
 
-  document.title = title;
-  setMeta('meta[name="description"]', 'content', description);
-  setMeta('link[rel="canonical"]', 'href', url);
-  setMeta('meta[property="og:title"]', 'content', title);
-  setMeta('meta[property="og:description"]', 'content', description);
-  setMeta('meta[property="og:url"]', 'content', url);
-  setMeta('meta[name="twitter:title"]', 'content', title);
-  setMeta('meta[name="twitter:description"]', 'content', description);
-  setMeta('meta[name="robots"]', 'content', NOINDEX_PATHS.has(pathname) ? 'noindex, follow' : 'index, follow');
+export function urlForPath(pathname) {
+  return `${SITE_URL}${pathname === '/' ? '' : pathname}`;
 }

@@ -122,4 +122,4 @@ async function checkOrderStatus(args = {}, user) {
   };
 }
 
-module.exports = { searchProducts, checkOrderStatus, CATEGORY_ROUTES };
+module.exports = { searchProducts, checkOrderStatus, CATEGORY_ROUTES, productUrl };
