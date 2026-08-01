@@ -509,7 +509,7 @@ export default function Chatbot() {
           border-radius: 3px;
         }
 
-        .dz-msg { display: flex; gap: 9px; max-width: 85%; }
+        .dz-msg { display: flex; gap: 9px; max-width: 85%; min-width: 0; }
         .dz-msg.bot { align-self: flex-start; }
         .dz-msg.user { align-self: flex-end; flex-direction: row-reverse; }
 
@@ -528,13 +528,17 @@ export default function Chatbot() {
 
         .dz-mav svg { width: 17px; height: 17px; color: #c9a84c; }
 
-        .dz-mcol { display: flex; flex-direction: column; gap: 4px; }
+        .dz-mcol { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 
         .dz-bubble {
           padding: 11px 15px;
           font-size: 13.5px;
           line-height: 1.65;
+          max-width: 100%;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
           word-break: break-word;
+          white-space: normal;
         }
 
         .dz-msg.bot .dz-bubble {
