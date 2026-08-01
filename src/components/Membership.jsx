@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import QRCode from 'react-qr-code';
+import { Crown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { BASE } from '../hooks/useProducts';
@@ -98,7 +99,10 @@ function Membership() {
         <div className="membership-section">
           {user && membership.tier !== 'none' && (
             <div className={`membership-status-card tier-${membership.tier}`}>
-              <span className="membership-badge">{membership.tier === 'gold' ? '★ Gold Member' : '♛ Platinum Member'}</span>
+              <span className="membership-badge">
+                <Crown size={16} strokeWidth={1.8} />
+                {membership.tier === 'gold' ? 'Gold Member' : 'Platinum Member'}
+              </span>
               <p className="membership-status-line">
                 Status: <b>{membership.status === 'active' ? 'Active' : membership.status === 'pending' ? 'Payment Pending' : membership.status}</b>
               </p>

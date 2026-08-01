@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { Crown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
 
@@ -65,9 +66,12 @@ function SettingsDrawer({ open, onClose, onOpenAuth, onOpenWishlist }) {
           <div className="settings-account-card">
             {user ? (
               <>
-                <div className="settings-avatar">{initials}</div>
+                <div className={`settings-avatar ${user.membership?.status === 'active' ? 'user-avatar-premium' : ''}`}>{initials}</div>
                 <div className="settings-account-info">
-                  <p className="settings-account-name">{user.firstName} {user.lastName}</p>
+                  <p className="settings-account-name">
+                    {user.firstName} {user.lastName}
+                    {user.membership?.status === 'active' && <Crown size={15} strokeWidth={1.8} className="premium-crown" aria-label="Premium member" />}
+                  </p>
                   <p className="settings-account-email">{user.email}</p>
                 </div>
               </>

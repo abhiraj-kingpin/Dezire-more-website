@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Helmet } from 'react-helmet-async';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
+import { Heart } from 'lucide-react';
 import { productUrl } from '../utils/categoryRoutes';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
@@ -361,9 +362,7 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
             aria-label="Add to wishlist"
             onClick={handleCardWishlist}
           >
-            <svg viewBox="0 0 24 24">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-            </svg>
+            <Heart size={14} strokeWidth={2} />
           </button>
 
           {hovered && (
@@ -648,7 +647,8 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
                 className={`pd-add-wishlist ${wishlisted ? 'active' : ''}`}
                 onClick={handleModalWishlist}
               >
-                {wishlisted ? '♥ Added to Wishlist' : '♡ Add to Wishlist'}
+                <Heart size={16} strokeWidth={2} fill={wishlisted ? 'currentColor' : 'none'} />
+                {wishlisted ? 'Added to Wishlist' : 'Add to Wishlist'}
               </button>
 
               <p className="pd-footer-note">

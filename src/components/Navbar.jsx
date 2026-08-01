@@ -18,6 +18,7 @@ import ProductCard, { flyToCart, ripple } from './ProductCard';
 import { searchSubstring, highlightMatch } from '../utils/fuzzySearch';
 import { categoryRouteFor } from '../utils/categoryRoutes';
 import QRCode from 'react-qr-code';
+import { Search, Heart, ShoppingCart, Settings, User, Menu as MenuIcon, X } from 'lucide-react';
 
 const FALLBACK_SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 const SUGGESTION_LIMIT = 8;
@@ -602,18 +603,7 @@ function Navbar() {
         aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
         onClick={() => setMobileMenuOpen(prev => !prev)}
       >
-        {mobileMenuOpen ? (
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        ) : (
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <line x1="3" y1="12" x2="21" y2="12" />
-            <line x1="3" y1="18" x2="21" y2="18" />
-          </svg>
-        )}
+        {mobileMenuOpen ? <X size={22} strokeWidth={1.8} /> : <MenuIcon size={22} strokeWidth={1.8} />}
       </button>
 
       <Link to="/" className="nav-logo" style={{ flexShrink: 0 }}>
@@ -630,52 +620,34 @@ function Navbar() {
       </Link>
 
       <div className="nav-search-bar" onClick={() => setSearchOpen(true)}>
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
+        <Search size={18} strokeWidth={1.8} />
         <span>Search for sarees, dress materials, co-ords...</span>
       </div>
 
-      <div className="nav-icons" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+      <div className="nav-icons">
         <button aria-label="Search" className="mobile-search-btn" onClick={() => setSearchOpen(true)}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
+          <Search size={20} strokeWidth={1.8} />
         </button>
 
         <button aria-label="Wishlist" onClick={() => setWishlistOpen(true)}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-          </svg>
+          <Heart size={20} strokeWidth={1.8} />
           {wishlist.length > 0 && <span className="badge">{wishlist.length}</span>}
         </button>
 
         <button aria-label="Cart" id="nav-cart-icon" onClick={() => { setCartOpen(true); setPaymentStep(false); }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <path d="M16 10a4 4 0 01-8 0" />
-          </svg>
+          <ShoppingCart size={20} strokeWidth={1.8} />
           {cartCount > 0 && <span className="badge">{cartCount}</span>}
         </button>
 
         <button aria-label="Settings" onClick={() => setSettingsOpen(true)}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="3" />
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-          </svg>
+          <Settings size={20} strokeWidth={1.8} />
         </button>
 
         {user ? (
           <UserMenu />
         ) : (
           <button className="auth-trigger-btn" onClick={() => { setAuthOpen(true); setActiveTab('login'); setError(''); }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
+            <User size={20} strokeWidth={1.8} />
             <span className="auth-btn-label">Login</span>
           </button>
         )}

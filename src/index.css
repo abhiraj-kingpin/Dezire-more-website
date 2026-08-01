@@ -76,7 +76,13 @@ nav {
   border: 1px solid var(--border);
   border-radius: 24px;
   padding: 11px 18px;
-  max-width: 600px;
+  /* This column is already grid-template-columns: auto 1fr auto's middle
+     1fr track, so the search bar fills it edge to edge (margin:auto only
+     comes into play once the track itself is wider than max-width) — the
+     previous 600px cap left ~287px of empty space on each side on a 1920px
+     screen, which read as "not filling available space" despite the gaps
+     technically being equal. */
+  max-width: 900px;
   width: 100%;
   margin: 0 auto;
   cursor: pointer;
@@ -195,6 +201,17 @@ nav {
   gap: 10px;
   min-width: max-content;
   flex-shrink: 0;
+}
+/* This measured as 6px in live testing at desktop widths despite no
+   matching max-width media query (confirmed via matchMedia) — something in
+   this file's many overlapping mobile breakpoints was winning in a way that
+   didn't reproduce under manual cascade tracing. Scoped to min-width so it
+   can't touch the intentionally tighter mobile gaps (6px/2px) further down;
+   !important guarantees it wins over whatever that unresolved rule is. */
+@media (min-width: 769px) {
+  .nav-icons {
+    gap: 14px !important;
+  }
 }
 .mobile-search-btn {
   display: none;
@@ -1651,14 +1668,27 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 .membership-status-card.tier-platinum { background: linear-gradient(135deg, rgba(90,90,110,0.1), transparent); }
 
 .membership-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-family: 'Cormorant Garamond', serif;
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 700;
+  letter-spacing: 0.3px;
   color: var(--dark-green);
   margin-bottom: 8px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(184,150,78,0.16), rgba(184,150,78,0.05));
+  border: 1px solid var(--gold);
 }
-.membership-status-card.tier-platinum .membership-badge { color: #4a4a63; }
+.membership-badge svg { color: var(--gold); }
+.membership-status-card.tier-platinum .membership-badge {
+  color: #4a4a63;
+  background: linear-gradient(135deg, rgba(90,90,110,0.16), rgba(90,90,110,0.05));
+  border-color: #8a8aa3;
+}
+.membership-status-card.tier-platinum .membership-badge svg { color: #8a8aa3; }
 
 .membership-status-line { font-size: 0.8125rem; color: var(--text-mid); margin-bottom: 4px; }
 .membership-payment-history { margin-top: 16px; }
@@ -2487,6 +2517,10 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 
 .pd-add-wishlist {
   width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   background: var(--surface-alt);
   color: var(--text-dark);
   border: 1px solid var(--border);
@@ -4590,6 +4624,17 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   flex-shrink: 0;
 }
 
+/* Active premium members get a thin gold ring on the avatar and a small
+   crown next to their name — gated on membership.status === 'active' at
+   the call site, not here, so this is purely presentational. */
+.user-avatar-premium {
+  box-shadow: 0 0 0 2px var(--gold);
+}
+.premium-crown {
+  color: var(--gold);
+  flex-shrink: 0;
+}
+
 .user-dropdown {
   position: absolute;
   top: calc(100% + 8px);
@@ -4616,6 +4661,9 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   font-size: 0.875rem;
   color: var(--text-dark);
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .user-dropdown-email {
@@ -5642,7 +5690,7 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 }
 
 .settings-account-info { min-width: 0; }
-.settings-account-name { font-size: 1rem; font-weight: 700; color: var(--text-dark); margin-bottom: 2px; }
+.settings-account-name { font-size: 1rem; font-weight: 700; color: var(--text-dark); margin-bottom: 2px; display: flex; align-items: center; gap: 6px; }
 .settings-account-email {
   font-size: 0.75rem; color: var(--text-light);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -6446,8 +6494,12 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     display: flex;
   }
   .logo-text .logo-name {
-    font-size: 1rem;
-    letter-spacing: 1px;
+    font-size: 1.1875rem;
+    letter-spacing: 1.5px;
+    padding-bottom: 4px;
+    border-bottom: 1.5px solid var(--gold);
+    display: inline-block;
+    width: fit-content;
   }
   .logo-text .logo-tagline {
     display: none;
@@ -6505,10 +6557,22 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     padding: 0;
     justify-content: center;
     border-radius: 50%;
+    position: relative;
   }
+  /* Collapsing to just the avatar circle on mobile used to hide ANY direct
+     svg child indiscriminately — that included the premium crown once it
+     was added here, not just the intended chevron. */
   .auth-trigger-btn.user-logged-in span,
-  .auth-trigger-btn.user-logged-in > svg {
+  .auth-trigger-btn.user-logged-in > svg:not(.premium-crown) {
     display: none;
+  }
+  .auth-trigger-btn.user-logged-in .premium-crown {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    background: var(--surface);
+    border-radius: 50%;
+    padding: 1px;
   }
   .nav-hamburger {
     grid-column: 1;
