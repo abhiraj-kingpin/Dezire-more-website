@@ -216,6 +216,13 @@ nav {
 .mobile-search-btn {
   display: none;
 }
+/* Element+class — a plain `.mobile-account-btn` here loses to the later,
+   equally-specific `.auth-trigger-btn { display: flex }` base rule
+   regardless of source order, since both are single-class selectors and
+   that one sits further down the file. */
+button.mobile-account-btn {
+  display: none;
+}
 .nav-hamburger {
   display: none;
   background: none;
@@ -1640,7 +1647,7 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
   -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;
 }
-.recently-viewed-price { font-size: 0.8125rem; font-weight: 700; color: var(--dark-green); margin-top: 2px; }
+.recently-viewed-price { font-family: 'Cormorant Garamond', serif; font-size: 0.8125rem; font-weight: 700; color: var(--dark-green); margin-top: 2px; }
 
 .account-wishlist-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
 .account-wishlist-move {
@@ -6485,25 +6492,23 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     grid-column: 1 / -1;
     grid-row: 1;
     justify-self: start;
-    gap: 6px;
+    gap: 10px;
     /* Base rule sets min-width:max-content, which silently overrides any
        max-width here once content is narrower than the cap (used width
        is max(min-width, max-width) per spec) — must reset it or the
-       reservation below does nothing. Reserves the icon row's fixed
-       width (4 buttons x 32px + 3 gaps x 6px = 146px) plus a real gap,
-       so the wordmark can never grow into the wishlist icon again. */
+       reservation below does nothing. Wishlist/Cart/Settings collapse into
+       the single Account icon on mobile now, so only one ~32px icon shares
+       this row — reserve just enough for that, not four. */
     min-width: 0;
-    max-width: calc(100% - 160px);
+    max-width: calc(100% - 50px);
   }
-  /* Company name shown next to the emblem; tagline dropped on mobile —
-     it was wide enough to collide with the wishlist icon. */
   .logo-text {
     display: flex;
     min-width: 0;
   }
   .logo-text .logo-name {
-    font-size: 1.0625rem;
-    letter-spacing: 0.9px;
+    font-size: 1.3125rem;
+    letter-spacing: 1.75px;
     padding-bottom: 4px;
     border-bottom: 1.5px solid var(--gold);
     display: inline-block;
@@ -6513,12 +6518,17 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     white-space: nowrap;
     text-overflow: ellipsis;
   }
+  /* Restored on mobile now that the single-icon layout leaves room —
+     sized down from the desktop tagline so it doesn't crowd the wordmark. */
   .logo-text .logo-tagline {
-    display: none;
+    font-size: 0.5rem;
+    letter-spacing: 1.2px;
+    margin-top: 3px;
+    white-space: nowrap;
   }
   .logo-emblem {
-    width: 46px;
-    height: 46px;
+    width: 56px;
+    height: 56px;
     top: 0;
   }
   .nav-icons {
@@ -6534,6 +6544,20 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
      redundant search icon here. */
   .mobile-search-btn {
     display: none !important;
+  }
+  /* Wishlist/Cart/Settings/Account collapse into one Account icon on
+     mobile (below) — desktop keeps these four separate. `.nav-icons`-
+     qualified (0,2,0) to reliably beat the earlier `.nav-icons button`
+     (0,1,1) rule at line 5213, which also matches at this breakpoint. */
+  .nav-icons .icon-wishlist-btn,
+  .nav-icons .icon-cart-btn,
+  .nav-icons .icon-settings-btn,
+  .nav-icons .icon-account-desktop {
+    display: none;
+  }
+  .nav-icons .mobile-account-btn {
+    display: flex;
+    position: relative;
   }
   .nav-icons button,
   .auth-trigger-btn {

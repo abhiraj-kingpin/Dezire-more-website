@@ -18,7 +18,7 @@ import ProductCard, { flyToCart, ripple } from './ProductCard';
 import { searchSubstring, highlightMatch } from '../utils/fuzzySearch';
 import { categoryRouteFor } from '../utils/categoryRoutes';
 import QRCode from 'react-qr-code';
-import { Search, Heart, ShoppingCart, Settings, User, Menu as MenuIcon, X } from 'lucide-react';
+import { Search, Heart, ShoppingCart, Settings, User, Menu as MenuIcon, X, Crown } from 'lucide-react';
 
 const FALLBACK_SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 const SUGGESTION_LIMIT = 8;
@@ -123,6 +123,7 @@ function Navbar() {
     authOpen, setAuthOpen, authPrompt, promptLogin,
   } = useAuth();
   const { showToast } = useToast();
+  const isPremium = user?.membership?.status === 'active';
 
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -629,28 +630,49 @@ function Navbar() {
           <Search size={20} strokeWidth={1.8} />
         </button>
 
-        <button aria-label="Wishlist" onClick={() => setWishlistOpen(true)}>
+        <button aria-label="Wishlist" className="icon-wishlist-btn" onClick={() => setWishlistOpen(true)}>
           <Heart size={20} strokeWidth={1.8} />
           {wishlist.length > 0 && <span className="badge">{wishlist.length}</span>}
         </button>
 
-        <button aria-label="Cart" id="nav-cart-icon" onClick={() => { setCartOpen(true); setPaymentStep(false); }}>
+        <button aria-label="Cart" id="nav-cart-icon" className="icon-cart-btn" onClick={() => { setCartOpen(true); setPaymentStep(false); }}>
           <ShoppingCart size={20} strokeWidth={1.8} />
           {cartCount > 0 && <span className="badge">{cartCount}</span>}
         </button>
 
-        <button aria-label="Settings" onClick={() => setSettingsOpen(true)}>
+        <button aria-label="Settings" className="icon-settings-btn" onClick={() => setSettingsOpen(true)}>
           <Settings size={20} strokeWidth={1.8} />
         </button>
 
-        {user ? (
-          <UserMenu />
-        ) : (
-          <button className="auth-trigger-btn" onClick={() => { setAuthOpen(true); setActiveTab('login'); setError(''); }}>
+        <div className="icon-account-desktop">
+          {user ? (
+            <UserMenu />
+          ) : (
+            <button className="auth-trigger-btn" onClick={() => { setAuthOpen(true); setActiveTab('login'); setError(''); }}>
+              <User size={20} strokeWidth={1.8} />
+              <span className="auth-btn-label">Login</span>
+            </button>
+          )}
+        </div>
+
+        {/* Mobile-only: Wishlist/Cart/Settings/Account fold into this single
+            icon (opens the same SettingsDrawer that already lists all of
+            them) — desktop keeps the four separate icons above unchanged. */}
+        <button
+          aria-label="Account"
+          className={`auth-trigger-btn mobile-account-btn ${user ? 'user-logged-in' : ''}`}
+          onClick={() => setSettingsOpen(true)}
+        >
+          {user ? (
+            <div className={`user-avatar ${isPremium ? 'user-avatar-premium' : ''}`}>
+              {user.firstName?.[0]?.toUpperCase()}
+            </div>
+          ) : (
             <User size={20} strokeWidth={1.8} />
-            <span className="auth-btn-label">Login</span>
-          </button>
-        )}
+          )}
+          {isPremium && <Crown size={14} strokeWidth={1.8} className="premium-crown" aria-label="Premium member" />}
+          {cartCount > 0 && <span className="badge">{cartCount}</span>}
+        </button>
       </div>
 
       {mobileMenuOpen && <div className="nav-mobile-backdrop" onClick={closeMobileMenu} />}
@@ -1286,6 +1308,8 @@ function Navbar() {
         onClose={() => setSettingsOpen(false)}
         onOpenAuth={() => { setSettingsOpen(false); setAuthOpen(true); }}
         onOpenWishlist={() => { setSettingsOpen(false); setWishlistOpen(true); }}
+        onOpenCart={() => { setSettingsOpen(false); setCartOpen(true); setPaymentStep(false); }}
+        cartCount={cartCount}
       />
     </nav>
   );

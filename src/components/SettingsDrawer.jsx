@@ -24,7 +24,7 @@ function MenuButton({ children, onClick }) {
   );
 }
 
-function SettingsDrawer({ open, onClose, onOpenAuth, onOpenWishlist }) {
+function SettingsDrawer({ open, onClose, onOpenAuth, onOpenWishlist, onOpenCart, cartCount }) {
   const { user, logout } = useAuth();
   const { wishlist } = useWishlist();
 
@@ -97,6 +97,9 @@ function SettingsDrawer({ open, onClose, onOpenAuth, onOpenWishlist }) {
             <p className="settings-section-title">My Account</p>
             <div className="settings-menu-list">
               <MenuLink to="/orders" onClose={onClose}>My Orders</MenuLink>
+              <MenuButton onClick={onOpenCart}>
+                Cart{cartCount > 0 ? ` (${cartCount})` : ''}
+              </MenuButton>
               <MenuButton onClick={onOpenWishlist}>
                 Wishlist{wishlist?.length > 0 ? ` (${wishlist.length})` : ''}
               </MenuButton>
