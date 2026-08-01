@@ -10,12 +10,19 @@ const { defineSecret } = require('firebase-functions/params');
 const app = require('./app');
 const { connectDB } = require('./db');
 
+// Kept in sync with an actual `grep -r process.env` across dezire-backend,
+// not just carried over from whenever this file was first written — the
+// original list here still had OPENROUTER_API_KEY and SMTP_* from before
+// the Gemini and Resend switches, and was missing GEMINI_*/RESEND_*/
+// RAZORPAY_* entirely, which would have silently broken chat, email, and
+// online payments on first deploy.
 const secretNames = [
   'MONGODB_URI', 'JWT_SECRET',
   'ADMIN_EMAIL', 'ADMIN_PASSWORD',
   'CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET',
-  'OPENROUTER_API_KEY',
-  'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM',
+  'GEMINI_API_KEY', 'GEMINI_MODEL',
+  'RESEND_API_KEY', 'RESEND_FROM_EMAIL',
+  'RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_WEBHOOK_SECRET',
   'FRONTEND_URL',
 ];
 const secrets = secretNames.map(defineSecret);
