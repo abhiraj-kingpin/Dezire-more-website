@@ -78,6 +78,10 @@ const orderSchema = new mongoose.Schema(
 
     isGift:      { type: Boolean, default: false },
     giftMessage: { type: String, trim: true },
+
+    // Optional, customer-provided when they cancel their own order —
+    // useful for admin analytics, never required to actually cancel.
+    cancellationReason: { type: String, trim: true },
   },
   { timestamps: true }
 );

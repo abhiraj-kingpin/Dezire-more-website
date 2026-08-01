@@ -20,6 +20,13 @@ const EXCHANGE_REASONS = [
   { value: 'size-mismatch', label: 'Size mismatch (stitched items only)' },
   { value: 'other', label: 'Other' },
 ];
+const CANCEL_REASONS = [
+  { value: '', label: 'Prefer not to say' },
+  { value: 'ordered-by-mistake', label: 'Ordered by mistake' },
+  { value: 'found-better-price', label: 'Found a better price elsewhere' },
+  { value: 'taking-too-long', label: 'Delivery is taking too long' },
+  { value: 'other', label: 'Other' },
+];
 
 // Orders arrive newest-first from the API — grouping just needs to notice
 // month boundaries as it walks the list, not re-sort anything.
@@ -104,11 +111,58 @@ function ExchangeModal({ order, onClose, onSubmitted }) {
   );
 }
 
+function CancelModal({ order, onClose, onCancelled }) {
+  const { authHeaders } = useAuth();
+  const { showToast } = useToast();
+  const [reason, setReason] = useState('');
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleConfirm = async () => {
+    setCancelling(true);
+    try {
+      const res = await fetch(`${BASE}/orders/${order._id}/cancel`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ reason: reason || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not cancel order');
+      onCancelled(data.order);
+      showToast('Order cancelled', 'success');
+      onClose();
+    } catch (err) {
+      showToast(err.message, 'info');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  return (
+    <div className="checkout-overlay" onClick={onClose}>
+      <div className="checkout-modal checkout-modal-narrow" onClick={e => e.stopPropagation()}>
+        <h3 className="order-success-title" style={{ marginBottom: '4px' }}>Cancel this order?</h3>
+        <p className="order-success-sub">Order {order.orderNumber} — this cannot be undone.</p>
+
+        <label className="auth-label">Reason (optional)</label>
+        <select className="payment-input payment-input-spaced" value={reason} onChange={e => setReason(e.target.value)}>
+          {CANCEL_REASONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+        </select>
+
+        <button className="cart-checkout-btn order-cancel-btn" onClick={handleConfirm} disabled={cancelling} style={{ marginTop: '14px' }}>
+          {cancelling ? 'Cancelling…' : 'Yes, Cancel Order'}
+        </button>
+        <div className="auth-switch">
+          <span onClick={onClose}>Keep Order</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function OrderCard({ order, onCancelled, exchange, onExchangeSubmitted }) {
   const [expanded, setExpanded] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [exchangeModalOpen, setExchangeModalOpen] = useState(false);
-  const { authHeaders } = useAuth();
   const { addToCart } = useCart();
   const { showToast } = useToast();
 
@@ -118,26 +172,6 @@ function OrderCard({ order, onCancelled, exchange, onExchangeSubmitted }) {
 
   const daysSinceDelivery = order.deliveredAt ? (Date.now() - new Date(order.deliveredAt).getTime()) / (1000 * 60 * 60 * 24) : null;
   const canRequestExchange = order.orderStatus === 'Delivered' && daysSinceDelivery !== null && daysSinceDelivery <= EXCHANGE_WINDOW_DAYS;
-
-  const handleCancel = async (e) => {
-    e.stopPropagation();
-    if (!window.confirm('Cancel this order? This cannot be undone.')) return;
-    setCancelling(true);
-    try {
-      const res = await fetch(`${BASE}/orders/${order._id}/cancel`, {
-        method: 'PATCH',
-        headers: authHeaders(),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not cancel order');
-      onCancelled(data.order);
-      showToast('Order cancelled', 'success');
-    } catch (err) {
-      showToast(err.message, 'info');
-    } finally {
-      setCancelling(false);
-    }
-  };
 
   const handleReorder = (e) => {
     e.stopPropagation();
@@ -270,12 +304,20 @@ function OrderCard({ order, onCancelled, exchange, onExchangeSubmitted }) {
             ) : null}
             <button onClick={handleSupport}>Customer Support</button>
             {canCancel && (
-              <button className="order-cancel-btn" onClick={handleCancel} disabled={cancelling}>
-                {cancelling ? 'Cancelling...' : 'Cancel Order'}
+              <button className="order-cancel-btn" onClick={(e) => { e.stopPropagation(); setCancelModalOpen(true); }}>
+                Cancel Order
               </button>
             )}
           </div>
         </div>
+      )}
+
+      {cancelModalOpen && (
+        <CancelModal
+          order={order}
+          onClose={() => setCancelModalOpen(false)}
+          onCancelled={onCancelled}
+        />
       )}
 
       {exchangeModalOpen && (

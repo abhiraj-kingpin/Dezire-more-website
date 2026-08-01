@@ -335,7 +335,11 @@ router.patch('/:id/cancel', requireAuth, async (req, res) => {
       return res.status(400).json({ error: `Orders can no longer be cancelled once they're ${order.orderStatus.toLowerCase()}` });
     }
 
+    const { reason } = req.body;
     order.orderStatus = 'Cancelled';
+    if (reason && typeof reason === 'string' && reason.trim()) {
+      order.cancellationReason = reason.trim();
+    }
     await order.save();
 
     if (req.user.notificationsEnabled !== false) {
