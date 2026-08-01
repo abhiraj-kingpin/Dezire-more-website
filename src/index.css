@@ -223,6 +223,20 @@ nav {
 button.mobile-account-btn {
   display: none;
 }
+/* Logged-in state adds a THIRD class (.user-logged-in) — the desktop pill
+   rule `.auth-trigger-btn.user-logged-in { display: flex }` is two classes
+   (0,2,0), which beats the plain button.mobile-account-btn rule above
+   (0,1,1) regardless of order, showing a second bare "A" circle next to
+   the real pill. Needs its own higher-specificity override. */
+button.mobile-account-btn.user-logged-in {
+  display: none;
+}
+/* Mobile drawer's own header row (title + close) — only meant to be seen
+   inside the full-screen drawer; unhidden it also renders inline in the
+   normal horizontal desktop nav-links row as a stray "Dezire More ✕" pill. */
+.nav-links-header {
+  display: none;
+}
 .nav-hamburger {
   display: none;
   background: none;
@@ -6593,6 +6607,15 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     height: 40px;
     border: 1.75px solid var(--gold);
     background: var(--surface-alt);
+  }
+  /* The desktop-hiding fix for the logged-in duplicate-"A" bug
+     (button.mobile-account-btn.user-logged-in, 0,2,1 — see base rules)
+     has higher specificity than the plain rule above (0,2,0) and would
+     otherwise also hide this on mobile, where it's the intended single
+     Account icon. Re-asserted at higher specificity (0,3,0) so it wins
+     back here without needing !important. */
+  .nav-icons .mobile-account-btn.user-logged-in {
+    display: flex;
   }
   /* Guest state has no inner avatar circle to carry color, so the button
      itself gets the site's primary dark-green/gold treatment instead. */
