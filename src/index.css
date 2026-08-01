@@ -5187,7 +5187,13 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   }
 
   .auth-btn-label { display: none; }
-  .auth-trigger-btn { padding: 9px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: 10px; }
+  /* Sizing/shape for .auth-trigger-btn now lives solely in the "COMPACT
+     SINGLE-ROW MOBILE HEADER" block below (the actually-authoritative one at
+     this same breakpoint) — this rule used to also set width/height/
+     border-radius, which silently persisted (CSS cascades per-property, not
+     per-block) even after that later block stopped mentioning border-radius
+     for the logged-out state, leaving the button a rounded square instead of
+     a circle with a barely-visible icon inside. */
 
   .nav-mobile-backdrop {
     display: block;
@@ -5439,14 +5445,17 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   /* The close button is absolutely positioned in the top-right corner; at
      narrow widths the tabs bar (flush with the top of the modal) sat right
      underneath it and the "Create Account" label ran into the ✕. Reserve
-     space above the tabs instead of overlapping them. */
+     space above the tabs instead of overlapping them. Margin here previously
+     left the two exactly touching (0px gap) in testing — real device font
+     metrics can easily tip that into an overlap, so this leaves real
+     clearance rather than the minimum that happens to work in one browser. */
   .auth-close {
     top: 10px;
     right: 10px;
     z-index: 3;
   }
   .auth-tabs {
-    margin-top: 34px;
+    margin-top: 42px;
   }
   .auth-name-row {
     flex-direction: column;
@@ -6466,6 +6475,21 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   .auth-trigger-btn {
     width: 32px;
     height: 32px;
+  }
+  /* Explicit for both auth states (logged-in gets padding:0 below, which
+     needs this too) — previously only .user-logged-in set border-radius,
+     so the logged-out "Login" button fell back to a stale rounded-square
+     radius from an earlier, superseded mobile header block. Selector is
+     `button.auth-trigger-btn` (element+class), not just `.auth-trigger-btn`
+     (class-only) — `.nav-icons button` elsewhere is also element+class, and
+     a plain class selector loses to that regardless of source order no
+     matter how late this rule appears. */
+  button.auth-trigger-btn {
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
   }
   .nav-icons button svg {
     width: 16px;
