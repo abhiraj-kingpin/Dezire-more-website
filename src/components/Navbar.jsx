@@ -443,19 +443,34 @@ function Navbar() {
     }
   }, [pendingAddress, pendingEmail]);
 
-  // Powers the "Pay via UPI" checkout option — fetched once at mount rather
-  // than on cart open, since it rarely changes and this way it's already
+  // Powers the "Pay via UPI" checkout option — fetched at mount rather than
+  // on cart open, since it rarely changes and this way it's already
   // available the instant checkout renders. The QR shown at checkout is
   // generated fresh from this UPI ID plus the real order total (see the
   // upiLink built below), not a static image. The option only shows up once
   // an admin has set a UPI ID, so an unconfigured site just silently has one
-  // less option.
-  useEffect(() => {
+  // less option — which used to also silently happen for a CONFIGURED site
+  // if this one-shot, un-retried fetch landed while Render's free-tier
+  // backend was still waking from a cold start (30-50s) and it never got a
+  // second chance. Retries with backoff, plus a final attempt right when
+  // checkout actually opens (by then other API calls have almost certainly
+  // already woken the backend up).
+  const fetchUpiSettings = () => {
     fetch(`${BASE}/payment-settings`)
       .then(res => res.json())
-      .then(data => setUpiSettings({ upiId: data.upiId || '' }))
+      .then(data => { if (data.upiId) setUpiSettings({ upiId: data.upiId }); })
       .catch(() => {});
+  };
+  useEffect(() => {
+    fetchUpiSettings();
+    const retry1 = setTimeout(fetchUpiSettings, 4000);
+    const retry2 = setTimeout(fetchUpiSettings, 12000);
+    return () => { clearTimeout(retry1); clearTimeout(retry2); };
   }, []);
+  useEffect(() => {
+    if (paymentStep && !upiSettings.upiId) fetchUpiSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paymentStep]);
 
   const handleResendVerification = async () => {
     if (resendCooldown > 0) return;
