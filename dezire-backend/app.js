@@ -7,6 +7,8 @@ const { connectDB } = require('./db');
 
 const Product = require('./models/Product');
 const { productUrl } = require('./services/chatTools');
+const { getMcpServer } = require('./services/mcpServer');
+const { StreamableHTTPServerTransport } = require('@modelcontextprotocol/sdk/server/streamableHttp.js');
 const productRoutes = require('./routes/products');
 const adminRoutes   = require('./routes/admin');
 const orderRoutes   = require('./routes/orders');
@@ -39,7 +41,7 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
 }));
 
-app.use(cors({
+const siteCors = cors({
   origin: [
     process.env.FRONTEND_URL,
     'https://www.deziremore.com',
@@ -54,7 +56,12 @@ app.use(cors({
     'capacitor://localhost',
   ],
   credentials: true,
-}));
+});
+// /mcp skips this and gets its own open-origin cors() further down — running
+// both on the same request left Access-Control-Allow-Credentials: true (set
+// here) alongside Access-Control-Allow-Origin: * (set there), a combination
+// browsers reject outright for any credentialed request.
+app.use((req, res, next) => (req.path === '/mcp' ? next() : siteCors(req, res, next)));
 // Stashes the raw request bytes alongside the parsed body — needed to
 // verify the Razorpay webhook's HMAC signature, which is computed over
 // the exact raw payload, not the re-serialized parsed JSON.
@@ -86,6 +93,46 @@ app.use('/api/coupons',  couponRoutes);
 app.use('/api/admin',    adminRoutes);
 app.use('/api/auth',     authRoutes);
 app.use('/api/chat',     chatRoute);
+
+// ─── MCP server: public product catalog, no auth ───────────────────────────────
+// Lets external AI tools/agents (not just this site's own Priya chatbot)
+// query the same product data the storefront already shows anyone who
+// browses it — search, categories, and per-product details. Deliberately
+// read-only and limited to public catalog fields; no order/customer data or
+// admin actions are exposed here. One fresh server+transport per request
+// (stateless mode, no sessionIdGenerator) since there's no per-session state
+// to keep — this is the SDK's own recommended pattern for a simple
+// read-only HTTP MCP server, not a corner cut for this use case.
+//
+// Open CORS on just this route (the app-wide cors() above only allows this
+// site's own known origins) — a browser-based AI tool calling this endpoint
+// directly is exactly the intended use, and the data behind it is the same
+// public catalog every storefront visitor already sees, so there's nothing
+// here an open origin policy would leak.
+const mcpCors = cors();
+app.post('/mcp', mcpCors, async (req, res) => {
+  try {
+    const server = getMcpServer();
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    await server.connect(transport);
+    await transport.handleRequest(req, res, req.body);
+    res.on('close', () => {
+      transport.close();
+      server.close();
+    });
+  } catch (err) {
+    console.error('[mcp]', err.message);
+    if (!res.headersSent) {
+      res.status(500).json({ jsonrpc: '2.0', error: { code: -32603, message: 'Internal server error' }, id: null });
+    }
+  }
+});
+app.get('/mcp', mcpCors, (req, res) => {
+  res.status(405).json({ jsonrpc: '2.0', error: { code: -32000, message: 'Method not allowed — this is a stateless MCP server, POST only.' }, id: null });
+});
+app.delete('/mcp', mcpCors, (req, res) => {
+  res.status(405).json({ jsonrpc: '2.0', error: { code: -32000, message: 'Method not allowed — this is a stateless MCP server, no sessions to terminate.' }, id: null });
+});
 
 // GET /sitemap.xml — generated from the storefront's static/category routes
 // (mirrors src/App.jsx's route table) instead of a hand-maintained file that
