@@ -28,26 +28,24 @@ const WHATSAPP_NUMBER = '918171761948';
 function Hero() {
   const [current, setCurrent] = useState(0);
   const [animating, setAnimating] = useState(false);
-  const [exitIdx, setExitIdx] = useState(null);
   const [textVisible, setTextVisible] = useState(true);
   const [chatModalOpen, setChatModalOpen] = useState(false);
   const timerRef = useRef(null);
 
+  // Slide swap is a plain CSS crossfade now (see .deck-card's transition
+  // in index.css) — just flip `current` and let the class change
+  // (top/mid/back) animate itself; no more multi-step exit choreography.
+  const CROSSFADE_MS = 1000;
   const goTo = (next) => {
     if (animating || next === current) return;
     setAnimating(true);
     setTextVisible(false);
-    setExitIdx(current);
-
-    setTimeout(() => {
-      setCurrent(next);
-      setExitIdx(null);
-    }, 220);
+    setCurrent(next);
 
     setTimeout(() => {
       setTextVisible(true);
       setAnimating(false);
-    }, 320);
+    }, CROSSFADE_MS);
   };
 
   const advance = () => {
@@ -63,7 +61,6 @@ function Hero() {
   const getCardClass = (idx) => {
     const total = heroSlides.length;
     const pos = (idx - current + total) % total;
-    if (idx === exitIdx) return "deck-card deck-exit";
     if (pos === 0) return "deck-card deck-top";
     if (pos === 1) return "deck-card deck-mid";
     return "deck-card deck-back";

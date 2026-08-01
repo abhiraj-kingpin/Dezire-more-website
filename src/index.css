@@ -4205,9 +4205,12 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   border-radius: 20px;
   overflow: hidden;
   transform-origin: center center;
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.25s ease;
+  /* Slow, gentle crossfade between slides (not a snappy cut) — a slide's
+     className changes (top/mid/back) on the same DOM node (keyed by
+     index), so these transitions interpolate automatically. */
+  transition: transform 1s ease-in-out,
+              opacity 1s ease-in-out,
+              box-shadow 1s ease-in-out;
 }
 
 .deck-card img {
@@ -4241,26 +4244,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   z-index: 1;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
   opacity: 0.65;
-}
-
-.deck-exit {
-  z-index: 10;
-  animation: deckShuffle 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-@keyframes deckShuffle {
-  0% {
-    transform: translateX(0px) translateZ(0) rotateY(0deg) scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: translateX(-60px) translateZ(-60px) rotateY(-20deg) scale(0.88);
-    opacity: 0.4;
-  }
-  100% {
-    transform: translateX(-100px) translateZ(-100px) rotateY(-30deg) scale(0.75);
-    opacity: 0;
-  }
 }
 
 /* Hero dots */
@@ -5331,9 +5314,15 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     height: 340px;
   }
   /* Single clean image on mobile — the stacked peeking cards behind it
-     read as a second slider and can catch the edge-swipe-back gesture. */
+     read as a second slider and can catch the edge-swipe-back gesture.
+     opacity:0 (not display:none) so the outgoing slide crossfades out
+     smoothly instead of vanishing instantly when it becomes mid/back;
+     transform:none keeps it perfectly in place under the top slide so
+     only opacity changes — a plain fade, not a slide/shrink. */
   .deck-mid, .deck-back {
-    display: none;
+    opacity: 0;
+    transform: none;
+    pointer-events: none;
   }
   .hero-title {
     font-size: 2.375rem;
