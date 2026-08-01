@@ -2049,6 +2049,12 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
      open while search results stay mounted behind it (closing search used
      to unmount the very card whose modal was opening, so it never showed). */
   z-index: 10001;
+  /* backdrop-filter can otherwise leave a later-mounted, higher z-index
+     sibling (the lightbox) compositing incorrectly on some browsers, letting
+     this modal's content paint through on top of it despite the z-index
+     order — isolation forces this into its own self-contained stacking
+     context so later siblings reliably composite above it. */
+  isolation: isolate;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2790,6 +2796,7 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   inset: 0;
   background: rgba(6, 8, 7, 0.94);
   z-index: 10500;
+  isolation: isolate;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5359,7 +5366,11 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 
   /* Product detail modal */
   .pd-modal {
-    grid-template-columns: 1fr;
+    /* Plain 1fr (unlike the desktop rule's minmax(0, ...) tracks) let grid's
+       default min-width:auto win — any child that doesn't wrap (the Add to
+       Cart/Buy Now row, the delivery estimate line) forced this whole column,
+       and the modal with it, wider than the viewport. */
+    grid-template-columns: minmax(0, 1fr);
     max-height: 94vh;
     border-radius: 16px;
   }

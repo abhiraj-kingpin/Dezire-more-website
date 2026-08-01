@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
@@ -130,8 +131,7 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
   const [selectedSize,  setSelectedSize]  = useState(null);
   const [quantity,      setQuantity]      = useState(1);
   const [lightboxOpen,  setLightboxOpen]  = useState(false);
-  const [zoom,          setZoom]          = useState(1);
-  const [pan,           setPan]           = useState({ x: 0, y: 0 });
+  const [zoomPct,       setZoomPct]       = useState(100);
   const [mainImgRatio,  setMainImgRatio]  = useState(null);
   const [related,       setRelated]       = useState([]);
 
@@ -139,9 +139,7 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
   const modalImgRef  = useRef(null);
   const wishlistBtnRef      = useRef(null);
   const modalWishlistBtnRef = useRef(null);
-  const dragState = useRef(null);
   const gallerySwipeRef = useRef(null);
-  const lightboxSwipeRef = useRef(null);
 
   const { toggleWishlist, addToWishlist, isWishlisted } = useWishlist();
   const { addToCart, buyNow }            = useCart();
@@ -205,29 +203,27 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
   const showPrev = useCallback((e) => {
     e?.stopPropagation();
     setActiveImg(i => (i - 1 + mediaCount) % mediaCount);
-    setZoom(1); setPan({ x: 0, y: 0 });
   }, [mediaCount]);
 
   const showNext = useCallback((e) => {
     e?.stopPropagation();
     setActiveImg(i => (i + 1) % mediaCount);
-    setZoom(1); setPan({ x: 0, y: 0 });
   }, [mediaCount]);
 
   // The lightbox only ever shows images (video plays inline in the main
-  // gallery instead), so it navigates within image bounds only.
+  // gallery instead), so it navigates within image bounds only. Zoom/pan
+  // reset happens automatically — the TransformWrapper below is keyed by
+  // activeImg, so changing image remounts it fresh.
   const showPrevImage = useCallback((e) => {
     e?.stopPropagation();
     if (galleryImages.length < 2) return;
     setActiveImg(i => (i - 1 + galleryImages.length) % galleryImages.length);
-    setZoom(1); setPan({ x: 0, y: 0 });
   }, [galleryImages.length]);
 
   const showNextImage = useCallback((e) => {
     e?.stopPropagation();
     if (galleryImages.length < 2) return;
     setActiveImg(i => (i + 1) % galleryImages.length);
-    setZoom(1); setPan({ x: 0, y: 0 });
   }, [galleryImages.length]);
 
   // Swipe-to-navigate on the main gallery image (mobile). A genuine swipe
@@ -247,31 +243,6 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
     if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.5) {
       e.preventDefault();
       dx < 0 ? showNext() : showPrev();
-    }
-  };
-
-  // Same idea inside the full-screen lightbox, but only while not zoomed in
-  // (when zoomed, touch-drag pans the image instead — handled separately).
-  const handleLightboxTouchStart = (e) => {
-    const t = e.touches[0];
-    if (zoom === 1) { lightboxSwipeRef.current = { x: t.clientX, y: t.clientY }; return; }
-    onDragStart(t.clientX, t.clientY);
-  };
-  const handleLightboxTouchMove = (e) => {
-    if (zoom === 1) return;
-    const t = e.touches[0];
-    onDragMove(t.clientX, t.clientY);
-  };
-  const handleLightboxTouchEnd = (e) => {
-    if (zoom !== 1) { onDragEnd(); return; }
-    const start = lightboxSwipeRef.current;
-    lightboxSwipeRef.current = null;
-    if (!start) return;
-    const t = e.changedTouches[0];
-    const dx = t.clientX - start.x;
-    const dy = t.clientY - start.y;
-    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-      dx < 0 ? showNextImage() : showPrevImage();
     }
   };
 
@@ -363,37 +334,7 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
     }, 380);
   };
 
-  // ── Lightbox pan/zoom (mouse drag + wheel, touch drag + pinch-free double-tap) ──
-  const toggleZoom = () => {
-    setZoom(z => {
-      const next = z > 1 ? 1 : 2.4;
-      if (next === 1) setPan({ x: 0, y: 0 });
-      return next;
-    });
-  };
-
-  const onWheelZoom = (e) => {
-    e.preventDefault();
-    setZoom(z => {
-      const next = Math.min(4, Math.max(1, z - e.deltaY * 0.0018));
-      if (next === 1) setPan({ x: 0, y: 0 });
-      return next;
-    });
-  };
-
-  const onDragStart = (clientX, clientY) => {
-    if (zoom === 1) return;
-    dragState.current = { startX: clientX, startY: clientY, panX: pan.x, panY: pan.y };
-  };
-  const onDragMove = (clientX, clientY) => {
-    if (!dragState.current) return;
-    const dx = clientX - dragState.current.startX;
-    const dy = clientY - dragState.current.startY;
-    setPan({ x: dragState.current.panX + dx, y: dragState.current.panY + dy });
-  };
-  const onDragEnd = () => { dragState.current = null; };
-
-  const openLightbox = () => { setZoom(1); setPan({ x: 0, y: 0 }); setLightboxOpen(true); };
+  const openLightbox = () => setLightboxOpen(true);
 
   return (
     <>
@@ -458,7 +399,11 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
       {modalOpen && createPortal(
         <div className="pd-overlay" onClick={closeModal}>
           <div className="pd-modal" onClick={e => e.stopPropagation()}>
-            <button className="pd-close" onClick={closeModal} aria-label="Close">✕</button>
+            {/* Hidden (not just covered) while the lightbox is open — its own
+                backdrop-filter can leave this button visible/clickable
+                through the lightbox's overlay on some browsers despite a
+                lower z-index, producing two visible close buttons at once. */}
+            {!lightboxOpen && <button className="pd-close" onClick={closeModal} aria-label="Close">✕</button>}
 
             {/* Left — Images: vertical thumbnail rail + large main image */}
             <div className="pd-left">
@@ -704,7 +649,10 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
         document.body
       )}
 
-      {/* ── Full-screen Lightbox: zoom / pan / navigate ── */}
+      {/* ── Full-screen Lightbox: real pinch/double-tap/wheel zoom + pan via
+          react-zoom-pan-pinch, +/- and Reset kept as an explicit fallback.
+          Keyed by activeImg so switching images remounts with a clean
+          reset scale/position rather than carrying over the last zoom. ── */}
       {modalOpen && lightboxOpen && createPortal(
         <div className="lightbox-overlay" onClick={() => setLightboxOpen(false)}>
           <button className="lightbox-close" onClick={() => setLightboxOpen(false)} aria-label="Close zoom view">✕</button>
@@ -716,38 +664,38 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
             </>
           )}
 
-          <div className="lightbox-toolbar" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setZoom(z => Math.max(1, z - 0.5))} aria-label="Zoom out">−</button>
-            <span>{Math.round(zoom * 100)}%</span>
-            <button onClick={() => setZoom(z => Math.min(4, z + 0.5))} aria-label="Zoom in">+</button>
-            <button onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }} aria-label="Reset zoom">Reset</button>
-          </div>
-
-          <div
-            className="lightbox-stage"
-            onClick={e => e.stopPropagation()}
-            onWheel={onWheelZoom}
-            onDoubleClick={toggleZoom}
-            onMouseDown={(e) => onDragStart(e.clientX, e.clientY)}
-            onMouseMove={(e) => onDragMove(e.clientX, e.clientY)}
-            onMouseUp={onDragEnd}
-            onMouseLeave={onDragEnd}
-            onTouchStart={handleLightboxTouchStart}
-            onTouchMove={handleLightboxTouchMove}
-            onTouchEnd={handleLightboxTouchEnd}
+          <TransformWrapper
+            key={activeImg}
+            initialScale={1}
+            minScale={1}
+            maxScale={4}
+            centerOnInit
+            doubleClick={{ mode: 'toggle', step: 1.4 }}
+            onTransform={(ref, state) => setZoomPct(Math.round(state.scale * 100))}
           >
-            <img
-              key={activeImg}
-              src={galleryImages[activeImg] || product.image}
-              alt={product.name}
-              className="lightbox-img"
-              draggable={false}
-              style={{
-                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-                cursor: zoom > 1 ? 'grab' : 'zoom-in',
-              }}
-            />
-          </div>
+            {({ zoomIn, zoomOut, resetTransform }) => (
+              <>
+                <div className="lightbox-toolbar" onClick={e => e.stopPropagation()}>
+                  <button onClick={() => zoomOut()} aria-label="Zoom out">−</button>
+                  <span>{zoomPct}%</span>
+                  <button onClick={() => zoomIn()} aria-label="Zoom in">+</button>
+                  <button onClick={() => resetTransform()} aria-label="Reset zoom">Reset</button>
+                </div>
+
+                <TransformComponent
+                  wrapperClass="lightbox-stage"
+                  wrapperProps={{ onClick: e => e.stopPropagation() }}
+                >
+                  <img
+                    src={galleryImages[activeImg] || product.image}
+                    alt={product.name}
+                    className="lightbox-img"
+                    draggable={false}
+                  />
+                </TransformComponent>
+              </>
+            )}
+          </TransformWrapper>
         </div>,
         document.body
       )}
