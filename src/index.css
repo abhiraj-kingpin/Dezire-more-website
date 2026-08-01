@@ -6485,28 +6485,40 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     grid-column: 1 / -1;
     grid-row: 1;
     justify-self: start;
-    gap: 10px;
-    max-width: 68%;
+    gap: 6px;
+    /* Base rule sets min-width:max-content, which silently overrides any
+       max-width here once content is narrower than the cap (used width
+       is max(min-width, max-width) per spec) — must reset it or the
+       reservation below does nothing. Reserves the icon row's fixed
+       width (4 buttons x 32px + 3 gaps x 6px = 146px) plus a real gap,
+       so the wordmark can never grow into the wishlist icon again. */
+    min-width: 0;
+    max-width: calc(100% - 160px);
   }
   /* Company name shown next to the emblem; tagline dropped on mobile —
      it was wide enough to collide with the wishlist icon. */
   .logo-text {
     display: flex;
+    min-width: 0;
   }
   .logo-text .logo-name {
-    font-size: 1.1875rem;
-    letter-spacing: 1.5px;
+    font-size: 1.0625rem;
+    letter-spacing: 0.9px;
     padding-bottom: 4px;
     border-bottom: 1.5px solid var(--gold);
     display: inline-block;
     width: fit-content;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
   .logo-text .logo-tagline {
     display: none;
   }
   .logo-emblem {
-    width: 60px;
-    height: 60px;
+    width: 46px;
+    height: 46px;
     top: 0;
   }
   .nav-icons {
@@ -6516,7 +6528,7 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 10px;
+    gap: 6px;
   }
   /* The search bar row below already covers search — no need for a
      redundant search icon here. */
