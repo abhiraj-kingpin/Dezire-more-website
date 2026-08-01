@@ -125,7 +125,21 @@ function makeMsg(from, text, extra = {}) {
 
 export default function HelplineWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  const [showGreeting, setShowGreeting] = useState(true);
+  // Shown once ever per browser, not on every page load/visit — same
+  // "seen" pattern as IntroAnimation.jsx's own localStorage flag. The
+  // initializer only reads (must stay pure — React.StrictMode calls it
+  // twice in dev, so writing here made the 2nd call see the 1st call's
+  // own write and always resolve to "already seen"); the write happens
+  // once, as a mount effect, below.
+  const [showGreeting, setShowGreeting] = useState(() => {
+    try { return localStorage.getItem('dm_greeting_seen') !== 'true'; }
+    catch { return true; }
+  });
+  useEffect(() => {
+    if (!showGreeting) return;
+    try { localStorage.setItem('dm_greeting_seen', 'true'); } catch { /* private browsing, etc. */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only the initial mount value matters
+  }, []);
   const [messages, setMessages] = useState([
     makeMsg('bot', "Hi! 👋 Welcome to Dezire More. Ask me about your order, sizing, our collections, or styling advice — I'm here to help!"),
   ]);
