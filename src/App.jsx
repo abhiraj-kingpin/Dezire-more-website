@@ -47,6 +47,7 @@ function App() {
             <SearchProvider>
               <BrowserRouter>
                 <ScrollToTop />
+                <HelplineWidget />
                 <Routes>
                   <Route path="/" element={<Layout />}>
                     <Route index element={<Home />} />
@@ -93,7 +94,6 @@ function App() {
           </WishlistProvider>
         </CartProvider>
       </AuthProvider>
-      <HelplineWidget />
       </ToastProvider>
     </ThemeProvider>
   );

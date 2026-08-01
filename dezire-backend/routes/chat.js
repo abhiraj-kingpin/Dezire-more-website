@@ -123,4 +123,32 @@ router.post('/', chatLimiter, optionalAuth, async (req, res) => {
   }
 });
 
+// ── Direct-query tiers for the Help widget's deterministic pipeline ────────
+// These bypass Gemini entirely — the widget's intentMatcher routes a message
+// here instead of to POST / whenever it confidently recognizes an order- or
+// product-lookup request, so the common cases never cost an LLM call. Reuse
+// the exact same whitelisted chatTools.js functions the AI tool-calling path
+// already uses, so the security/field-whitelisting logic exists in one place
+// regardless of which path reached it.
+router.get('/order-status', chatLimiter, optionalAuth, async (req, res) => {
+  try {
+    const result = await checkOrderStatus({ orderNumber: req.query.orderNumber }, req.user);
+    res.json(result);
+  } catch (err) {
+    console.error('[chat/order-status] error:', err.message);
+    res.status(500).json({ found: false });
+  }
+});
+
+router.get('/product-search', chatLimiter, async (req, res) => {
+  try {
+    const { q, category, minPrice, maxPrice } = req.query;
+    const result = await searchProducts({ query: q, category, minPrice, maxPrice });
+    res.json(result);
+  } catch (err) {
+    console.error('[chat/product-search] error:', err.message);
+    res.status(500).json({ products: [] });
+  }
+});
+
 module.exports = router;

@@ -168,7 +168,7 @@ function Navbar() {
   // whatever page is open, not route changes — so on Home, opening any of
   // them left the Style Assistant bubble showing underneath, since the
   // route (and therefore the Home-only check in Layout.jsx) never changed.
-  // Chatbot listens for this to hide itself while any of them are open.
+  // HelplineWidget listens for this to hide itself while any of them are open.
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('dm:overlay-visibility', { detail: { open: anyOverlayOpen } }));
   }, [anyOverlayOpen]);

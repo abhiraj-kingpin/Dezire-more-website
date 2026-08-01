@@ -4,7 +4,6 @@ import { Helmet } from 'react-helmet-async';
 import AnnouncementBar from './AnnouncementBar';
 import Navbar from './Navbar';
 import Footer from './Footer';
-import Chatbot from './Chatbot';
 import { titleForPath, descriptionForPath, robotsForPath, urlForPath } from '../utils/pageTitles';
 
 // index.html ships static description/OG/Twitter/canonical tags as a
@@ -34,7 +33,6 @@ function removeStaticSeoTags() {
 
 function Layout() {
   const { pathname } = useLocation();
-  const isHome = pathname === '/';
 
   useEffect(() => {
     removeStaticSeoTags();
@@ -70,7 +68,6 @@ function Layout() {
         <Outlet />
       </main>
       <Footer />
-      {isHome && <Chatbot />}
     </>
   );
 }
