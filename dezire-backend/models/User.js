@@ -56,6 +56,12 @@ const userSchema = new mongoose.Schema(
 
     notificationsEnabled: { type: Boolean, default: true },
 
+    // FCM device tokens for the Android app — an array (not a single field)
+    // since the same account can be logged in on more than one device.
+    // Registered on login/app-open, removed on logout so a signed-out
+    // device stops receiving pushes for that account.
+    fcmTokens: { type: [String], default: [] },
+
     membership: {
       tier:        { type: String, enum: ['none', 'gold', 'platinum'], default: 'none' },
       status:      { type: String, enum: ['inactive', 'pending', 'active', 'expired'], default: 'inactive' },

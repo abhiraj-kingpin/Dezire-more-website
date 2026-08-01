@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { BASE } from '../hooks/useProducts';
+import { initPushNotifications, removePushToken } from '../utils/pushNotifications';
 
 const AuthContext = createContext();
 const TOKEN_KEY = 'dezire_token';
@@ -32,6 +33,7 @@ export function AuthProvider({ children }) {
   const applySession = (token, userData) => {
     localStorage.setItem(TOKEN_KEY, token);
     setUser(userData);
+    initPushNotifications(authHeaders);
   };
 
   // Restore session on app load by validating the stored token against the
@@ -50,6 +52,7 @@ export function AuthProvider({ children }) {
         if (!res.ok) return; // transient server error — keep the token, don't touch user
         const data = await parseJson(res);
         setUser(data.user);
+        initPushNotifications(authHeaders);
       })
       .catch(() => {}) // network error — keep the token, don't touch user
       .finally(() => setLoading(false));
@@ -147,6 +150,9 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
+    // Needs the still-valid token to authenticate the removal call, so this
+    // has to happen before the token itself is cleared below.
+    removePushToken(authHeaders);
     localStorage.removeItem(TOKEN_KEY);
     setUser(null);
     // Cart/wishlist are in-memory only (not saved per-account server-side),

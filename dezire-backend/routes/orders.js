@@ -13,6 +13,7 @@ const User = require('../models/User');
 const { sendOrderConfirmationEmail, sendAdminOrderAlert, sendOrderStatusEmail } = require('../utils/notifications');
 const { logAdminAction } = require('../utils/auditLog');
 const shiprocket = require('../services/shiprocket');
+const fcm = require('../services/fcm');
 
 // Real, automatically-verified payments — replaces the old manual QR/UPI
 // reference-entry flow. Test-mode keys work immediately (no KYC needed);
@@ -265,6 +266,9 @@ router.patch('/:id/razorpay/confirm', requireAuth, async (req, res) => {
       if (order.orderStatus === 'Order Placed') order.orderStatus = 'Payment Confirmed';
       await order.save();
       sendOrderStatusEmail(order).catch(err => console.error('[order status email]', err.message));
+      User.findOne({ email: order.customerEmail }).select('notificationsEnabled fcmTokens').lean()
+        .then(customer => { if (customer?.notificationsEnabled !== false) fcm.sendOrderStatusPush(customer, order); })
+        .catch(err => console.error('[order status push]', err.message));
     }
 
     res.json({ success: true, order });
@@ -298,6 +302,9 @@ router.post('/razorpay/webhook', async (req, res) => {
         if (order.orderStatus === 'Order Placed') order.orderStatus = 'Payment Confirmed';
         await order.save();
         sendOrderStatusEmail(order).catch(err => console.error('[order status email]', err.message));
+        User.findOne({ email: order.customerEmail }).select('notificationsEnabled fcmTokens').lean()
+          .then(customer => { if (customer?.notificationsEnabled !== false) fcm.sendOrderStatusPush(customer, order); })
+          .catch(err => console.error('[order status push]', err.message));
       }
     }
 
@@ -345,6 +352,7 @@ router.patch('/:id/cancel', requireAuth, async (req, res) => {
 
     if (req.user.notificationsEnabled !== false) {
       sendOrderStatusEmail(order).catch(err => console.error('[order status email]', err.message));
+      fcm.sendOrderStatusPush(req.user, order).catch(err => console.error('[order status push]', err.message));
     }
 
     res.json({ success: true, order });
@@ -444,9 +452,10 @@ router.patch('/:id/status', adminAuth, async (req, res) => {
 
     if (orderStatus) {
       const customerEmail = (order.customerEmail || '').toLowerCase().trim();
-      const customer = await User.findOne({ email: customerEmail }).select('notificationsEnabled').lean();
+      const customer = await User.findOne({ email: customerEmail }).select('notificationsEnabled fcmTokens').lean();
       if (!customer || customer.notificationsEnabled !== false) {
         sendOrderStatusEmail(order).catch(err => console.error('[order status email]', err.message));
+        if (customer) fcm.sendOrderStatusPush(customer, order).catch(err => console.error('[order status push]', err.message));
       }
     }
 
@@ -490,9 +499,10 @@ router.post('/:id/create-shipment', adminAuth, async (req, res) => {
     logAdminAction(req.admin.email, 'order.create-shipment', order._id, `${order.orderNumber}: ${result.awbAssigned ? `AWB ${result.awbCode} (${result.courierName})` : `order created, AWB pending — ${result.error}`}`);
 
     if (result.awbAssigned) {
-      const customer = await User.findOne({ email: order.customerEmail }).select('notificationsEnabled').lean();
+      const customer = await User.findOne({ email: order.customerEmail }).select('notificationsEnabled fcmTokens').lean();
       if (!customer || customer.notificationsEnabled !== false) {
         sendOrderStatusEmail(order).catch(err => console.error('[order status email]', err.message));
+        if (customer) fcm.sendOrderStatusPush(customer, order).catch(err => console.error('[order status push]', err.message));
       }
     }
 
@@ -528,9 +538,10 @@ router.post('/shiprocket/webhook', async (req, res) => {
       order.orderStatus = mappedStatus;
       if (mappedStatus === 'Delivered') order.deliveredAt = new Date();
       await order.save();
-      const customer = await User.findOne({ email: order.customerEmail }).select('notificationsEnabled').lean();
+      const customer = await User.findOne({ email: order.customerEmail }).select('notificationsEnabled fcmTokens').lean();
       if (!customer || customer.notificationsEnabled !== false) {
         sendOrderStatusEmail(order).catch(err => console.error('[order status email]', err.message));
+        if (customer) fcm.sendOrderStatusPush(customer, order).catch(err => console.error('[order status push]', err.message));
       }
     } else {
       await order.save();

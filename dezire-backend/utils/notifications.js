@@ -242,4 +242,5 @@ module.exports = {
   sendOrderStatusEmail,
   sendWishlistAlertEmail,
   sendExchangeStatusEmail,
+  ORDER_STATUS_MESSAGES: STATUS_MESSAGES,
 };

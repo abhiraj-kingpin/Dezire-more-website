@@ -274,6 +274,33 @@ router.patch('/me', requireAuth, async (req, res) => {
   }
 });
 
+// POST /api/auth/fcm-token — registers this device for push notifications.
+// $addToSet so calling it repeatedly (every app open) doesn't pile up
+// duplicate entries for the same device.
+router.post('/fcm-token', requireAuth, async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ error: 'FCM token is required' });
+    await User.updateOne({ _id: req.user._id }, { $addToSet: { fcmTokens: token } });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// DELETE /api/auth/fcm-token — called on logout so a signed-out device
+// stops receiving pushes meant for this account.
+router.delete('/fcm-token', requireAuth, async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ error: 'FCM token is required' });
+    await User.updateOne({ _id: req.user._id }, { $pull: { fcmTokens: token } });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // ── Saved addresses ─────────────────────────────────────────────────────────
 
 router.post('/addresses', requireAuth, async (req, res) => {
