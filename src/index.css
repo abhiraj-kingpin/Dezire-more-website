@@ -5079,6 +5079,12 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     border-radius: 10px;
     transition: background 0.2s ease;
     flex-shrink: 0;
+    /* .nav-links becomes a position:fixed drawer (z-index: 200) covering the
+       top-left corner when open — without this, the static-positioned
+       hamburger/X toggle is painted underneath it and disappears entirely,
+       leaving no visible way to close the drawer except tapping the backdrop. */
+    position: relative;
+    z-index: 201;
   }
   .nav-hamburger:active { background: var(--surface-alt); }
 
