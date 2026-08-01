@@ -104,6 +104,7 @@ function Navbar() {
   const [pendingAddress, setPendingAddress] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [paymentReferenceInput, setPaymentReferenceInput] = useState('');
+  const [amountPaidInput, setAmountPaidInput] = useState('');
   const [upiSettings, setUpiSettings] = useState({ upiId: '' });
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [lastOrderId, setLastOrderId] = useState('');
@@ -526,6 +527,10 @@ function Navbar() {
       setOrderError('Please enter the UPI transaction reference / UTR number after paying.');
       return;
     }
+    if (paymentMethod === 'UPI' && !(Number(amountPaidInput) > 0)) {
+      setOrderError('Please enter the amount you paid.');
+      return;
+    }
 
     setIsPlacingOrder(true);
     try {
@@ -557,6 +562,7 @@ function Navbar() {
           couponCode: appliedCoupon?.code,
           paymentMethod,
           paymentReference: paymentMethod === 'UPI' ? paymentReferenceInput.trim() : undefined,
+          amountPaid: paymentMethod === 'UPI' ? Number(amountPaidInput) : undefined,
         }),
       });
       const data = await res.json();
@@ -582,6 +588,7 @@ function Navbar() {
     setAppliedCoupon(null);
     setCouponInput('');
     setPaymentReferenceInput('');
+    setAmountPaidInput('');
   };
 
   // The order already exists at this point (created just above, status
@@ -1167,7 +1174,7 @@ function Navbar() {
                     </div>
                     <p className="payment-upi-id">UPI ID: <strong>{upiSettings.upiId}</strong></p>
                     <p className="payment-verify-hint">
-                      Scan with any UPI app — the amount is pre-filled, but please don't change it. After paying, enter the transaction reference / UTR number below; we'll confirm your payment manually, which can take a few hours.
+                      Scan with any UPI app — the amount is pre-filled, but please don't change it. After paying, enter the transaction reference / UTR number and amount paid below; we'll confirm your payment manually, which can take a few hours.
                     </p>
                     <input
                       type="text"
@@ -1175,6 +1182,14 @@ function Navbar() {
                       placeholder="UPI transaction reference / UTR number"
                       value={paymentReferenceInput}
                       onChange={e => setPaymentReferenceInput(e.target.value)}
+                    />
+                    <input
+                      type="number"
+                      className="payment-input payment-input-spaced"
+                      placeholder="Amount paid"
+                      value={amountPaidInput}
+                      onChange={e => setAmountPaidInput(e.target.value)}
+                      onFocus={() => { if (!amountPaidInput) setAmountPaidInput(finalTotal.toFixed(2)); }}
                     />
                   </div>
                 )}
@@ -1200,6 +1215,7 @@ function Navbar() {
           setPaymentStep(false);
           setPaymentMethod('');
           setPaymentReferenceInput('');
+          setAmountPaidInput('');
           setPlacedOrder(null);
         }}>
           <div className="checkout-modal checkout-modal-narrow" onClick={e => e.stopPropagation()}>

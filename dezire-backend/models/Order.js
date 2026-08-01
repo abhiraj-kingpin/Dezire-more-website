@@ -53,6 +53,15 @@ const orderSchema = new mongoose.Schema(
     // old manual QR/UPI flow — superseded by Razorpay's own verified
     // payment IDs below for new orders, kept for historical ones.
     paymentReference: { type: String, trim: true },
+    // What the customer claims they paid, entered alongside paymentReference
+    // for manual UPI orders — compared against `total` by the admin against
+    // their real bank/UPI app, not validated automatically (there's nothing
+    // to validate it against on this end).
+    amountPaid: { type: Number },
+    // Audit trail for PATCH /orders/admin/:id/verify-payment — who manually
+    // confirmed a manual-reference payment actually landed, and when.
+    paymentVerifiedAt: { type: Date },
+    paymentVerifiedBy: { type: String, trim: true },
     // Razorpay's own order for this purchase — created right after our
     // Order exists so its amount can't be tampered with client-side.
     razorpayOrderId: { type: String },

@@ -175,6 +175,7 @@
     <button class="nav-item active" onclick="showPage('dashboard')">Dashboard</button>
     <button class="nav-item" onclick="showPage('analytics')">Analytics</button>
     <button class="nav-item" onclick="showPage('orders')">Orders</button>
+    <button class="nav-item" onclick="showPage('verify')">Pending Verification</button>
     <button class="nav-item" onclick="showPage('exchanges')">Exchanges</button>
     <button class="nav-item" onclick="showPage('customers')">Customers</button>
     <button class="nav-item" onclick="showPage('coupons')">Coupons</button>
@@ -244,6 +245,15 @@
       <p class="subtitle">Every order placed on the store, newest first</p>
       <div class="card" style="padding:0;overflow:hidden">
         <div id="orders-list"><p class="loading" style="padding:40px">Loading…</p></div>
+      </div>
+    </div>
+
+    <!-- Pending Verification -->
+    <div class="page" id="page-verify">
+      <h2>Pending Verification</h2>
+      <p class="subtitle">Manual UPI / bank transfer orders awaiting a human check against your real UPI or bank app — COD and Razorpay orders never appear here.</p>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="verify-list"><p class="loading" style="padding:40px">Loading…</p></div>
       </div>
     </div>
 
@@ -638,6 +648,7 @@ function showPage(name) {
   if (name === 'dashboard') loadDashboard();
   if (name === 'analytics') loadAnalytics();
   if (name === 'orders') loadOrdersList();
+  if (name === 'verify') loadVerifyList();
   if (name === 'exchanges') loadExchangesList();
   if (name === 'customers') loadCustomersList();
   if (name === 'coupons') loadCouponsList();
@@ -774,6 +785,7 @@ const ORDER_STATUSES = [
   'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled',
 ];
 let allOrders = [];
+let pendingVerifyOrders = [];
 let expandedOrderId = null;
 
 async function loadOrdersList() {
@@ -785,6 +797,52 @@ async function loadOrdersList() {
   } catch (err) {
     document.getElementById('orders-list').innerHTML = `<p class="empty">Failed to load orders: ${err.message}</p>`;
   }
+}
+
+// Manual-reference orders (UPI / legacy QR / Online Banking) not yet marked
+// paid — COD has nothing to verify, Razorpay confirms itself automatically.
+async function loadVerifyList() {
+  try {
+    const res = await fetch(`${API}/orders/admin/all`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    pendingVerifyOrders = (data.data || []).filter(o =>
+      o.paymentStatus !== 'paid' && !['COD', 'Razorpay'].includes(o.paymentMethod)
+    );
+    renderVerifyTable();
+  } catch (err) {
+    document.getElementById('verify-list').innerHTML = `<p class="empty">Failed to load: ${err.message}</p>`;
+  }
+}
+
+function renderVerifyTable() {
+  const el = document.getElementById('verify-list');
+  if (!pendingVerifyOrders.length) {
+    el.innerHTML = '<p class="empty">Nothing waiting on verification right now</p>';
+    return;
+  }
+  el.innerHTML = `
+    <table class="products-table">
+      <thead><tr>
+        <th>Order</th><th>Customer</th><th>Expected</th><th>UTR / Reference</th><th>Claimed Paid</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${pendingVerifyOrders.map(o => {
+          const mismatch = o.amountPaid != null && Number(o.amountPaid) !== Number(o.total);
+          return `
+          <tr>
+            <td><strong>${o.orderNumber}</strong><br/><span style="font-size:11px;color:var(--muted)">${new Date(o.createdAt).toLocaleDateString('en-IN')}</span></td>
+            <td>${o.customerName}<br/><span style="font-size:11px;color:var(--muted)">${o.customerPhone}</span></td>
+            <td>₹${o.total.toLocaleString('en-IN')}</td>
+            <td style="font-family:monospace">${o.paymentReference || '—'}</td>
+            <td style="${mismatch ? 'color:#c0392b;font-weight:600' : ''}">
+              ${o.amountPaid != null ? `₹${Number(o.amountPaid).toLocaleString('en-IN')}` : '—'}
+              ${mismatch ? '<br/><span style="font-size:11px">⚠ doesn\'t match expected</span>' : ''}
+            </td>
+            <td><button class="btn btn-gold" style="padding:6px 14px;font-size:12px" onclick="confirmOrderPayment('${o._id}')">Verify Payment</button></td>
+          </tr>
+        `; }).join('')}
+      </tbody>
+    </table>`;
 }
 
 function toggleOrderDetail(id) {
@@ -811,28 +869,26 @@ async function updateOrderStatus(id, orderStatus) {
 }
 
 // Razorpay orders confirm themselves automatically (signature verification
-// on checkout success, backed by a webhook) — this button is a manual
-// fallback for the rare case that fails, or for pre-Razorpay orders placed
-// under the old manual QR/UPI flow. Check the payment in your Razorpay
-// dashboard (or bank/UPI app for legacy orders) before clicking.
+// on checkout success, backed by a webhook) — this button (shown both here
+// and on the dedicated Pending Verification tab) is for manual UPI/bank-
+// transfer orders, or a fallback for the rare Razorpay case that fails.
+// Check the UTR + amount in your real UPI/bank app before clicking — this
+// is a human confirmation, nothing here validates it automatically.
 async function confirmOrderPayment(id) {
-  if (!confirm('Have you verified this payment? This will mark the order as Paid.')) return;
+  if (!confirm('Have you verified this payment against your UPI/bank app? This will mark the order as Paid.')) return;
   try {
-    const order = allOrders.find(o => o._id === id);
-    const res = await fetch(`${API}/orders/${id}/status`, {
+    const res = await fetch(`${API}/orders/admin/${id}/verify-payment`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({
-        paymentStatus: 'paid',
-        orderStatus: order?.orderStatus === 'Order Placed' ? 'Payment Confirmed' : undefined,
-      }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
     const idx = allOrders.findIndex(o => o._id === id);
     if (idx > -1) allOrders[idx] = data.order;
+    pendingVerifyOrders = pendingVerifyOrders.filter(o => o._id !== id);
     renderOrdersTable();
-    toast('Payment confirmed', 'success');
+    renderVerifyTable();
+    toast('Payment verified', 'success');
     // There's no automatic email/SMS/WhatsApp API wired in, so the customer
     // isn't notified unless someone tells them. This opens WhatsApp Web/App
     // with the confirmation pre-typed — you still have to hit Send yourself.

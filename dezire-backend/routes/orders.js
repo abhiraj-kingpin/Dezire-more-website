@@ -72,7 +72,7 @@ router.post('/', requireAuth, async (req, res) => {
     const {
       customerName, customerPhone,
       items, address, subtotal, deliveryCharge, total,
-      paymentMethod, paymentReference, isGift, giftMessage, couponCode,
+      paymentMethod, paymentReference, amountPaid, isGift, giftMessage, couponCode,
     } = req.body;
     const customerEmail = req.user.email;
 
@@ -119,6 +119,9 @@ router.post('/', requireAuth, async (req, res) => {
     if (needsManualReference && !paymentReference?.trim()) {
       return res.status(400).json({ error: 'Please enter the UPI transaction ID / reference number from your payment app.' });
     }
+    if (needsManualReference && !(Number(amountPaid) > 0)) {
+      return res.status(400).json({ error: 'Please enter the amount you paid.' });
+    }
 
     // Re-validated here rather than trusting whatever discount the client
     // already showed at checkout — a coupon can expire or hit its usage
@@ -157,6 +160,7 @@ router.post('/', requireAuth, async (req, res) => {
       discountAmount,
       paymentMethod,
       paymentReference: needsManualReference ? paymentReference.trim() : undefined,
+      amountPaid: needsManualReference ? Number(amountPaid) : undefined,
       paymentStatus: 'pending',
       orderStatus: 'Order Placed',
       estimatedDelivery: estimatedDeliveryDate(),
@@ -465,6 +469,40 @@ router.patch('/:id/status', adminAuth, async (req, res) => {
   }
 });
 
+// PATCH /api/orders/admin/:orderId/verify-payment — dedicated action for
+// manually-referenced (UPI/QR/Online Banking) orders: admin has checked the
+// UTR + amount against their real bank/UPI app and confirms it actually
+// landed. Deliberately its own route (not folded into the generic
+// PATCH /:id/status above) so the audit stamps below always get set
+// consistently, regardless of which admin-panel button triggers it.
+router.patch('/admin/:orderId/verify-payment', adminAuth, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.orderId);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    if (order.paymentStatus === 'paid') {
+      return res.status(400).json({ error: 'This order is already marked paid.' });
+    }
+
+    order.paymentStatus = 'paid';
+    order.paymentVerifiedAt = new Date();
+    order.paymentVerifiedBy = req.admin.email;
+    if (order.orderStatus === 'Order Placed') order.orderStatus = 'Payment Confirmed';
+    await order.save();
+
+    logAdminAction(req.admin.email, 'order.verify-payment', order._id, `${order.orderNumber}: UTR ${order.paymentReference || 'n/a'}, claimed ₹${order.amountPaid ?? 'n/a'} against total ₹${order.total}`);
+
+    const customer = await User.findOne({ email: order.customerEmail }).select('notificationsEnabled fcmTokens').lean();
+    if (!customer || customer.notificationsEnabled !== false) {
+      sendOrderStatusEmail(order).catch(err => console.error('[order status email]', err.message));
+      if (customer) fcm.sendOrderStatusPush(customer, order).catch(err => console.error('[order status push]', err.message));
+    }
+
+    res.json({ success: true, order });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // POST /api/orders/:id/create-shipment — admin creates a real Shiprocket
 // shipment for this order and gets back a live AWB/tracking number. Package
 // weight/dimensions aren't tracked per-product anywhere in this app, so
@@ -481,6 +519,14 @@ router.post('/:id/create-shipment', adminAuth, async (req, res) => {
     if (!order) return res.status(404).json({ error: 'Order not found' });
     if (order.shipment?.awbCode) {
       return res.status(400).json({ error: `This order already has a shipment (AWB ${order.shipment.awbCode}).` });
+    }
+    // COD has nothing to verify (cash collected on delivery) — everything
+    // else (UPI, legacy QR/Online Banking, Razorpay) must be paymentStatus
+    // 'paid' before it's eligible for dispatch. Razorpay orders reach that
+    // automatically on checkout; manual-reference orders need the admin's
+    // explicit verify-payment action first.
+    if (order.paymentMethod !== 'COD' && order.paymentStatus !== 'paid') {
+      return res.status(400).json({ error: 'Payment hasn\'t been verified for this order yet — verify it before creating a shipment.' });
     }
 
     const { weight = 0.5, length = 30, breadth = 20, height = 5 } = req.body || {};
