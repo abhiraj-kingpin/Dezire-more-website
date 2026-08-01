@@ -5741,6 +5741,7 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   background: none;
   border: none;
   padding: 13px 0;
+  font-family: inherit;
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--text-dark);
@@ -6474,14 +6475,10 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   display: none;
 }
 @media (max-width: 768px) {
-  /* Row 1: logo + name  ...........  wishlist / cart / settings / account
-     Row 2: hamburger  +  search bar */
+  /* Row 1: logo + wordmark alone, full width — no icons compete for space.
+     Row 2: hamburger (left) | search bar (center) | Account icon (right). */
   nav {
-    /* Column 1 is a fixed narrow track sized only for the hamburger button —
-       logo and icons span the full row and self-align to opposite edges, so
-       neither one forces column 1 wider (which used to starve the search bar
-       on row 2 of space). */
-    grid-template-columns: 40px 1fr;
+    grid-template-columns: 40px 1fr 48px;
     grid-template-rows: auto auto;
     align-items: center;
     column-gap: 10px;
@@ -6492,23 +6489,23 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     grid-column: 1 / -1;
     grid-row: 1;
     justify-self: start;
-    gap: 10px;
+    gap: 12px;
     /* Base rule sets min-width:max-content, which silently overrides any
        max-width here once content is narrower than the cap (used width
-       is max(min-width, max-width) per spec) — must reset it or the
-       reservation below does nothing. Wishlist/Cart/Settings collapse into
-       the single Account icon on mobile now, so only one ~32px icon shares
-       this row — reserve just enough for that, not four. */
+       is max(min-width, max-width) per spec) — must reset it or a max-width
+       here would do nothing. Nothing else shares row 1 anymore (Account
+       moved to row 2 below), so the logo can use the full row. */
     min-width: 0;
-    max-width: calc(100% - 50px);
+    max-width: 100%;
   }
   .logo-text {
     display: flex;
     min-width: 0;
   }
   .logo-text .logo-name {
-    font-size: 1.3125rem;
-    letter-spacing: 1.75px;
+    font-size: 1.625rem;
+    font-weight: 700;
+    letter-spacing: 2.5px;
     padding-bottom: 4px;
     border-bottom: 1.5px solid var(--gold);
     display: inline-block;
@@ -6521,19 +6518,19 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   /* Restored on mobile now that the single-icon layout leaves room —
      sized down from the desktop tagline so it doesn't crowd the wordmark. */
   .logo-text .logo-tagline {
-    font-size: 0.5rem;
-    letter-spacing: 1.2px;
-    margin-top: 3px;
+    font-size: 0.5625rem;
+    letter-spacing: 1.4px;
+    margin-top: 4px;
     white-space: nowrap;
   }
   .logo-emblem {
-    width: 56px;
-    height: 56px;
+    width: 68px;
+    height: 68px;
     top: 0;
   }
   .nav-icons {
-    grid-column: 1 / -1;
-    grid-row: 1;
+    grid-column: 3;
+    grid-row: 2;
     justify-self: end;
     display: flex;
     align-items: center;
@@ -6555,9 +6552,30 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   .nav-icons .icon-account-desktop {
     display: none;
   }
+  /* Account is now the single hub for Orders/Cart/Wishlist/Profile/
+     Addresses/Membership — it should read as the primary action, not a
+     plain outline icon lost among the others. `.nav-icons button` (below)
+     already forces background:none/color:text-dark at higher specificity
+     than plain `.auth-trigger-btn`, which is why the guest icon rendered
+     flat before — matched here with `.nav-icons .mobile-account-btn`
+     (0,2,0) so the gold/green treatment actually wins. */
   .nav-icons .mobile-account-btn {
     display: flex;
     position: relative;
+    width: 40px;
+    height: 40px;
+    border: 1.75px solid var(--gold);
+    background: var(--surface-alt);
+  }
+  /* Guest state has no inner avatar circle to carry color, so the button
+     itself gets the site's primary dark-green/gold treatment instead. */
+  .nav-icons .mobile-account-btn:not(.user-logged-in) {
+    background: var(--dark-green);
+    color: var(--gold-light);
+  }
+  .nav-icons .mobile-account-btn:not(.user-logged-in) svg {
+    width: 20px;
+    height: 20px;
   }
   .nav-icons button,
   .auth-trigger-btn {
