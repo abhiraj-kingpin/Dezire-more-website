@@ -728,10 +728,17 @@ export default function HelplineWidget() {
           </div>
         )}
 
-        <button className="dz-toggle" onClick={() => { setIsOpen(!isOpen); setShowGreeting(false); }} aria-label={isOpen ? 'Close help' : 'Open help'}>
-          {isOpen ? <X size={26} strokeWidth={2} /> : <MessageCircle size={26} strokeWidth={1.8} />}
-          {!isOpen && unread > 0 && <span className="dz-badge">{unread}</span>}
-        </button>
+        {/* Closing is handled solely by the header's .dz-hclose once open —
+            this used to also render as an X here, but .dz-wrap's fixed
+            bottom-right position sits right over the panel's own input/send
+            bar (especially the full-height mobile sheet), blocking it. One
+            close button, always in the header, never duplicated here. */}
+        {!isOpen && (
+          <button className="dz-toggle" onClick={() => { setIsOpen(true); setShowGreeting(false); }} aria-label="Open help">
+            <MessageCircle size={26} strokeWidth={1.8} />
+            {unread > 0 && <span className="dz-badge">{unread}</span>}
+          </button>
+        )}
       </div>
     </>
   );
