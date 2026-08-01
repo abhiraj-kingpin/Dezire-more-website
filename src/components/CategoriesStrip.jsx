@@ -41,6 +41,7 @@ const categories = [
   {
     name: 'Jewelry & Accessories',
     link: '/jewelry-accessories',
+    wide: true,
     images: [
       '/assets/jewelry/jewelry1.jpeg',
       '/assets/accessories/accessories1.png',
@@ -80,7 +81,7 @@ function CategoryCard({ cat }) {
   return (
     <Link
       to={cat.link}
-      className="cat-card"
+      className={`cat-card ${cat.wide ? 'cat-card-wide' : ''}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >

@@ -601,10 +601,10 @@ function Navbar() {
 
       <button
         className="nav-hamburger"
-        aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+        aria-label="Open menu"
         onClick={() => setMobileMenuOpen(prev => !prev)}
       >
-        {mobileMenuOpen ? <X size={22} strokeWidth={1.8} /> : <MenuIcon size={22} strokeWidth={1.8} />}
+        <MenuIcon size={22} strokeWidth={1.8} />
       </button>
 
       <Link to="/" className="nav-logo" style={{ flexShrink: 0 }}>
@@ -678,6 +678,16 @@ function Navbar() {
       {mobileMenuOpen && <div className="nav-mobile-backdrop" onClick={closeMobileMenu} />}
 
       <ul className={`nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+        {/* Real header row (title + close), not a decorative ::before with
+            the toggle button z-index-layered over it from its collapsed-bar
+            position — that let the "X" land on top of whichever list item
+            happened to sit at that fixed coordinate once the header grew. */}
+        <li className="nav-links-header">
+          <span>Dezire More</span>
+          <button className="nav-links-close" onClick={closeMobileMenu} aria-label="Close menu">
+            <X size={20} strokeWidth={2} />
+          </button>
+        </li>
         <li><Link to="/sarees" onClick={closeMobileMenu}>Sarees</Link></li>
         <li><Link to="/dress-materials" onClick={closeMobileMenu}>Dress Materials</Link></li>
         <li className={`dropdown ${readyToWearOpen ? 'open' : ''}`}>

@@ -556,7 +556,10 @@ button.mobile-account-btn {
 .categories { padding: 70px 48px; background: var(--warm-white); }
 /* Flexbox (not a fixed-column grid) so a non-divisible category count — 5 —
    always wraps into centered, evenly-sized rows instead of leaving a
-   lopsided orphan card on the last row at any viewport width. */
+   lopsided orphan card on the last row at any viewport width. Verified
+   this only actually settles into 2-per-row (where .cat-card-wide below
+   applies) at real phone widths (<=440px) — wider viewports wrap
+   differently (5 across, 4+1, 3+2) and are left alone. */
 .categories-grid {
   display: flex;
   flex-wrap: wrap;
@@ -593,6 +596,39 @@ button.mobile-account-btn {
   .categories-grid { gap: 12px; }
   .cat-card { flex-basis: 130px; max-width: 155px; }
   .cat-overlay h3 { font-size: 1.125rem; }
+}
+
+/* At real phone widths the flex-wrap above always settles into exactly
+   2 cards per row (verified: still 4+1 at 600px, only becomes 2-per-row
+   at <=440px) — 5 cards means the last (Jewelry & Accessories) wraps
+   alone, centered and narrower than a real row instead of looking like
+   part of the grid. Switch to an explicit 2-column grid here so it can
+   deliberately span both columns as a full-width last row instead. */
+@media (max-width: 440px) {
+  .categories-grid {
+    display: grid;
+    /* Fixed-size columns (not 1fr) so normal cards keep the same ~155px
+       size .cat-card's own max-width already gives them — 1fr would
+       stretch them to fill the row instead, throwing off the height
+       match below. justify-content centers the pair, same as the old
+       flexbox's justify-content:center did. */
+    grid-template-columns: repeat(2, 155px);
+    justify-content: center;
+  }
+  /* Matching .cat-card's 3:4 aspect-ratio at double the width would make
+     this row twice as tall as a normal one — height is pinned to match
+     a normal card's own rendered height instead (155px column => ~207px
+     tall via 3:4, i.e. this row). */
+  .cat-card-wide {
+    grid-column: 1 / -1;
+    /* .cat-card's own max-width:155px (set above for the 2-up grid
+       columns) otherwise caps this at a single column's width even
+       though its grid area correctly spans both. */
+    max-width: none;
+    width: 100%;
+    aspect-ratio: auto;
+    height: 207px;
+  }
 }
 .wedding-banner { margin: 0 48px; background: linear-gradient(to right, var(--warm-white) 40%, transparent); position: relative; overflow: hidden; border-radius: 2px; min-height: 280px; display: flex; align-items: center; }
 .wedding-content { position: relative; z-index: 2; padding: 50px 52px; }
@@ -5117,12 +5153,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     border-radius: 10px;
     transition: background 0.2s ease;
     flex-shrink: 0;
-    /* .nav-links becomes a position:fixed drawer (z-index: 200) covering the
-       top-left corner when open — without this, the static-positioned
-       hamburger/X toggle is painted underneath it and disappears entirely,
-       leaving no visible way to close the drawer except tapping the backdrop. */
-    position: relative;
-    z-index: 201;
   }
   .nav-hamburger:active { background: var(--surface-alt); }
 
@@ -6487,14 +6517,22 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     min-width: 0;
     max-width: 100%;
   }
+  /* align-items:center on .nav-logo centers the whole (taller) emblem
+     against the whole (name + tagline) text block, which puts the
+     wordmark's own visual center above the emblem's — the tagline line
+     below it pulls the block's midpoint down without the emblem having
+     an equivalent. Nudging the text block down compensates so the
+     wordmark line itself, not the two-line block, lines up with the
+     emblem's center. */
   .logo-text {
     display: flex;
     min-width: 0;
+    margin-top: 15px;
   }
   .logo-text .logo-name {
-    font-size: 1.625rem;
+    font-size: 1.4375rem;
     font-weight: 700;
-    letter-spacing: 2.5px;
+    letter-spacing: 2.2px;
     padding-bottom: 4px;
     border-bottom: 1.5px solid var(--gold);
     display: inline-block;
@@ -6513,8 +6551,8 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     white-space: nowrap;
   }
   .logo-emblem {
-    width: 68px;
-    height: 68px;
+    width: 84px;
+    height: 84px;
     top: 0;
   }
   .nav-icons {
@@ -6631,9 +6669,14 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     background: var(--cream) !important;
     padding: 0 0 24px !important;
   }
-  .nav-links::before {
-    content: "Dezire More";
-    display: block;
+  /* Real header row (title + close button) — see the matching JSX comment
+     for why this replaced a decorative ::before banner with a toggle
+     button z-index-layered on top of it from an unrelated position. */
+  .nav-links-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     font-family: 'Cormorant Garamond', serif;
     font-size: 1.4375rem;
     font-weight: 700;
@@ -6641,8 +6684,25 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     text-transform: uppercase;
     color: var(--gold-light);
     background: var(--dark-green);
-    padding: 30px 24px 18px;
+    padding: 30px 16px 18px 24px;
     margin-bottom: 6px;
+  }
+  .nav-links-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: none;
+    border: none;
+    color: var(--gold-light);
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  .nav-links-close:active {
+    background: rgba(255, 255, 255, 0.12);
   }
   .nav-links a {
     position: relative;
