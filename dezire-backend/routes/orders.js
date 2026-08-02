@@ -558,6 +558,52 @@ router.post('/:id/create-shipment', adminAuth, async (req, res) => {
   }
 });
 
+// PATCH /api/orders/admin/:orderId/manual-tracking — free alternative to the
+// Shiprocket route above, for shipping the normal way (courier counter,
+// India Post, etc.) instead of through a paid aggregator account. Admin
+// enters whatever tracking number the courier gave them by hand; if no
+// custom link is given, defaults to 17track.net's free public lookup, which
+// covers virtually every Indian courier with no account needed on either
+// end. Same shape as Shiprocket's result (courierName/awbCode/trackingUrl)
+// so MyOrders.jsx's tracking display works identically either way — it has
+// no idea, and doesn't need to, which path produced this data.
+router.patch('/admin/:orderId/manual-tracking', adminAuth, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.orderId);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    if (order.shipment?.awbCode) {
+      return res.status(400).json({ error: `This order already has a shipment (AWB ${order.shipment.awbCode}).` });
+    }
+    if (order.paymentMethod !== 'COD' && order.paymentStatus !== 'paid') {
+      return res.status(400).json({ error: 'Payment hasn\'t been verified for this order yet — verify it before adding tracking.' });
+    }
+
+    const { awbCode, courierName, trackingUrl } = req.body || {};
+    if (!awbCode?.trim()) return res.status(400).json({ error: 'Tracking number is required' });
+    if (!courierName?.trim()) return res.status(400).json({ error: 'Courier name is required' });
+
+    order.shipment = {
+      awbCode: awbCode.trim(),
+      courierName: courierName.trim(),
+      trackingUrl: trackingUrl?.trim() || `https://t.17track.net/en#nums=${encodeURIComponent(awbCode.trim())}`,
+    };
+    order.orderStatus = 'Shipped';
+    await order.save();
+
+    logAdminAction(req.admin.email, 'order.manual-tracking', order._id, `${order.orderNumber}: AWB ${order.shipment.awbCode} (${order.shipment.courierName})`);
+
+    const customer = await User.findOne({ email: order.customerEmail }).select('notificationsEnabled fcmTokens').lean();
+    if (!customer || customer.notificationsEnabled !== false) {
+      sendOrderStatusEmail(order).catch(err => console.error('[order status email]', err.message));
+      if (customer) fcm.sendOrderStatusPush(customer, order).catch(err => console.error('[order status push]', err.message));
+    }
+
+    res.json({ success: true, order });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // POST /api/orders/shiprocket/webhook — real-time shipment status updates
 // (out for delivery, delivered, RTO, etc.) instead of the static "+9 days"
 // estimate. Verified via a shared secret (set the same value here and in

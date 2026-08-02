@@ -947,13 +947,43 @@ function renderShipmentSection(o) {
     return `<p style="font-size:13px;margin-top:4px;color:var(--muted)">Order created on Shiprocket, but no courier could be auto-assigned yet (check the Shiprocket dashboard — usually a serviceability/pincode issue).</p>`;
   }
   return `
-    <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin-top:4px">
-      <label style="font-size:11px;color:var(--muted)">Weight (kg)<br/><input type="number" step="0.1" value="0.5" id="ship-weight-${o._id}" style="width:70px;padding:5px"/></label>
-      <label style="font-size:11px;color:var(--muted)">L (cm)<br/><input type="number" value="30" id="ship-l-${o._id}" style="width:60px;padding:5px"/></label>
-      <label style="font-size:11px;color:var(--muted)">B (cm)<br/><input type="number" value="20" id="ship-b-${o._id}" style="width:60px;padding:5px"/></label>
-      <label style="font-size:11px;color:var(--muted)">H (cm)<br/><input type="number" value="5" id="ship-h-${o._id}" style="width:60px;padding:5px"/></label>
-      <button class="btn btn-gold" style="padding:6px 14px;font-size:12px" onclick="createShipment('${o._id}')">Create Shipment</button>
+    <div style="margin-top:4px">
+      <p style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px">Enter tracking manually (free — no account needed)</p>
+      <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin-bottom:14px">
+        <label style="font-size:11px;color:var(--muted)">Courier<br/><input type="text" placeholder="e.g. India Post, Delhivery" id="track-courier-${o._id}" style="width:150px;padding:5px"/></label>
+        <label style="font-size:11px;color:var(--muted)">Tracking / AWB number<br/><input type="text" id="track-awb-${o._id}" style="width:160px;padding:5px"/></label>
+        <button class="btn btn-gold" style="padding:6px 14px;font-size:12px" onclick="submitManualTracking('${o._id}')">Save Tracking</button>
+      </div>
+      <p style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px">Or create via Shiprocket (needs a configured account)</p>
+      <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
+        <label style="font-size:11px;color:var(--muted)">Weight (kg)<br/><input type="number" step="0.1" value="0.5" id="ship-weight-${o._id}" style="width:70px;padding:5px"/></label>
+        <label style="font-size:11px;color:var(--muted)">L (cm)<br/><input type="number" value="30" id="ship-l-${o._id}" style="width:60px;padding:5px"/></label>
+        <label style="font-size:11px;color:var(--muted)">B (cm)<br/><input type="number" value="20" id="ship-b-${o._id}" style="width:60px;padding:5px"/></label>
+        <label style="font-size:11px;color:var(--muted)">H (cm)<br/><input type="number" value="5" id="ship-h-${o._id}" style="width:60px;padding:5px"/></label>
+        <button class="btn btn-outline" style="padding:6px 14px;font-size:12px" onclick="createShipment('${o._id}')">Create Shipment</button>
+      </div>
     </div>`;
+}
+
+async function submitManualTracking(id) {
+  const courierName = document.getElementById(`track-courier-${id}`).value.trim();
+  const awbCode = document.getElementById(`track-awb-${id}`).value.trim();
+  if (!courierName || !awbCode) { toast('Enter both courier name and tracking number', 'error'); return; }
+  try {
+    const res = await fetch(`${API}/orders/admin/${id}/manual-tracking`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ courierName, awbCode }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const idx = allOrders.findIndex(o => o._id === id);
+    if (idx > -1) allOrders[idx] = data.order;
+    renderOrdersTable();
+    toast('Tracking saved', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
 }
 
 async function createShipment(id) {
