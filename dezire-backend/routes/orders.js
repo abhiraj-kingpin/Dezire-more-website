@@ -503,6 +503,42 @@ router.patch('/admin/:orderId/verify-payment', adminAuth, async (req, res) => {
   }
 });
 
+// PATCH /api/orders/admin/:orderId/reject-payment — the other side of
+// verify-payment: admin checked their UPI/bank app and the claimed UTR/
+// amount never actually landed. Explicit paymentStatus:'failed' (already in
+// the enum, previously unused) + orderStatus:'Cancelled' (the same status
+// customer-initiated cancellation uses) rather than silently leaving it
+// pending — so it's clearly resolved and drops out of Pending Verification.
+router.patch('/admin/:orderId/reject-payment', adminAuth, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.orderId);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    if (order.paymentStatus === 'paid') {
+      return res.status(400).json({ error: 'This order is already marked paid — cannot reject it.' });
+    }
+    if (order.orderStatus === 'Cancelled') {
+      return res.status(400).json({ error: 'This order is already cancelled.' });
+    }
+
+    order.paymentStatus = 'failed';
+    order.orderStatus = 'Cancelled';
+    order.cancellationReason = 'Payment not verified by admin';
+    await order.save();
+
+    logAdminAction(req.admin.email, 'order.reject-payment', order._id, `${order.orderNumber}: UTR ${order.paymentReference || 'n/a'} did not match/land — marked payment failed, order cancelled`);
+
+    const customer = await User.findOne({ email: order.customerEmail }).select('notificationsEnabled fcmTokens').lean();
+    if (!customer || customer.notificationsEnabled !== false) {
+      sendOrderStatusEmail(order).catch(err => console.error('[order status email]', err.message));
+      if (customer) fcm.sendOrderStatusPush(customer, order).catch(err => console.error('[order status push]', err.message));
+    }
+
+    res.json({ success: true, order });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // POST /api/orders/:id/create-shipment — admin creates a real Shiprocket
 // shipment for this order and gets back a live AWB/tracking number. Package
 // weight/dimensions aren't tracked per-product anywhere in this app, so

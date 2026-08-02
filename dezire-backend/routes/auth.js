@@ -462,6 +462,21 @@ router.get('/admin/all', adminAuth, async (req, res) => {
   }
 });
 
+// DELETE /api/auth/admin/:userId — removes a customer account (spam/test
+// signups, or a deletion request). Orders reference customerEmail directly
+// rather than a User foreign key, so their order history stays intact for
+// business records even after the account itself is gone.
+router.delete('/admin/:userId', adminAuth, async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.userId);
+    if (!user) return res.status(404).json({ error: 'Customer not found' });
+    logAdminAction(req.admin.email, 'customer.delete', user._id, user.email);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 router.patch('/admin/membership/:userId/confirm', adminAuth, async (req, res) => {
   try {
     const user = await User.findById(req.params.userId);

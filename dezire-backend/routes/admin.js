@@ -64,4 +64,34 @@ router.get('/audit-log', adminAuth, async (req, res) => {
   }
 });
 
+// DELETE /api/admin/audit-log/month/:month — bulk-clear a whole month's
+// worth of entries at once (month as 'YYYY-MM', e.g. '2026-08') so the log
+// doesn't grow forever. A specific /month/ path rather than a query string
+// so it can't accidentally collide with the single-entry DELETE below.
+router.delete('/audit-log/month/:month', adminAuth, async (req, res) => {
+  try {
+    const match = /^(\d{4})-(\d{2})$/.exec(req.params.month);
+    if (!match) return res.status(400).json({ error: 'Month must be in YYYY-MM format' });
+    const [, year, month] = match;
+    const start = new Date(Number(year), Number(month) - 1, 1);
+    const end = new Date(Number(year), Number(month), 1);
+
+    const result = await AuditLog.deleteMany({ createdAt: { $gte: start, $lt: end } });
+    res.json({ success: true, deletedCount: result.deletedCount });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/admin/audit-log/:id — remove a single entry.
+router.delete('/audit-log/:id', adminAuth, async (req, res) => {
+  try {
+    const result = await AuditLog.findByIdAndDelete(req.params.id);
+    if (!result) return res.status(404).json({ error: 'Log entry not found' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

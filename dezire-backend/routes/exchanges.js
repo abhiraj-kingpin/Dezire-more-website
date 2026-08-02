@@ -121,4 +121,19 @@ router.patch('/admin/:id/status', adminAuth, async (req, res) => {
   }
 });
 
+// DELETE /api/exchanges/admin/:id — removes a stray/duplicate/test request
+// from the list. Status changes (Approved/Rejected/Completed) above are the
+// normal way to resolve a real customer request; this is for cleaning up
+// entries that shouldn't be there at all, not a substitute for Reject.
+router.delete('/admin/:id', adminAuth, async (req, res) => {
+  try {
+    const exchange = await Exchange.findByIdAndDelete(req.params.id);
+    if (!exchange) return res.status(404).json({ error: 'Exchange request not found' });
+    logAdminAction(req.admin.email, 'exchange.delete', exchange._id, `${exchange.orderNumber}: ${exchange.productName}`);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 module.exports = router;

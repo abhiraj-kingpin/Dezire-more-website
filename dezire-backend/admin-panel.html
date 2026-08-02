@@ -560,6 +560,12 @@
     <div class="page" id="page-activity">
       <h2>Activity Log</h2>
       <p class="subtitle">Recent admin actions — order/payment status, product, coupon, and membership changes</p>
+      <div class="card" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:16px">
+        <label style="font-size:11px;color:var(--muted)">Clear a whole month<br/>
+          <select id="activity-month-select" style="width:auto;padding:7px 10px;font-size:13px"></select>
+        </label>
+        <button class="btn btn-danger" style="padding:8px 14px;font-size:13px" onclick="clearAuditLogMonth()">Clear Log</button>
+      </div>
       <div class="card" style="padding:0;overflow:hidden">
         <div id="activity-list"><p class="loading" style="padding:40px">Loading…</p></div>
       </div>
@@ -838,7 +844,10 @@ function renderVerifyTable() {
               ${o.amountPaid != null ? `₹${Number(o.amountPaid).toLocaleString('en-IN')}` : '—'}
               ${mismatch ? '<br/><span style="font-size:11px">⚠ doesn\'t match expected</span>' : ''}
             </td>
-            <td><button class="btn btn-gold" style="padding:6px 14px;font-size:12px" onclick="confirmOrderPayment('${o._id}')">Verify Payment</button></td>
+            <td style="white-space:nowrap">
+              <button class="btn btn-gold" style="padding:6px 14px;font-size:12px" onclick="confirmOrderPayment('${o._id}')">Verify Payment</button>
+              <button class="btn btn-outline" style="padding:6px 14px;font-size:12px;color:var(--danger);margin-top:6px" onclick="rejectOrderPayment('${o._id}')">Payment Not Done</button>
+            </td>
           </tr>
         `; }).join('')}
       </tbody>
@@ -893,6 +902,30 @@ async function confirmOrderPayment(id) {
     // isn't notified unless someone tells them. This opens WhatsApp Web/App
     // with the confirmation pre-typed — you still have to hit Send yourself.
     window.open(waLinkForOrder(data.order, waPaymentConfirmedMessage(data.order)), '_blank', 'noreferrer');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+// The other half of confirmOrderPayment above — admin checked their real
+// UPI/bank app and the claimed UTR/amount never actually showed up.
+async function rejectOrderPayment(id) {
+  if (!confirm('Mark this payment as not received? This cancels the order and cannot be undone.')) return;
+  try {
+    const res = await fetch(`${API}/orders/admin/${id}/reject-payment`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const idx = allOrders.findIndex(o => o._id === id);
+    if (idx > -1) allOrders[idx] = data.order;
+    pendingVerifyOrders = pendingVerifyOrders.filter(o => o._id !== id);
+    renderOrdersTable();
+    renderVerifyTable();
+    toast('Order cancelled — payment not received', 'success');
+    const msg = `Hi ${data.order.customerName.split(' ')[0]}, we couldn't verify the payment for your Dezire More order ${data.order.orderNumber}, so it's been cancelled. If you did pay, please reply with your transaction reference and we'll look into it right away.`;
+    window.open(waLinkForOrder(data.order, msg), '_blank', 'noreferrer');
   } catch (err) {
     toast(err.message, 'error');
   }
@@ -1099,6 +1132,25 @@ async function updateExchangeStatus(id, status) {
   }
 }
 
+// This is for removing a stray/duplicate/test request entirely — changing
+// the dropdown above to "Rejected" is the normal way to resolve a real one.
+async function deleteExchange(id) {
+  if (!confirm('Delete this exchange request? This cannot be undone.')) return;
+  try {
+    const res = await fetch(`${API}/exchanges/admin/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    allExchanges = allExchanges.filter(e => e._id !== id);
+    renderExchangesTable();
+    toast('Exchange request deleted', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
 function renderExchangesTable() {
   const el = document.getElementById('exchanges-list');
   if (!allExchanges.length) {
@@ -1108,7 +1160,7 @@ function renderExchangesTable() {
   el.innerHTML = `
     <table class="products-table">
       <thead><tr>
-        <th>Order</th><th>Item</th><th>Reason</th><th>Description</th><th>Status</th>
+        <th>Order</th><th>Item</th><th>Reason</th><th>Description</th><th>Status</th><th></th>
       </tr></thead>
       <tbody>
         ${allExchanges.map(e => `
@@ -1122,6 +1174,7 @@ function renderExchangesTable() {
                 ${EXCHANGE_STATUSES.map(s => `<option value="${s}" ${s === e.status ? 'selected' : ''}>${s}</option>`).join('')}
               </select>
             </td>
+            <td><button class="btn btn-outline" style="padding:6px 10px;font-size:11px;color:var(--danger)" onclick="deleteExchange('${e._id}')">Delete</button></td>
           </tr>
         `).join('')}
       </tbody>
@@ -1162,6 +1215,25 @@ async function confirmMembership(userId) {
     if (idx > -1) allCustomers[idx].membership = data.membership;
     renderCustomersTable();
     toast('Membership activated', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+// Orders keep the customer's email directly (not a foreign key to their
+// account), so deleting the account here doesn't touch their order history.
+async function deleteCustomer(id, email) {
+  if (!confirm(`Delete the account for "${email}"? This cannot be undone. Their past orders are kept for your records either way.`)) return;
+  try {
+    const res = await fetch(`${API}/auth/admin/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    allCustomers = allCustomers.filter(c => c._id !== id);
+    renderCustomersTable();
+    toast('Customer deleted', 'success');
   } catch (err) {
     toast(err.message, 'error');
   }
@@ -1210,6 +1282,7 @@ function renderCustomersTable() {
                 ${lastPayment?.paymentReference ? `<div style="font-size:11px;margin-bottom:6px">Ref: <code>${lastPayment.paymentReference}</code></div>` : `<div style="font-size:11px;color:var(--muted);margin-bottom:6px">(reference not submitted yet)</div>`}
                 <button class="btn btn-gold" style="padding:6px 12px;font-size:12px" onclick="confirmMembership('${c._id}')">Confirm Payment</button>
               ` : ''}
+              <button class="btn btn-outline" style="padding:6px 10px;font-size:11px;color:var(--danger);margin-top:6px" onclick="deleteCustomer('${c._id}','${c.email}')">Delete</button>
             </td>
           </tr>
           ${isExpanded ? `
@@ -1236,28 +1309,98 @@ function renderCustomersTable() {
 
 // ── Activity Log ──────────────────────────────────────────────────────────────
 
+let allActivityLogs = [];
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
 async function loadAuditLog() {
   try {
     const res = await fetch(`${API}/admin/audit-log`, { headers: { Authorization: `Bearer ${token}` } });
     const data = await res.json();
-    const logs = data.data || [];
-    document.getElementById('activity-list').innerHTML = logs.length
-      ? `<table class="products-table">
-          <thead><tr><th>When</th><th>Admin</th><th>Action</th><th>Details</th></tr></thead>
-          <tbody>
-            ${logs.map(l => `
-              <tr>
-                <td style="font-size:12px;color:var(--muted);white-space:nowrap">${new Date(l.createdAt).toLocaleString('en-IN')}</td>
-                <td style="font-size:12px">${l.adminEmail}</td>
-                <td style="font-size:12px"><span class="badge badge-active">${l.action}</span></td>
-                <td style="font-size:12px">${l.details || ''}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>`
-      : '<p class="empty">No admin activity recorded yet</p>';
+    allActivityLogs = data.data || [];
+    populateActivityMonthSelect();
+    renderAuditLog();
   } catch (err) {
     document.getElementById('activity-list').innerHTML = `<p class="empty">Failed to load activity log: ${err.message}</p>`;
+  }
+}
+
+// Options are derived from months that actually have entries (not every
+// calendar month ever), so the dropdown only ever offers something there's
+// actually something to clear.
+function populateActivityMonthSelect() {
+  const months = [...new Set(allActivityLogs.map(l => {
+    const d = new Date(l.createdAt);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }))].sort().reverse();
+
+  const sel = document.getElementById('activity-month-select');
+  sel.innerHTML = months.length
+    ? months.map(m => {
+        const [y, mo] = m.split('-');
+        return `<option value="${m}">${MONTH_NAMES[Number(mo) - 1]} ${y}</option>`;
+      }).join('')
+    : '<option value="">No entries yet</option>';
+}
+
+function renderAuditLog() {
+  document.getElementById('activity-list').innerHTML = allActivityLogs.length
+    ? `<table class="products-table">
+        <thead><tr><th>When</th><th>Admin</th><th>Action</th><th>Details</th><th></th></tr></thead>
+        <tbody>
+          ${allActivityLogs.map(l => `
+            <tr>
+              <td style="font-size:12px;color:var(--muted);white-space:nowrap">${new Date(l.createdAt).toLocaleString('en-IN')}</td>
+              <td style="font-size:12px">${l.adminEmail}</td>
+              <td style="font-size:12px"><span class="badge badge-active">${l.action}</span></td>
+              <td style="font-size:12px">${l.details || ''}</td>
+              <td><button class="btn btn-outline" style="padding:4px 10px;font-size:11px;color:var(--danger)" onclick="deleteAuditLogEntry('${l._id}')">Delete</button></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`
+    : '<p class="empty">No admin activity recorded yet</p>';
+}
+
+async function deleteAuditLogEntry(id) {
+  if (!confirm('Delete this log entry? This cannot be undone.')) return;
+  try {
+    const res = await fetch(`${API}/admin/audit-log/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    allActivityLogs = allActivityLogs.filter(l => l._id !== id);
+    populateActivityMonthSelect();
+    renderAuditLog();
+    toast('Log entry deleted', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function clearAuditLogMonth() {
+  const month = document.getElementById('activity-month-select').value;
+  if (!month) return;
+  const [y, mo] = month.split('-');
+  const label = `${MONTH_NAMES[Number(mo) - 1]} ${y}`;
+  if (!confirm(`Delete every activity log entry from ${label}? This cannot be undone.`)) return;
+  try {
+    const res = await fetch(`${API}/admin/audit-log/month/${month}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    allActivityLogs = allActivityLogs.filter(l => {
+      const d = new Date(l.createdAt);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` !== month;
+    });
+    populateActivityMonthSelect();
+    renderAuditLog();
+    toast(`Deleted ${data.deletedCount} entr${data.deletedCount === 1 ? 'y' : 'ies'} from ${label}`, 'success');
+  } catch (err) {
+    toast(err.message, 'error');
   }
 }
 
@@ -1643,9 +1786,12 @@ function editProduct(id) {
     document.getElementById(`tag-${tag}`).checked = (p.tags||[]).includes(tag);
   });
 
-  // Show existing images
+  // Show existing images — marked data-existing so renderPreviews() (below)
+  // knows to leave these alone and never re-render them itself; they're
+  // server-side images with their own dedicated remove path
+  // (deleteExistingImage), not part of the selectedFiles upload queue.
   document.getElementById('image-previews').innerHTML = (p.images||[]).map(img => `
-    <div class="preview-item">
+    <div class="preview-item" data-existing="true">
       <img src="${img.url}" />
       <button class="remove-img" onclick="deleteExistingImage('${id}','${img.publicId}',this.parentElement)">×</button>
     </div>`).join('');
@@ -1839,6 +1985,15 @@ function handleDragLeave()  { document.getElementById('upload-zone').classList.r
 
 function renderPreviews() {
   const el = document.getElementById('image-previews');
+  // Bug was here: this used to re-scan the DOM for ".preview-item:not([data-new])"
+  // and prepend whatever it found — but previous calls' own newly-selected-file
+  // previews matched that same selector (nothing ever marked them "new"), so
+  // every re-render re-added them on top of the fresh copy generated just below,
+  // duplicating every already-selected file each time a photo was added or
+  // removed. Only genuinely pre-existing server images (marked data-existing in
+  // editProduct() above) need to survive a re-render; the selectedFiles portion
+  // is authoritative and always safe to fully rebuild from scratch.
+  const existing = el.querySelectorAll('.preview-item[data-existing]');
   const newPreviews = selectedFiles.map((file, i) => {
     const url = URL.createObjectURL(file);
     return `<div class="preview-item">
@@ -1846,9 +2001,7 @@ function renderPreviews() {
       <button class="remove-img" onclick="removeFile(${i})">×</button>
     </div>`;
   }).join('');
-  // Keep existing image previews + append new ones
-  const existing = el.querySelectorAll('.preview-item:not([data-new])');
-  el.innerHTML = Array.from(existing).map(el => el.outerHTML).join('') + newPreviews;
+  el.innerHTML = Array.from(existing).map(node => node.outerHTML).join('') + newPreviews;
 }
 
 function removeFile(index) {
