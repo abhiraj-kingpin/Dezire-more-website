@@ -128,6 +128,7 @@ function spawnHeartBurst(btnEl) {
 
 function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) {
   const product = normalise(rawProduct);
+  const outOfStock = product.inStock === false;
 
   const [hovered,       setHovered]       = useState(false);
   const [modalOpen,     setModalOpen]     = useState(false);
@@ -296,6 +297,7 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
 
   const handleCardAddToCart = (e) => {
     e.stopPropagation();
+    if (outOfStock) return;
     if (needsSize) {
       showToast('Please select a size', 'info');
       openModal();
@@ -316,6 +318,7 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
   );
 
   const handleModalAddToCart = (e) => {
+    if (outOfStock) return;
     if (needsSize && !selectedSize) { showToast('Please select a size', 'info'); return; }
     const btn = e.currentTarget;
     ripple(btn);
@@ -326,6 +329,7 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
   };
 
   const handleModalBuyNow = (e) => {
+    if (outOfStock) return;
     if (needsSize && !selectedSize) { showToast('Please select a size', 'info'); return; }
     const btn = e.currentTarget;
     ripple(btn);
@@ -353,8 +357,14 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
             ? <img ref={cardImgRef} src={product.image} alt={product.name} loading="lazy" decoding="async" />
             : <div className="product-img-placeholder" />}
 
-          {product.isNew        && <span className="product-badge badge-new">New</span>}
-          {product.isBestseller && <span className="product-badge badge-best">Bestseller</span>}
+          {outOfStock ? (
+            <span className="product-badge badge-outofstock">Out of Stock</span>
+          ) : (
+            <>
+              {product.isNew        && <span className="product-badge badge-new">New</span>}
+              {product.isBestseller && <span className="product-badge badge-best">Bestseller</span>}
+            </>
+          )}
 
           <button
             ref={wishlistBtnRef}
@@ -390,7 +400,9 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
             )}
             {discount > 0 && <span className="price-discount">{discount}% off</span>}
           </div>
-          <button className="add-to-bag" onClick={handleCardAddToCart}>Add to Bag</button>
+          <button className="add-to-bag" onClick={handleCardAddToCart} disabled={outOfStock}>
+            {outOfStock ? 'Out of Stock' : 'Add to Bag'}
+          </button>
         </div>
       </div>
 
@@ -548,6 +560,8 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
                 {discount > 0 && <span className="pd-discount">{discount}% off</span>}
               </div>
 
+              {outOfStock && <p className="pd-out-of-stock-note">Currently out of stock</p>}
+
               <p className="pd-delivery-estimate">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="pd-delivery-icon"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="7.5" cy="18" r="1.5"/><circle cx="17.5" cy="18" r="1.5"/></svg>
                 Estimated delivery in 7–10 business days · Free shipping above ₹1,699
@@ -635,11 +649,11 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
               </div>
 
               <div className="pd-action-row">
-                <button className="pd-add-cart" onClick={handleModalAddToCart}>
-                  Add to Cart
+                <button className="pd-add-cart" onClick={handleModalAddToCart} disabled={outOfStock}>
+                  {outOfStock ? 'Out of Stock' : 'Add to Cart'}
                 </button>
-                <button className="pd-buy-now" onClick={handleModalBuyNow}>
-                  Buy Now
+                <button className={`pd-buy-now ${outOfStock ? 'pd-buy-now-oos' : ''}`} onClick={handleModalBuyNow} disabled={outOfStock}>
+                  {outOfStock ? 'Out of Stock' : 'Buy Now'}
                 </button>
               </div>
               <button

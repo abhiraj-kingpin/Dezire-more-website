@@ -181,6 +181,7 @@
     <button class="nav-item" onclick="showPage('coupons')">Coupons</button>
     <button class="nav-item" onclick="showPage('love')">Client Love</button>
     <button class="nav-item" onclick="showPage('payment')">Payment Settings</button>
+    <button class="nav-item" onclick="showPage('founder')">Owner / Founder</button>
     <button class="nav-item" onclick="showPage('products')">All Products</button>
     <button class="nav-item" onclick="showPage('add')">Add Product</button>
     <button class="nav-item" onclick="showPage('bulk')">Bulk Import</button>
@@ -349,6 +350,31 @@
           <input type="text" id="payment-upi-id" placeholder="yourbusiness@okhdfcbank" style="width:100%" />
         </div>
         <button class="btn btn-gold" id="payment-save-btn" onclick="savePaymentSettings()">Save Payment Settings</button>
+      </div>
+    </div>
+
+    <!-- Owner / Founder -->
+    <div class="page" id="page-founder">
+      <h2>Owner / Founder</h2>
+      <p class="subtitle">Powers the "Founder" section on the Our Story page — photo, name, title, quote, and bio</p>
+      <div class="card" style="max-width:560px">
+        <div id="founder-photo-preview" style="margin-bottom:14px;display:none">
+          <img id="founder-photo-preview-img" src="" alt="Current photo" style="width:120px;height:120px;object-fit:cover;border-radius:8px" />
+        </div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px">
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Name</label><input type="text" id="founder-name" style="width:220px" /></div>
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Title</label><input type="text" id="founder-title" style="width:220px" /></div>
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Photo</label><input type="file" id="founder-photo" accept="image/*" /></div>
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="font-size:12px;display:block;margin-bottom:4px">Quote</label>
+          <textarea id="founder-quote" rows="2" style="width:100%" placeholder="A short personal quote"></textarea>
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="font-size:12px;display:block;margin-bottom:4px">Bio</label>
+          <textarea id="founder-bio" rows="4" style="width:100%" placeholder="A paragraph about the brand's story"></textarea>
+        </div>
+        <button class="btn btn-gold" id="founder-save-btn" onclick="saveFounderSettings()">Save Owner Details</button>
       </div>
     </div>
 
@@ -660,6 +686,7 @@ function showPage(name) {
   if (name === 'coupons') loadCouponsList();
   if (name === 'love') loadTestimonialsList();
   if (name === 'payment') loadPaymentSettings();
+  if (name === 'founder') loadFounderSettings();
   if (name === 'activity') loadAuditLog();
   if (name === 'add' && !document.getElementById('edit-product-id').value) resetForm();
 }
@@ -1677,6 +1704,57 @@ async function savePaymentSettings() {
   }
 }
 
+// ── Owner / Founder ───────────────────────────────────────────────────────────
+
+async function loadFounderSettings() {
+  try {
+    const res = await fetch(`${API}/founder-settings`);
+    const data = await res.json();
+    document.getElementById('founder-name').value = data.name || '';
+    document.getElementById('founder-title').value = data.title || '';
+    document.getElementById('founder-quote').value = data.quote || '';
+    document.getElementById('founder-bio').value = data.bio || '';
+    const preview = document.getElementById('founder-photo-preview');
+    if (data.photo) {
+      document.getElementById('founder-photo-preview-img').src = data.photo;
+      preview.style.display = 'block';
+    } else {
+      preview.style.display = 'none';
+    }
+  } catch (err) {
+    toast('Failed to load owner details: ' + err.message, 'error');
+  }
+}
+
+async function saveFounderSettings() {
+  const fd = new FormData();
+  fd.append('name', document.getElementById('founder-name').value.trim());
+  fd.append('title', document.getElementById('founder-title').value.trim());
+  fd.append('quote', document.getElementById('founder-quote').value.trim());
+  fd.append('bio', document.getElementById('founder-bio').value.trim());
+  const photoFile = document.getElementById('founder-photo').files[0];
+  if (photoFile) fd.append('founderPhoto', photoFile);
+
+  const btn = document.getElementById('founder-save-btn');
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API}/founder-settings`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    toast('Owner details saved', 'success');
+    document.getElementById('founder-photo').value = '';
+    loadFounderSettings();
+  } catch (err) {
+    toast('Failed to save: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 // ── Products List ─────────────────────────────────────────────────────────────
 
 async function loadProductsList() {
@@ -1711,7 +1789,7 @@ function renderProductsTable(products) {
     <table class="products-table">
       <thead><tr>
         <th>Photo</th><th>Name</th><th>Category</th>
-        <th>Price</th><th>Tags</th><th>Status</th><th>Actions</th>
+        <th>Price</th><th>Tags</th><th>Status</th><th>Stock</th><th>Actions</th>
       </tr></thead>
       <tbody>
         ${products.map(p => `
@@ -1726,6 +1804,12 @@ function renderProductsTable(products) {
             <td>${(p.tags||[]).map(t => `<span class="badge badge-tag">${t}</span>`).join('')}</td>
             <td><span class="badge ${p.isActive !== false ? 'badge-active' : 'badge-inactive'}">${p.isActive !== false ? 'Active' : 'Hidden'}</span></td>
             <td>
+              <span class="badge ${p.inStock ? 'badge-active' : 'badge-inactive'}">${p.inStock ? 'In stock' : 'Out of stock'}</span><br/>
+              <button class="btn btn-outline" style="padding:4px 10px;font-size:11px;margin-top:6px" onclick="toggleProductStock('${p._id}', ${p.inStock})">
+                ${p.inStock ? 'Mark Out of Stock' : 'Mark In Stock'}
+              </button>
+            </td>
+            <td>
               <div class="actions">
                 <button class="btn btn-outline" style="padding:6px 12px;font-size:12px" onclick="editProduct('${p._id}')">Edit</button>
                 <button class="btn btn-danger" style="padding:6px 12px;font-size:12px" onclick="deleteProduct('${p._id}','${p.name.replace(/'/g,"\\'")}')">Delete</button>
@@ -1734,6 +1818,28 @@ function renderProductsTable(products) {
           </tr>`).join('')}
       </tbody>
     </table>`;
+}
+
+// Quick in-stock/out-of-stock flip straight from the product list — the full
+// Add/Edit form still has the In Stock dropdown + Stock Count for when more
+// detail is needed, but flagging an outfit as sold out shouldn't require
+// opening the whole edit form and scrolling to find it.
+async function toggleProductStock(id, currentlyInStock) {
+  try {
+    const res = await fetch(`${API}/products/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ inStock: !currentlyInStock }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const idx = allProducts.findIndex(p => p._id === id);
+    if (idx > -1) allProducts[idx] = data.product;
+    renderProductsTable(allProducts);
+    toast(data.product.inStock ? 'Marked in stock' : 'Marked out of stock', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
 }
 
 // ── Add / Edit Product ────────────────────────────────────────────────────────

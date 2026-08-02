@@ -18,6 +18,12 @@ const storage = new CloudinaryStorage({
         allowed_formats: ['mp4', 'mov', 'webm'],
       };
     }
+    if (file.fieldname === 'founderPhoto') {
+      return {
+        folder: 'dezire-more-founder',
+        allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+      };
+    }
     return {
       folder: 'dezire-more-products',
       allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],

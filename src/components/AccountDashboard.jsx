@@ -113,28 +113,34 @@ export function AccountWishlist() {
 
   return (
     <div className="recently-viewed-grid">
-      {wishlist.map(product => (
+      {wishlist.map(product => {
+        const outOfStock = product.inStock === false;
+        return (
         <div key={product.id} className="recently-viewed-card">
           <div className="recently-viewed-img-wrap">
             {product.image ? <img src={product.image} alt={product.name} loading="lazy" decoding="async" /> : <div className="product-img-placeholder" />}
+            {outOfStock && <span className="product-badge badge-outofstock">Out of Stock</span>}
           </div>
           <p className="recently-viewed-name">{product.name}</p>
           <p className="recently-viewed-price">₹{Number(product.price).toLocaleString('en-IN')}</p>
           <div className="account-wishlist-actions">
             <button
               className="account-wishlist-move"
+              disabled={outOfStock}
               onClick={() => {
+                if (outOfStock) return;
                 addToCart(product);
                 toggleWishlist(product);
                 showToast('Moved to cart', 'cart');
               }}
             >
-              Move to Cart
+              {outOfStock ? 'Out of Stock' : 'Move to Cart'}
             </button>
             <button className="account-wishlist-remove" onClick={() => toggleWishlist(product)} aria-label="Remove from wishlist">✕</button>
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

@@ -771,6 +771,8 @@ button.mobile-account-btn.user-logged-in {
 .price-was { font-size: 0.8125rem; color: var(--text-light); text-decoration: line-through; }
 .add-to-bag { width: 100%; background: var(--dark-green); color: #fff; border: 2px solid var(--dark-green); padding: 11px; font-size: 0.625rem; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s; border-radius: 1px; }
 .add-to-bag:hover { background: transparent; color: var(--dark-green); }
+.add-to-bag:disabled { background: #ccc; border-color: #ccc; color: #666; cursor: default; }
+.add-to-bag:disabled:hover { background: #ccc; color: #666; }
 
 /* ===== About Us — Royal ===== */
 .about-section {
@@ -1685,6 +1687,7 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 }
 .recently-viewed-card { text-decoration: none; color: inherit; display: block; }
 .recently-viewed-img-wrap {
+  position: relative;
   aspect-ratio: 4/5;
   background: var(--surface-alt);
   border-radius: 6px;
@@ -1706,6 +1709,8 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   background: transparent; color: var(--dark-green); cursor: pointer;
 }
 .account-wishlist-move:hover { background: var(--dark-green); color: #fff; }
+.account-wishlist-move:disabled { border-color: #ccc; color: #999; cursor: default; }
+.account-wishlist-move:disabled:hover { background: transparent; color: #999; }
 .account-wishlist-remove {
   width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border-color, #ddd);
   background: transparent; color: var(--text-dark); cursor: pointer; font-size: 0.75rem;
@@ -2082,6 +2087,11 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 
 .badge-best {
   background: var(--gold);
+  color: #fff;
+}
+
+.badge-outofstock {
+  background: #6b6b6b;
   color: #fff;
 }
 
@@ -2544,6 +2554,8 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   transform: translateY(-1px);
 }
 .pd-add-cart:active { transform: translateY(0) scale(0.98); }
+.pd-add-cart:disabled { opacity: 0.5; cursor: default; transform: none; }
+.pd-add-cart:disabled:hover { background: transparent; color: var(--dark-green); transform: none; }
 
 .pd-buy-now {
   flex: 1;
@@ -2571,6 +2583,8 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 }
 .pd-buy-now:active { transform: translateY(0) scale(0.98); }
 .pd-buy-now:disabled { opacity: 0.75; cursor: default; transform: none; }
+.pd-buy-now.pd-buy-now-oos:disabled { background: #ccc; border-color: #ccc; color: #666; box-shadow: none; opacity: 1; }
+.pd-buy-now.pd-buy-now-oos:disabled:hover { filter: none; box-shadow: none; transform: none; }
 
 .pd-add-wishlist {
   width: 100%;
@@ -2625,6 +2639,15 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   border-radius: 6px;
   padding: 8px 12px;
   margin-bottom: 16px;
+}
+
+.pd-out-of-stock-note {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #b91c1c;
+  margin-bottom: 12px;
 }
 .pd-delivery-icon { flex-shrink: 0; color: var(--gold); }
 
