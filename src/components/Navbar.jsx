@@ -663,7 +663,20 @@ function Navbar() {
         <MenuIcon size={22} strokeWidth={1.8} />
       </button>
 
-      <Link to="/" className="nav-logo" style={{ flexShrink: 0 }}>
+      <Link
+        to="/"
+        className="nav-logo"
+        style={{ flexShrink: 0 }}
+        onClick={(e) => {
+          // Already home — a same-path Link click is a no-op in React
+          // Router, so force an actual refresh instead (the ask was
+          // "logo = back to home, or reload if already there").
+          if (window.location.pathname === '/') {
+            e.preventDefault();
+            window.location.reload();
+          }
+        }}
+      >
         <div className="logo-img-stack">
           <img src="/assets/logo/logo.png" alt="Dezire More" className="logo-emblem" />
           <span className="logo-royal-tag">Quintessential Queens</span>

@@ -16,6 +16,26 @@
 }
 body { font-family: 'Montserrat', sans-serif; background: var(--cream); color: var(--text-dark); overflow-x: hidden; transition: background 0.25s ease, color 0.25s ease; }
 
+/* Casual-copying deterrent — blocks click-drag text selection and the
+   browser's native image drag/long-press "save" affordance across the
+   storefront. Not real protection (devtools/screenshots always work), just
+   removes the one-click copy path for ordinary visitors. Form fields are
+   explicitly re-enabled since typing/pasting into them has to keep working. */
+body {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+}
+input, textarea, [contenteditable="true"] {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  user-select: text;
+}
+img {
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+}
+
 /* Keyboard focus — on-brand instead of the browser's default blue ring, but
    still always visible for keyboard/screen-reader users. :focus-visible
    means a mouse click never triggers it, only actual keyboard navigation. */

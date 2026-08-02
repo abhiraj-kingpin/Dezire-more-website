@@ -31,11 +31,33 @@ function removeStaticSeoTags() {
   });
 }
 
+// Casual-copying deterrent for the storefront (not a real DRM — anyone using
+// devtools or a screenshot still gets the content, this just removes the
+// one-click "Save Image"/"Copy" affordances for ordinary visitors). Right-
+// click and drag-to-save are blocked everywhere except form fields, where
+// normal text selection/paste has to keep working.
+function blockContextMenu(e) {
+  if (e.target.closest('input, textarea, [contenteditable="true"]')) return;
+  e.preventDefault();
+}
+function blockDragStart(e) {
+  if (e.target.tagName === 'IMG') e.preventDefault();
+}
+
 function Layout() {
   const { pathname } = useLocation();
 
   useEffect(() => {
     removeStaticSeoTags();
+  }, []);
+
+  useEffect(() => {
+    document.addEventListener('contextmenu', blockContextMenu);
+    document.addEventListener('dragstart', blockDragStart);
+    return () => {
+      document.removeEventListener('contextmenu', blockContextMenu);
+      document.removeEventListener('dragstart', blockDragStart);
+    };
   }, []);
 
   const title = titleForPath(pathname);
