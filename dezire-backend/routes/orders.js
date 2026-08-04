@@ -569,6 +569,7 @@ router.post('/:id/create-shipment', adminAuth, async (req, res) => {
     const result = await shiprocket.createShipment(order, { weight, length, breadth, height });
 
     order.shipment = {
+      provider: 'shiprocket',
       shiprocketOrderId: result.shiprocketOrderId,
       shiprocketShipmentId: result.shiprocketShipmentId,
       awbCode: result.awbCode,
@@ -619,6 +620,7 @@ router.patch('/admin/:orderId/manual-tracking', adminAuth, async (req, res) => {
     if (!courierName?.trim()) return res.status(400).json({ error: 'Courier name is required' });
 
     order.shipment = {
+      provider: 'manual',
       awbCode: awbCode.trim(),
       courierName: courierName.trim(),
       trackingUrl: trackingUrl?.trim() || `https://t.17track.net/en#nums=${encodeURIComponent(awbCode.trim())}`,

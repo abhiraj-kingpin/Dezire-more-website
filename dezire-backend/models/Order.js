@@ -97,6 +97,10 @@ const orderSchema = new mongoose.Schema(
     // before this existed, or for a site that hasn't configured
     // SHIPROCKET_EMAIL/PASSWORD at all.
     shipment: {
+      // Which path produced this shipment — lets admin's Track/Cancel
+      // buttons call the right service without guessing from the data
+      // shape. Absent on shipments created before this field existed.
+      provider:            { type: String, enum: ['shiprocket', 'delhivery', 'manual'] },
       shiprocketOrderId:   { type: String },
       shiprocketShipmentId: { type: String },
       awbCode:             { type: String },
