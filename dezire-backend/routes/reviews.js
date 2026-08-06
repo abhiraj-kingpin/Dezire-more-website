@@ -6,7 +6,7 @@ const Review = require('../models/Review');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
 const { requireAuth } = require('./auth');
-const { upload } = require('../middleware/cloudinary');
+const { upload, cloudinary } = require('../middleware/cloudinary');
 
 function currentUserIdFromToken(req) {
   const token = req.headers.authorization?.split(' ')[1];
@@ -37,6 +37,9 @@ function publicReview(review, userId) {
     verifiedPurchase: review.verifiedPurchase,
     helpfulCount: review.helpfulVotes.length,
     helpfulByMe: userId ? review.helpfulVotes.some(v => String(v) === String(userId)) : false,
+    // Lets the frontend show a Delete button on the reviewer's own card
+    // without exposing the raw userId to every other visitor.
+    isMine: userId ? String(review.userId) === String(userId) : false,
     createdAt: review.createdAt,
   };
 }
@@ -139,6 +142,31 @@ router.post('/:id/helpful', requireAuth, async (req, res) => {
     await review.save();
 
     res.json({ success: true, helpfulCount: review.helpfulVotes.length, helpfulByMe: !already });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// DELETE /api/reviews/:id — a customer removing their own review. Not an
+// admin moderation tool (there's no admin route for this) — ownership is
+// required, no exceptions.
+router.delete('/:id', requireAuth, async (req, res) => {
+  try {
+    const review = await Review.findById(req.params.id);
+    if (!review) return res.status(404).json({ error: 'Review not found' });
+    if (String(review.userId) !== String(req.user._id)) {
+      return res.status(403).json({ error: 'You can only delete your own review' });
+    }
+
+    for (const img of review.images) {
+      if (img.publicId) await cloudinary.uploader.destroy(img.publicId).catch(() => {});
+    }
+
+    const productId = review.productId;
+    await review.deleteOne();
+    await recomputeProductRating(productId);
+
+    res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

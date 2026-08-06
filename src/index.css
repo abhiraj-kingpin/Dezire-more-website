@@ -2757,15 +2757,22 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 }
 .review-date { font-size: 0.6875rem; color: var(--text-light); }
 .review-stars { color: var(--gold); letter-spacing: 2px; font-size: 0.875rem; margin-bottom: 6px; }
-.review-title { font-weight: 700; font-size: 0.875rem; color: var(--text-dark); margin-bottom: 4px; }
 .review-text { font-size: 0.8438rem; color: var(--text-mid); line-height: 1.6; }
 .review-photos { display: flex; gap: 8px; margin-top: 10px; }
 .review-photos img { width: 64px; height: 64px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
+.review-card-footer { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
 .review-helpful-btn {
-  margin-top: 10px; background: none; border: 1px solid var(--border); border-radius: 999px;
+  background: none; border: 1px solid var(--border); border-radius: 999px;
   padding: 5px 14px; font-size: 0.6875rem; color: var(--text-mid); cursor: pointer;
 }
 .review-helpful-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(184,150,78,0.08); }
+.review-delete-btn {
+  background: none; border: 1px solid var(--border); border-radius: 999px;
+  padding: 5px 14px; font-size: 0.6875rem; color: #a83a3a; cursor: pointer;
+}
+.review-delete-btn:hover { background: rgba(168, 58, 58, 0.08); }
+.review-delete-confirm { display: flex; align-items: center; gap: 6px; font-size: 0.6875rem; color: var(--text-mid); }
+.review-delete-confirm-yes { border-color: #a83a3a; background: #a83a3a; color: #fff; }
 
 @media (max-width: 640px) {
   .pd-related-wrap, .pd-reviews-wrap { padding: 22px 18px; }
@@ -2830,7 +2837,11 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 10000;
+  /* Opened from within the product modal (.pd-overlay, z-index 10001), so
+     this has to sit strictly above it — it was 10000 (one LOWER than the
+     modal underneath it), which on some Android renderers let the product
+     modal's own content paint on top of this instead of behind it. */
+  z-index: 10600;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4048,11 +4059,39 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 }
 
 .toast-item.toast-wishlist { background: #a83a52; }
-.toast-item.toast-checkout { background: var(--gold); color: #1a1a1a; }
+.toast-item.toast-checkout {
+  background: linear-gradient(135deg, var(--dark-green) 0%, #16261f 100%);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(212, 174, 110, 0.25) inset;
+}
 .toast-item.toast-success  { background: var(--dark-green); }
 
-.toast-icon { font-size: 0.875rem; line-height: 1; flex-shrink: 0; }
+.toast-icon { display: flex; align-items: center; line-height: 1; flex-shrink: 0; }
+.toast-item.toast-checkout .toast-icon { color: var(--gold-light); }
+.toast-icon-pulse { animation: toastIconPulse 1.4s ease-in-out infinite; }
+@keyframes toastIconPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.7; transform: scale(0.92); }
+}
 .toast-msg { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.toast-item-rich { flex-direction: column; align-items: stretch; max-width: min(320px, calc(100vw - 32px)); }
+.toast-item-top { display: flex; align-items: center; gap: 10px; }
+.toast-product-preview {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+}
+.toast-product-img {
+  width: 40px; height: 48px; object-fit: cover; border-radius: 3px; flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.12);
+}
+.toast-product-img-placeholder { display: block; }
+.toast-product-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.toast-product-name {
+  font-size: 0.75rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.toast-product-meta { font-size: 0.6875rem; opacity: 0.85; }
 
 @media (max-width: 640px) {
   .toast-stack { top: 72px; }

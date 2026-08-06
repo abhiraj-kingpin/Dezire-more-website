@@ -204,6 +204,22 @@ export function AuthProvider({ children }) {
     return { success: res.ok, ...data };
   };
 
+  // Re-fetches the current user from the server — for anything an admin
+  // might change asynchronously elsewhere (membership confirmation, order
+  // status) that this tab has no other way of learning about without a
+  // full page reload. Silent on failure — a transient network hiccup here
+  // shouldn't disturb whatever the user is already looking at.
+  const refreshUser = async () => {
+    try {
+      const res = await fetch(`${BASE}/auth/me`, { headers: authHeaders() });
+      const data = await parseJson(res);
+      if (res.ok) setUser(data.user);
+      return { success: res.ok };
+    } catch {
+      return { success: false };
+    }
+  };
+
   const subscribeMembership = async (tier) => {
     const res = await fetch(`${BASE}/auth/membership/subscribe`, {
       method: 'POST',
@@ -229,7 +245,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{
       user, loading, error, setError,
-      signup, verifyEmailToken, checkVerifyStatus, resendVerification, login, logout, updateUser,
+      signup, verifyEmailToken, checkVerifyStatus, resendVerification, login, logout, updateUser, refreshUser,
       addAddress, updateAddress, deleteAddress, subscribeMembership, submitMembershipReference,
       authOpen, setAuthOpen, authPrompt, promptLogin, authHeaders,
     }}>
