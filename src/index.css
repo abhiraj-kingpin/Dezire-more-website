@@ -2120,6 +2120,27 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   color: #fff;
 }
 
+/* Moved up onto the image itself (was a tiny 11px text row under the
+   product name that was easy to miss entirely) — same spot shoppers
+   already look for a rating badge on most e-commerce sites. */
+.card-rating-badge {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(26, 26, 26, 0.78);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 4px;
+  line-height: 1;
+}
+.card-rating-badge-star { color: var(--gold-light); font-size: 0.8125rem; }
+.card-rating-badge-count { font-weight: 500; opacity: 0.85; font-size: 0.6875rem; }
+
 .view-details-overlay {
   position: absolute;
   bottom: 0;
@@ -2696,7 +2717,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 .pd-related-grid .product-img-wrap { aspect-ratio: 3/4; border-radius: 6px; }
 .pd-related-grid .product-info { padding: 8px 0 0; }
 .pd-related-grid .brand-tag,
-.pd-related-grid .card-rating { display: none; }
 .pd-related-grid .product-name { font-size: 0.75rem; margin-bottom: 6px; }
 .pd-related-grid .price-row { margin-bottom: 8px; }
 
@@ -4322,18 +4342,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   line-height: 1.4;
 }
 
-.card-rating {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  margin-bottom: 6px;
-}
-.card-rating .star-rating { gap: 1px; }
-.card-rating .star { font-size: 0.6875rem; }
-.card-rating-num {
-  font-size: 0.6875rem;
-  color: var(--text-light);
-}
 
 /* ── Hero Deck cards ── */
 .deck-card {
@@ -6126,7 +6134,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 }
 .cm-recommendations-row .product-info { padding: 6px 0 0; }
 .cm-recommendations-row .brand-tag,
-.cm-recommendations-row .card-rating { display: none; }
 .cm-recommendations-row .product-name { font-size: 0.6875rem; margin-bottom: 6px; }
 .cm-recommendations-row .price-row { margin-bottom: 6px; }
 .cm-recommendations-row .add-to-bag { padding: 6px; font-size: 0.5625rem; }

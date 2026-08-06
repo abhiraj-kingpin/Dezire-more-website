@@ -375,6 +375,14 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
             <Heart size={14} strokeWidth={2} />
           </button>
 
+          {product.rating > 0 && (
+            <span className="card-rating-badge">
+              <span className="card-rating-badge-star">★</span>
+              {product.rating}
+              {product.reviews > 0 && <span className="card-rating-badge-count">({product.reviews})</span>}
+            </span>
+          )}
+
           {hovered && (
             <div className="view-details-overlay">
               <span>View Details</span>
@@ -387,12 +395,6 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
           <p className="product-name">
             {highlightQuery ? highlightMatch(product.name, highlightQuery) : product.name}
           </p>
-          {product.rating > 0 && (
-            <div className="card-rating">
-              <StarRating rating={product.rating} />
-              <span className="card-rating-num">{product.rating}{product.reviews > 0 ? ` (${product.reviews})` : ''}</span>
-            </div>
-          )}
           <div className="price-row">
             <span className="price-now">₹{product.price.toLocaleString('en-IN')}</span>
             {product.originalPrice > 0 && (
