@@ -1,10 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import { WifiOff } from 'lucide-react';
 import AnnouncementBar from './AnnouncementBar';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import { titleForPath, descriptionForPath, robotsForPath, urlForPath } from '../utils/pageTitles';
+import useOnlineStatus from '../hooks/useOnlineStatus';
+import { useToast } from '../context/ToastContext';
 
 // index.html ships static description/OG/Twitter/canonical tags as a
 // fallback for crawlers that never execute JavaScript at all (they only
@@ -46,6 +49,9 @@ function blockDragStart(e) {
 
 function Layout() {
   const { pathname } = useLocation();
+  const isOnline = useOnlineStatus();
+  const { showToast } = useToast();
+  const wasOffline = useRef(false);
 
   useEffect(() => {
     removeStaticSeoTags();
@@ -59,6 +65,18 @@ function Layout() {
       document.removeEventListener('dragstart', blockDragStart);
     };
   }, []);
+
+  // A quiet confirmation the moment connectivity actually comes back —
+  // the persistent banner below already covers "you're offline right now",
+  // this is just the "you're good again" bookend.
+  useEffect(() => {
+    if (!isOnline) { wasOffline.current = true; return; }
+    if (wasOffline.current) {
+      wasOffline.current = false;
+      showToast("You're back online", 'success');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOnline]);
 
   const title = titleForPath(pathname);
   const description = descriptionForPath(pathname);
@@ -84,6 +102,12 @@ function Layout() {
       </Helmet>
 
       <a href="#main-content" className="skip-to-content">Skip to content</a>
+      {!isOnline && (
+        <div className="offline-banner" role="status">
+          <WifiOff size={14} strokeWidth={2} />
+          You're offline — some pages and actions won't work until your connection's back.
+        </div>
+      )}
       <AnnouncementBar />
       <Navbar />
       <main id="main-content" key={pathname} className="page-fade-in">
