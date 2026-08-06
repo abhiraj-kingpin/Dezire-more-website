@@ -712,7 +712,18 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
             maxScale={4}
             centerOnInit
             doubleClick={{ mode: 'toggle', step: 1.4 }}
-            onTransform={(ref, state) => setZoomPct(Math.round(state.scale * 100))}
+            // onTransform fires on every single frame of a gesture, so it was
+            // re-rendering this whole component (parent of the render-prop
+            // below) continuously for the entire duration of a pinch — on
+            // slower Android WebViews that render storm could fall behind the
+            // touch events, leaving the gesture looking "stuck" and unable to
+            // restart cleanly. Only committing to state once a gesture
+            // actually finishes keeps the live pinch itself untouched by React
+            // entirely; the toolbar's % label just updates a beat later.
+            onZoomStop={(ref) => setZoomPct(Math.round(ref.state.scale * 100))}
+            onPinchStop={(ref) => setZoomPct(Math.round(ref.state.scale * 100))}
+            onPanningStop={(ref) => setZoomPct(Math.round(ref.state.scale * 100))}
+            onWheelStop={(ref) => setZoomPct(Math.round(ref.state.scale * 100))}
           >
             {({ zoomIn, zoomOut, resetTransform }) => (
               <>

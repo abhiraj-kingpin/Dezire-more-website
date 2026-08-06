@@ -159,9 +159,53 @@ function CancelModal({ order, onClose, onCancelled }) {
   );
 }
 
-function OrderCard({ order, onCancelled, exchange, onExchangeSubmitted }) {
+function DeleteOrderModal({ order, onClose, onDeleted }) {
+  const { authHeaders } = useAuth();
+  const { showToast } = useToast();
+  const [deleting, setDeleting] = useState(false);
+
+  const handleConfirm = async () => {
+    setDeleting(true);
+    try {
+      const res = await fetch(`${BASE}/orders/${order._id}/hide`, {
+        method: 'PATCH',
+        headers: authHeaders(),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not remove this order');
+      onDeleted(order._id);
+      showToast('Order removed from your history', 'success');
+      onClose();
+    } catch (err) {
+      showToast(err.message, 'info');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <div className="checkout-overlay" onClick={onClose}>
+      <div className="checkout-modal checkout-modal-narrow" onClick={e => e.stopPropagation()}>
+        <h3 className="order-success-title" style={{ marginBottom: '4px' }}>Remove this order from your history?</h3>
+        <p className="order-success-sub">
+          Order {order.orderNumber} — this only removes it from your own order history view. It cannot be undone from here, but it doesn't affect the order itself or any warranty/support tied to it.
+        </p>
+
+        <button className="cart-checkout-btn order-cancel-btn" onClick={handleConfirm} disabled={deleting} style={{ marginTop: '14px' }}>
+          {deleting ? 'Removing…' : 'Yes, Remove It'}
+        </button>
+        <div className="auth-switch">
+          <span onClick={onClose}>Keep Order</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OrderCard({ order, onCancelled, onDeleted, exchange, onExchangeSubmitted }) {
   const [expanded, setExpanded] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [exchangeModalOpen, setExchangeModalOpen] = useState(false);
   const { addToCart } = useCart();
   const { showToast } = useToast();
@@ -316,6 +360,9 @@ function OrderCard({ order, onCancelled, exchange, onExchangeSubmitted }) {
                 Cancel Order
               </button>
             )}
+            <button className="order-cancel-btn" onClick={(e) => { e.stopPropagation(); setDeleteModalOpen(true); }}>
+              Delete
+            </button>
           </div>
         </div>
       )}
@@ -325,6 +372,14 @@ function OrderCard({ order, onCancelled, exchange, onExchangeSubmitted }) {
           order={order}
           onClose={() => setCancelModalOpen(false)}
           onCancelled={onCancelled}
+        />
+      )}
+
+      {deleteModalOpen && (
+        <DeleteOrderModal
+          order={order}
+          onClose={() => setDeleteModalOpen(false)}
+          onDeleted={onDeleted}
         />
       )}
 
@@ -366,6 +421,10 @@ function MyOrders() {
 
   const handleCancelled = (updatedOrder) => {
     setOrders(prev => prev.map(o => o._id === updatedOrder._id ? updatedOrder : o));
+  };
+
+  const handleDeleted = (orderId) => {
+    setOrders(prev => prev.filter(o => o._id !== orderId));
   };
 
   const handleExchangeSubmitted = (orderId, newExchange) => {
@@ -423,6 +482,7 @@ function MyOrders() {
                   key={order._id}
                   order={order}
                   onCancelled={handleCancelled}
+                  onDeleted={handleDeleted}
                   exchange={exchanges[order._id]}
                   onExchangeSubmitted={handleExchangeSubmitted}
                 />

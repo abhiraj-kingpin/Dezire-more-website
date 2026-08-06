@@ -324,13 +324,34 @@ router.post('/razorpay/webhook', async (req, res) => {
 // previously any caller could read anyone's orders just by knowing their email.
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const orders = await Order.find({ customerEmail: req.user.email })
+    const orders = await Order.find({ customerEmail: req.user.email, hiddenFromCustomer: { $ne: true } })
       .sort({ createdAt: -1 })
       .lean();
 
     res.json({ data: orders });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /api/orders/:id/hide — "delete" from the customer's own order
+// history. Doesn't touch the record itself (financial/audit history stays
+// intact for the business side — same reasoning as why the admin panel has
+// no order-delete either), just flips a flag GET / already filters on.
+router.patch('/:id/hide', requireAuth, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    if (order.customerEmail !== req.user.email) {
+      return res.status(403).json({ error: 'This order does not belong to your account' });
+    }
+
+    order.hiddenFromCustomer = true;
+    await order.save();
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 });
 

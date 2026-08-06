@@ -25,7 +25,6 @@ function WriteReviewForm({ productId, onSubmitted, onCancel }) {
   const { user, authHeaders } = useAuth();
   const { showToast } = useToast();
   const [rating, setRating] = useState(5);
-  const [title, setTitle] = useState('');
   const [text, setText] = useState('');
   const [images, setImages] = useState([]);
   const [submitting, setSubmitting] = useState(false);
@@ -38,7 +37,6 @@ function WriteReviewForm({ productId, onSubmitted, onCancel }) {
       const formData = new FormData();
       formData.append('productId', productId);
       formData.append('rating', rating);
-      formData.append('title', title);
       formData.append('text', text);
       images.forEach(img => formData.append('images', img));
 
@@ -62,8 +60,6 @@ function WriteReviewForm({ productId, onSubmitted, onCancel }) {
     <form className="review-form" onSubmit={handleSubmit}>
       <label className="auth-label">Your Rating</label>
       <StarPicker value={rating} onChange={setRating} />
-      <label className="auth-label">Review Title (optional)</label>
-      <input className="auth-input" type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Sum it up in a few words" />
       <label className="auth-label">Your Review</label>
       <textarea className="auth-input review-textarea" value={text} onChange={e => setText(e.target.value)} placeholder="What did you like or dislike?" rows={4} />
       <label className="auth-label">Add Photos (optional, up to 4)</label>
@@ -81,8 +77,10 @@ function WriteReviewForm({ productId, onSubmitted, onCancel }) {
   );
 }
 
-function ReviewCard({ review, onVote }) {
+function ReviewCard({ review, onVote, onDelete }) {
   const initials = review.userName?.[0]?.toUpperCase() || '?';
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
   return (
     <div className="review-card">
       <div className="review-card-header">
@@ -96,7 +94,6 @@ function ReviewCard({ review, onVote }) {
         </div>
       </div>
       <div className="review-stars">{'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}</div>
-      {review.title && <p className="review-title">{review.title}</p>}
       <p className="review-text">{review.text}</p>
       {review.images?.length > 0 && (
         <div className="review-photos">
@@ -105,9 +102,21 @@ function ReviewCard({ review, onVote }) {
           ))}
         </div>
       )}
-      <button type="button" className={`review-helpful-btn ${review.helpfulByMe ? 'active' : ''}`} onClick={() => onVote(review.id)}>
-        👍 Helpful {review.helpfulCount > 0 ? `(${review.helpfulCount})` : ''}
-      </button>
+      <div className="review-card-footer">
+        <button type="button" className={`review-helpful-btn ${review.helpfulByMe ? 'active' : ''}`} onClick={() => onVote(review.id)}>
+          👍 Helpful {review.helpfulCount > 0 ? `(${review.helpfulCount})` : ''}
+        </button>
+        {review.isMine && !confirmingDelete && (
+          <button type="button" className="review-delete-btn" onClick={() => setConfirmingDelete(true)}>Delete</button>
+        )}
+        {review.isMine && confirmingDelete && (
+          <span className="review-delete-confirm">
+            Delete this review?
+            <button type="button" className="review-delete-btn review-delete-confirm-yes" onClick={() => onDelete(review.id)}>Yes</button>
+            <button type="button" className="review-delete-btn" onClick={() => setConfirmingDelete(false)}>No</button>
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -143,6 +152,11 @@ function ReviewsSection({ productId }) {
 
   const handleVote = async (reviewId) => {
     const res = await fetch(`${BASE}/reviews/${reviewId}/helpful`, { method: 'POST', headers: authHeaders() });
+    if (res.ok) load();
+  };
+
+  const handleDelete = async (reviewId) => {
+    const res = await fetch(`${BASE}/reviews/${reviewId}`, { method: 'DELETE', headers: authHeaders() });
     if (res.ok) load();
   };
 
@@ -188,7 +202,7 @@ function ReviewsSection({ productId }) {
       {loading && <p className="marquee-status">Loading reviews…</p>}
       {!loading && reviews.length === 0 && <p className="review-login-note">No reviews yet — be the first to share your experience.</p>}
       {!loading && reviews.map(review => (
-        <ReviewCard key={review.id} review={review} onVote={handleVote} />
+        <ReviewCard key={review.id} review={review} onVote={handleVote} onDelete={handleDelete} />
       ))}
     </div>
   );

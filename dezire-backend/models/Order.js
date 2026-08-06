@@ -70,6 +70,12 @@ const orderSchema = new mongoose.Schema(
     // paymentStatus to 'paid', not a client-asserted claim.
     razorpayPaymentId: { type: String },
 
+    // Customer-initiated "remove from my order history" — orders stay
+    // intact for business/audit records (admin panel, revenue analytics,
+    // etc. never look at this field), it just filters out of the
+    // customer's own GET /orders list.
+    hiddenFromCustomer: { type: Boolean, default: false },
+
     orderStatus: {
       type: String,
       enum: [

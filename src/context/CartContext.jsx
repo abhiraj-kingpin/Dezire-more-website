@@ -54,7 +54,14 @@ export function CartProvider({ children }) {
     if (!silent) {
       setPaymentStep(false);
       setCartOpen(true);
-      if (!fromBuy) showToast('Product added to your Cart', 'cart');
+      if (!fromBuy) {
+        showToast('Product added to your Cart', 'cart', 3200, {
+          image: product.image,
+          name: product.name,
+          size: product.selectedSize,
+          price: product.price,
+        });
+      }
     }
   };
 
