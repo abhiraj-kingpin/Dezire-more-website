@@ -9,10 +9,6 @@ import { translateOrderStatus } from '../i18n/translations';
 import { BASE } from '../hooks/useProducts';
 import { downloadInvoice } from '../utils/invoice';
 
-const STATUS_STEPS = [
-  'Order Placed', 'Payment Confirmed', 'Processing',
-  'Packed', 'Shipped', 'Out for Delivery', 'Delivered',
-];
 const CANCELLABLE_STATUSES = ['Order Placed', 'Payment Confirmed', 'Processing'];
 const WHATSAPP_NUMBER = '918171761948';
 const CANCEL_REASONS = [
@@ -137,7 +133,6 @@ function OrderCard({ order, onCancelled, onDeleted }) {
   const { language } = useLanguage();
 
   const isCancelled = order.orderStatus === 'Cancelled';
-  const stepIndex = STATUS_STEPS.indexOf(order.orderStatus);
   const canCancel = CANCELLABLE_STATUSES.includes(order.orderStatus);
 
   const handleReorder = (e) => {
@@ -189,46 +184,20 @@ function OrderCard({ order, onCancelled, onDeleted }) {
           </div>
         </div>
 
-        {!isCancelled && (
-          <div className="order-mini-stepper">
-            {STATUS_STEPS.map((step, i) => (
-              <span key={step} className={`order-mini-dot ${i <= stepIndex ? 'done' : ''}`} title={translateOrderStatus(language, step)} />
-            ))}
-          </div>
-        )}
       </button>
 
       {expanded && (
         <div className="order-card-body">
           {!isCancelled && (
-            <div className="order-progress">
-              {STATUS_STEPS.map((step, i) => (
-                <div key={step} className={`order-progress-step ${i <= stepIndex ? 'done' : ''}`}>
-                  <span className="order-progress-dot" />
-                  <span className="order-progress-label">{translateOrderStatus(language, step)}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {!isCancelled && (
             order.orderStatus === 'Delivered' && order.deliveredAt ? (
               <p className="order-delivery-note">
                 Delivered on {new Date(order.deliveredAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
               </p>
-            ) : order.estimatedDelivery ? (
+            ) : (
               <p className="order-delivery-note">
-                Estimated delivery: {new Date(order.estimatedDelivery).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                Your order will be delivered within 3–5 business days. For any questions, contact us using the Customer Support button below.
               </p>
-            ) : null
-          )}
-
-          {!isCancelled && order.shipment?.awbCode && (
-            <p className="order-delivery-note">
-              {order.shipment.courierName || 'Courier'} — AWB {order.shipment.awbCode}
-              {' · '}
-              <a href={order.shipment.trackingUrl} target="_blank" rel="noreferrer">Track shipment →</a>
-            </p>
+            )
           )}
 
           <div className="order-success-summary">

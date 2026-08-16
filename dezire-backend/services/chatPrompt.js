@@ -8,7 +8,7 @@ function buildSystemPrompt(user) {
 STORE DETAILS:
 - Free shipping on orders above ₹2500 (₹99 delivery charge below that)
 - GST is added at checkout: 5% on items under ₹2,499, 18% on items ₹2,499 and above
-- Delivery: 7–10 business days depending on the area (pieces are made by professional tailors, so quality takes a little time)
+- Delivery: 3–5 business days depending on the area (pieces are made by professional tailors, so quality takes a little time)
 - Discount code: DEZIRE10 (10% off)
 - Customer Rating: 4.8 stars
 

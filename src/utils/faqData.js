@@ -10,7 +10,7 @@ export const FAQS = [
     id: 'delivery-time',
     keywords: ['delivery time', 'how long does delivery', 'shipping time', 'how many days', 'when will i get', 'delivery take'],
     question: 'How long does delivery take?',
-    answer: 'Standard delivery takes 7–10 business days depending on your area, as every piece is made by professional tailors. Free shipping on orders above ₹2,500.',
+    answer: 'Standard delivery takes 3–5 business days depending on your area, as every piece is made by professional tailors. Free shipping on orders above ₹2,500.',
   },
   {
     id: 'express-delivery',
@@ -54,7 +54,6 @@ export const FAQS = [
 export const QUICK_REPLIES = [
   'Track my order',
   'Size guide',
-  'Return policy',
   'New arrivals',
   'Discount codes',
 ];

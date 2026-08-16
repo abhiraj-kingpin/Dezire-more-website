@@ -1,7 +1,7 @@
 const FAQ_ITEMS = [
   {
     q: 'How long does delivery take?',
-    a: 'Most orders are delivered within 7–10 business days, depending on your location. Every piece is made by professional tailors, so quality takes a little time. Remote or hilly areas may take up to 10–12 business days.',
+    a: 'Most orders are delivered within 3–5 business days, depending on your location. Every piece is made by professional tailors, so quality takes a little time. Remote or hilly areas may take a couple of days longer.',
   },
   {
     q: 'Do you offer free shipping?',

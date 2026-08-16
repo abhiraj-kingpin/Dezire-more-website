@@ -514,7 +514,7 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
 
               <p className="pd-delivery-estimate">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="pd-delivery-icon"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="7.5" cy="18" r="1.5"/><circle cx="17.5" cy="18" r="1.5"/></svg>
-                Estimated delivery in 7–10 business days · Free shipping above ₹1,699
+                Estimated delivery in 3–5 business days · Free shipping above ₹2,500
               </p>
 
               {needsSize && (
@@ -615,7 +615,7 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
               </button>
 
               <p className="pd-footer-note">
-                Free shipping above ₹1699 &nbsp;|&nbsp; Easy 3-day returns
+                Free shipping above ₹2,500 &nbsp;|&nbsp; Delivery in 3–5 business days
               </p>
             </div>
 

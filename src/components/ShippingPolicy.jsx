@@ -52,12 +52,12 @@ function ShippingPolicy() {
           <div className="policy-card">
             <div className="policy-card-icon">◈</div>
             <h3>Delivery Time</h3>
-            <p>Standard delivery takes <strong>7–10 business days</strong>, depending on your area. Metro cities may receive orders sooner.</p>
+            <p>Standard delivery takes <strong>3–5 business days</strong>, depending on your area. Metro cities may receive orders sooner.</p>
           </div>
           <div className="policy-card">
             <div className="policy-card-icon">◈</div>
             <h3>Shipping Charges</h3>
-            <p>Free shipping on all orders above <strong>₹1699</strong>. A flat fee of ₹79 applies on orders below that.</p>
+            <p>Free shipping on all orders above <strong>₹2,500</strong>. A flat fee of ₹99 applies on orders below that.</p>
           </div>
           <div className="policy-card">
             <div className="policy-card-icon">◈</div>
@@ -67,7 +67,7 @@ function ShippingPolicy() {
           <div className="policy-card">
             <div className="policy-card-icon">◈</div>
             <h3>Remote Areas</h3>
-            <p>Delivery to remote or hilly areas may take up to <strong>10–12 business days</strong> depending on the courier network.</p>
+            <p>Delivery to remote or hilly areas may take a couple of days longer than the standard <strong>3–5 business days</strong>, depending on the courier network.</p>
           </div>
           <div className="policy-card">
             <div className="policy-card-icon">◈</div>

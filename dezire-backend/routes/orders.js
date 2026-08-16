@@ -66,7 +66,7 @@ function generateOrderNumber() {
 
 function estimatedDeliveryDate() {
   const d = new Date();
-  d.setDate(d.getDate() + 9);
+  d.setDate(d.getDate() + 5);
   return d;
 }
 

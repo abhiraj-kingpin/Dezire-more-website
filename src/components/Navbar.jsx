@@ -1022,7 +1022,7 @@ function Navbar() {
                 </div>
                 <div className="cm-trust-item">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 12a9 9 0 1 1 3 6.7M3 12v6M3 12h6"/></svg>
-                  <div><b>Easy Returns</b><small>3 Day Return Policy</small></div>
+                  <div><b>Fast Delivery</b><small>3–5 Business Days</small></div>
                 </div>
                 <div className="cm-trust-item">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="7.5" cy="18" r="1.5"/><circle cx="17.5" cy="18" r="1.5"/></svg>
@@ -1035,7 +1035,7 @@ function Navbar() {
               <div className="cm-payments">
                 <span className="cm-ssl">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M12 3 4 6v6c0 5 3.4 8.7 8 9 4.6-.3 8-4 8-9V6l-8-3Z"/></svg>
-                  Secure Payments via Razorpay
+                  Secure UPI Payments
                 </span>
                 <span className="cm-payments-divider" />
                 <span className="cm-ssl">
