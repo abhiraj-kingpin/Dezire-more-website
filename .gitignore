@@ -2,6 +2,7 @@ node_modules
 dist
 .env
 dezire-backend/SETUP-GUIDE.md
+.claude/settings.local.json
 *.apk
 *.keystore
 *.jks
