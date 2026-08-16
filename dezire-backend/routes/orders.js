@@ -13,19 +13,51 @@ const User = require('../models/User');
 const { sendOrderConfirmationEmail, sendAdminOrderAlert, sendOrderStatusEmail } = require('../utils/notifications');
 const { logAdminAction } = require('../utils/auditLog');
 const shiprocket = require('../services/shiprocket');
+const delhivery = require('../services/delhivery.service');
 const fcm = require('../services/fcm');
 
-// Real, automatically-verified payments — replaces the old manual QR/UPI
-// reference-entry flow. Test-mode keys work immediately (no KYC needed);
-// switching to live mode later is just swapping the two env vars.
+const GST_RATE_THRESHOLD = 2499;
+const GST_RATE_LOW = 5;
+const GST_RATE_HIGH = 18;
+const FREE_SHIPPING_THRESHOLD = 2500;
+const SHIPPING_CHARGE = 99;
+
+function gstRateFor(unitPrice) {
+  return unitPrice >= GST_RATE_THRESHOLD ? GST_RATE_HIGH : GST_RATE_LOW;
+}
+
+function computeBilling(items) {
+  let subtotal = 0;
+  let gst5 = 0;
+  let gst18 = 0;
+
+  const itemsWithGST = items.map(item => {
+    const rate = gstRateFor(item.price);
+    const lineBase = item.price * item.quantity;
+    const gstAmount = Math.round(lineBase * rate) / 100;
+    subtotal += lineBase;
+    if (rate === GST_RATE_HIGH) gst18 += gstAmount; else gst5 += gstAmount;
+    return { ...item, gstRate: rate, gstAmount };
+  });
+
+  const totalGST = Math.round((gst5 + gst18) * 100) / 100;
+  const deliveryCharge = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_CHARGE;
+
+  return {
+    itemsWithGST,
+    subtotal,
+    totalGST,
+    gstBreakdown: { gst5: Math.round(gst5 * 100) / 100, gst18: Math.round(gst18 * 100) / 100 },
+    deliveryCharge,
+  };
+}
+
 function getRazorpay() {
   const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET } = process.env;
   if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) return null;
   return new Razorpay({ key_id: RAZORPAY_KEY_ID, key_secret: RAZORPAY_KEY_SECRET });
 }
 
-// Orders placed before real accounts existed have no owning user, but their
-// email still identifies the customer — cancellable/early statuses only.
 const CANCELLABLE_STATUSES = ['Order Placed', 'Payment Confirmed', 'Processing'];
 
 function generateOrderNumber() {
@@ -34,16 +66,10 @@ function generateOrderNumber() {
 
 function estimatedDeliveryDate() {
   const d = new Date();
-  d.setDate(d.getDate() + 9); // matches the site's 7–10 business day shipping policy
+  d.setDate(d.getDate() + 9);
   return d;
 }
 
-// Validates each cart line before it ever reaches Order.create(). The
-// checkout UI lets a shopper pick a size, which the cart used to fold into
-// a client-side "<productId>-<size>" string and send straight through as
-// productId — Mongoose then blew up trying to cast that to an ObjectId.
-// Size now travels in its own `size` field, and this guards against any
-// other malformed/tampered item shape reaching the database.
 function validateItems(items) {
   for (const item of items) {
     if (!mongoose.Types.ObjectId.isValid(item?.productId)) {
@@ -62,16 +88,11 @@ function validateItems(items) {
   return null;
 }
 
-// POST /api/orders — create an order once payment is confirmed client-side.
-// Requires login (the frontend already gates "Place Order" behind
-// authentication; this closes the gap where the API itself didn't enforce
-// it). customerEmail always comes from the verified session, never the
-// request body, so an order can't be filed under someone else's account.
 router.post('/', requireAuth, async (req, res) => {
   try {
     const {
       customerName, customerPhone,
-      items, address, subtotal, deliveryCharge, total,
+      items, address,
       paymentMethod, paymentReference, amountPaid, isGift, giftMessage, couponCode,
     } = req.body;
     const customerEmail = req.user.email;
@@ -91,9 +112,6 @@ router.post('/', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'One or more items in this order no longer exist' });
     }
 
-    // Stock verification before payment — checked here, not just trusted
-    // from whatever the shopper had in their cart, since availability can
-    // change between browsing and checkout.
     for (const item of items) {
       const product = products.find(p => String(p._id) === String(item.productId));
       if (!product.inStock || product.stockCount < item.quantity) {
@@ -113,35 +131,23 @@ router.post('/', requireAuth, async (req, res) => {
     if (!paymentMethod) {
       return res.status(400).json({ error: 'Payment method is required' });
     }
-    // Razorpay verifies itself (signature check after checkout) — only the
-    // legacy manual QR/UPI methods need a customer-entered reference.
-    const needsManualReference = !['COD', 'Razorpay'].includes(paymentMethod);
-    if (needsManualReference && !paymentReference?.trim()) {
-      return res.status(400).json({ error: 'Please enter the UPI transaction ID / reference number from your payment app.' });
-    }
-    if (needsManualReference && !(Number(amountPaid) > 0)) {
-      return res.status(400).json({ error: 'Please enter the amount you paid.' });
+    if (paymentMethod === 'COD') {
+      return res.status(400).json({ error: 'Cash on Delivery is no longer available — please pay via UPI.' });
     }
 
-    // Re-validated here rather than trusting whatever discount the client
-    // already showed at checkout — a coupon can expire or hit its usage
-    // limit between being applied in the cart and the order actually posting.
+    const { itemsWithGST, subtotal, totalGST, gstBreakdown, deliveryCharge } = computeBilling(items);
+
     let discountAmount = 0;
     let appliedCoupon = null;
     if (couponCode) {
-      const result = await resolveCoupon(couponCode, Number(subtotal) || 0);
+      const result = await resolveCoupon(couponCode, subtotal);
       if (result.error) return res.status(400).json({ error: result.error });
       discountAmount = result.discount;
       appliedCoupon = result.coupon;
     }
-    const resolvedTotal = Number(subtotal) - discountAmount + Number(deliveryCharge || 0);
+    const resolvedTotal = subtotal - discountAmount + totalGST + deliveryCharge;
 
-    // No payment gateway is wired in — every order starts "pending"
-    // regardless of method. QR/UPI orders carry a customer-entered
-    // transaction reference the admin checks against their bank/UPI app
-    // before manually confirming payment (see PATCH /:id/status).
     let orderNumber = generateOrderNumber();
-    // Extremely unlikely, but guard against a collision on the unique index.
     for (let i = 0; i < 3 && await Order.exists({ orderNumber }); i++) {
       orderNumber = generateOrderNumber();
     }
@@ -151,16 +157,18 @@ router.post('/', requireAuth, async (req, res) => {
       customerEmail,
       customerName,
       customerPhone,
-      items,
+      items: itemsWithGST,
       address,
       subtotal,
+      totalGST,
+      gstBreakdown,
       deliveryCharge,
       total: resolvedTotal,
       couponCode: appliedCoupon?.code,
       discountAmount,
       paymentMethod,
-      paymentReference: needsManualReference ? paymentReference.trim() : undefined,
-      amountPaid: needsManualReference ? Number(amountPaid) : undefined,
+      paymentReference: paymentReference?.trim() || undefined,
+      amountPaid: Number(amountPaid) > 0 ? Number(amountPaid) : undefined,
       paymentStatus: 'pending',
       orderStatus: 'Order Placed',
       estimatedDelivery: estimatedDeliveryDate(),
@@ -172,11 +180,6 @@ router.post('/', requireAuth, async (req, res) => {
       await Coupon.findByIdAndUpdate(appliedCoupon._id, { $inc: { usedCount: 1 } });
     }
 
-    // Deduct stock now that the order is confirmed. Not wrapped in a
-    // transaction (this store's order volume doesn't warrant the added
-    // complexity) — worst case under rare concurrent checkouts is a slight
-    // oversell, which the admin can already see and address via the
-    // Products page.
     await Promise.all(items.map(async (item) => {
       const updated = await Product.findByIdAndUpdate(
         item.productId,
@@ -190,8 +193,6 @@ router.post('/', requireAuth, async (req, res) => {
       }
     }));
 
-    // Fire-and-forget — a slow/unconfigured mail server should never block
-    // or fail the order response.
     sendOrderConfirmationEmail(order).catch(err => console.error('[order email]', err.message));
     sendAdminOrderAlert(order).catch(err => console.error('[admin alert]', err.message));
 
@@ -201,14 +202,10 @@ router.post('/', requireAuth, async (req, res) => {
   }
 });
 
-// POST /api/orders/:id/razorpay/create-payment-order — creates a matching
-// Razorpay order for an existing (pending, unpaid) order, using the order's
-// own server-computed total — never a client-supplied amount, so there's
-// no way to tamper with what actually gets charged.
 router.post('/:id/razorpay/create-payment-order', requireAuth, async (req, res) => {
   try {
     const razorpay = getRazorpay();
-    if (!razorpay) return res.status(503).json({ error: 'Online payment is temporarily unavailable. Please try Cash on Delivery.' });
+    if (!razorpay) return res.status(503).json({ error: 'Online payment is temporarily unavailable. Please try again shortly.' });
 
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ error: 'Order not found' });
@@ -220,7 +217,7 @@ router.post('/:id/razorpay/create-payment-order', requireAuth, async (req, res) 
     }
 
     const rzpOrder = await razorpay.orders.create({
-      amount: Math.round(order.total * 100), // Razorpay expects the amount in paise
+      amount: Math.round(order.total * 100),
       currency: 'INR',
       receipt: order.orderNumber,
       notes: { orderId: String(order._id) },
@@ -235,10 +232,33 @@ router.post('/:id/razorpay/create-payment-order', requireAuth, async (req, res) 
   }
 });
 
-// PATCH /api/orders/:id/razorpay/confirm — verifies the payment signature
-// Razorpay's checkout success handler returns. This signature check is the
-// actual source of truth for "did the customer pay" — a client claiming
-// success without a valid signature is rejected, not trusted.
+async function autoCreateDelhiveryShipment(order) {
+  if (!delhivery.isConfigured() || order.shipment?.awbCode) return;
+  try {
+    const result = await delhivery.createShipment(order);
+    if (result.awbAssigned) {
+      order.shipment = {
+        provider: 'delhivery',
+        awbCode: result.awbCode,
+        courierName: result.courierName,
+        trackingUrl: result.trackingUrl,
+      };
+      order.orderStatus = 'Shipped';
+      await order.save();
+      logAdminAction('system', 'order.auto-shipment', order._id, `${order.orderNumber}: AWB ${result.awbCode} (Delhivery, auto-created on payment)`);
+      const customer = await User.findOne({ email: order.customerEmail }).select('notificationsEnabled fcmTokens').lean();
+      if (!customer || customer.notificationsEnabled !== false) {
+        sendOrderStatusEmail(order).catch(err => console.error('[order status email]', err.message));
+        if (customer) fcm.sendOrderStatusPush(customer, order).catch(err => console.error('[order status push]', err.message));
+      }
+    } else {
+      console.error(`[auto-shipment] Delhivery rejected ${order.orderNumber}: ${result.error}`);
+    }
+  } catch (err) {
+    console.error(`[auto-shipment] Failed for ${order.orderNumber}:`, err.message);
+  }
+}
+
 router.patch('/:id/razorpay/confirm', requireAuth, async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
@@ -273,6 +293,7 @@ router.patch('/:id/razorpay/confirm', requireAuth, async (req, res) => {
       User.findOne({ email: order.customerEmail }).select('notificationsEnabled fcmTokens').lean()
         .then(customer => { if (customer?.notificationsEnabled !== false) fcm.sendOrderStatusPush(customer, order); })
         .catch(err => console.error('[order status push]', err.message));
+      autoCreateDelhiveryShipment(order).catch(err => console.error('[auto-shipment]', err.message));
     }
 
     res.json({ success: true, order });
@@ -281,12 +302,6 @@ router.patch('/:id/razorpay/confirm', requireAuth, async (req, res) => {
   }
 });
 
-// POST /api/orders/razorpay/webhook — backstop for the rare case where the
-// checkout success callback never fires client-side (browser closed/
-// crashed right after paying, network drop, etc.). Razorpay calls this
-// directly, authenticated via its own webhook signature rather than a user
-// session — configure the same URL + a webhook secret in the Razorpay
-// dashboard under Settings > Webhooks, subscribed to "payment.captured".
 router.post('/razorpay/webhook', async (req, res) => {
   try {
     const signature = req.headers['x-razorpay-signature'];
@@ -309,6 +324,7 @@ router.post('/razorpay/webhook', async (req, res) => {
         User.findOne({ email: order.customerEmail }).select('notificationsEnabled fcmTokens').lean()
           .then(customer => { if (customer?.notificationsEnabled !== false) fcm.sendOrderStatusPush(customer, order); })
           .catch(err => console.error('[order status push]', err.message));
+        autoCreateDelhiveryShipment(order).catch(err => console.error('[auto-shipment]', err.message));
       }
     }
 
@@ -319,9 +335,6 @@ router.post('/razorpay/webhook', async (req, res) => {
   }
 });
 
-// GET /api/orders — the logged-in customer's own order history. Scoped to
-// their verified account email server-side, not a client-supplied param —
-// previously any caller could read anyone's orders just by knowing their email.
 router.get('/', requireAuth, async (req, res) => {
   try {
     const orders = await Order.find({ customerEmail: req.user.email, hiddenFromCustomer: { $ne: true } })
@@ -334,10 +347,6 @@ router.get('/', requireAuth, async (req, res) => {
   }
 });
 
-// PATCH /api/orders/:id/hide — "delete" from the customer's own order
-// history. Doesn't touch the record itself (financial/audit history stays
-// intact for the business side — same reasoning as why the admin panel has
-// no order-delete either), just flips a flag GET / already filters on.
 router.patch('/:id/hide', requireAuth, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
@@ -355,8 +364,6 @@ router.patch('/:id/hide', requireAuth, async (req, res) => {
   }
 });
 
-// PATCH /api/orders/:id/cancel — customer-initiated cancellation, only while
-// the order hasn't progressed past processing.
 router.patch('/:id/cancel', requireAuth, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
@@ -386,7 +393,6 @@ router.patch('/:id/cancel', requireAuth, async (req, res) => {
   }
 });
 
-// GET /api/orders/:id — single order detail
 router.get('/:id', async (req, res) => {
   try {
     const order = await Order.findById(req.params.id).lean();
@@ -397,9 +403,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// ── Admin routes ───────────────────────────────────────────────────────────
 
-// GET /api/orders/admin/all — every order, for the admin panel
 router.get('/admin/all', adminAuth, async (req, res) => {
   try {
     const orders = await Order.find().sort({ createdAt: -1 }).lean();
@@ -409,9 +413,6 @@ router.get('/admin/all', adminAuth, async (req, res) => {
   }
 });
 
-// GET /api/orders/admin/analytics — revenue/order breakdowns for the admin
-// dashboard. Only counts paymentStatus:'paid' orders toward revenue, since
-// pending COD/unverified-UPI orders haven't actually been paid yet.
 router.get('/admin/analytics', adminAuth, async (req, res) => {
   try {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -461,7 +462,72 @@ router.get('/admin/analytics', adminAuth, async (req, res) => {
   }
 });
 
-// PATCH /api/orders/:id/status — admin updates order lifecycle status
+router.get('/admin/gst-report', adminAuth, async (req, res) => {
+  try {
+    const now = new Date();
+    const defaultFrom = new Date(now.getFullYear(), now.getMonth(), 1);
+    const defaultTo = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+    const from = req.query.from ? new Date(req.query.from) : defaultFrom;
+    const to = req.query.to ? new Date(new Date(req.query.to).getTime() + 24 * 60 * 60 * 1000) : defaultTo;
+
+    if (isNaN(from.getTime()) || isNaN(to.getTime())) {
+      return res.status(400).json({ error: 'Invalid from/to date' });
+    }
+
+    const match = { paymentStatus: 'paid', createdAt: { $gte: from, $lt: to } };
+
+    const [totals, orders] = await Promise.all([
+      Order.aggregate([
+        { $match: match },
+        {
+          $group: {
+            _id: null,
+            orders: { $sum: 1 },
+            subtotal: { $sum: '$subtotal' },
+            gst5: { $sum: '$gstBreakdown.gst5' },
+            gst18: { $sum: '$gstBreakdown.gst18' },
+            totalGST: { $sum: '$totalGST' },
+            deliveryCharge: { $sum: '$deliveryCharge' },
+            discountAmount: { $sum: '$discountAmount' },
+            total: { $sum: '$total' },
+          },
+        },
+      ]),
+      Order.find(match)
+        .select('orderNumber createdAt subtotal gstBreakdown totalGST deliveryCharge discountAmount total')
+        .sort({ createdAt: 1 })
+        .lean(),
+    ]);
+
+    const totalsRow = totals[0] || {
+      orders: 0, subtotal: 0, gst5: 0, gst18: 0, totalGST: 0, deliveryCharge: 0, discountAmount: 0, total: 0,
+    };
+    delete totalsRow._id;
+
+    res.json({
+      from: from.toISOString(),
+      to: new Date(to.getTime() - 1).toISOString(),
+      ...totalsRow,
+      cgst: totalsRow.totalGST / 2,
+      sgst: totalsRow.totalGST / 2,
+      orderDetails: orders.map(o => ({
+        orderNumber: o.orderNumber,
+        date: o.createdAt,
+        subtotal: o.subtotal,
+        gst5: o.gstBreakdown?.gst5 || 0,
+        gst18: o.gstBreakdown?.gst18 || 0,
+        totalGST: o.totalGST,
+        deliveryCharge: o.deliveryCharge,
+        discountAmount: o.discountAmount,
+        total: o.total,
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.patch('/:id/status', adminAuth, async (req, res) => {
   try {
     const { orderStatus, paymentStatus } = req.body;
@@ -490,12 +556,6 @@ router.patch('/:id/status', adminAuth, async (req, res) => {
   }
 });
 
-// PATCH /api/orders/admin/:orderId/verify-payment — dedicated action for
-// manually-referenced (UPI/QR/Online Banking) orders: admin has checked the
-// UTR + amount against their real bank/UPI app and confirms it actually
-// landed. Deliberately its own route (not folded into the generic
-// PATCH /:id/status above) so the audit stamps below always get set
-// consistently, regardless of which admin-panel button triggers it.
 router.patch('/admin/:orderId/verify-payment', adminAuth, async (req, res) => {
   try {
     const order = await Order.findById(req.params.orderId);
@@ -517,6 +577,7 @@ router.patch('/admin/:orderId/verify-payment', adminAuth, async (req, res) => {
       sendOrderStatusEmail(order).catch(err => console.error('[order status email]', err.message));
       if (customer) fcm.sendOrderStatusPush(customer, order).catch(err => console.error('[order status push]', err.message));
     }
+    autoCreateDelhiveryShipment(order).catch(err => console.error('[auto-shipment]', err.message));
 
     res.json({ success: true, order });
   } catch (err) {
@@ -524,12 +585,6 @@ router.patch('/admin/:orderId/verify-payment', adminAuth, async (req, res) => {
   }
 });
 
-// PATCH /api/orders/admin/:orderId/reject-payment — the other side of
-// verify-payment: admin checked their UPI/bank app and the claimed UTR/
-// amount never actually landed. Explicit paymentStatus:'failed' (already in
-// the enum, previously unused) + orderStatus:'Cancelled' (the same status
-// customer-initiated cancellation uses) rather than silently leaving it
-// pending — so it's clearly resolved and drops out of Pending Verification.
 router.patch('/admin/:orderId/reject-payment', adminAuth, async (req, res) => {
   try {
     const order = await Order.findById(req.params.orderId);
@@ -560,12 +615,6 @@ router.patch('/admin/:orderId/reject-payment', adminAuth, async (req, res) => {
   }
 });
 
-// POST /api/orders/:id/create-shipment — admin creates a real Shiprocket
-// shipment for this order and gets back a live AWB/tracking number. Package
-// weight/dimensions aren't tracked per-product anywhere in this app, so
-// they're entered here at shipment time rather than assumed — defaults are
-// pre-filled in the admin UI for a typical apparel package but always
-// admin-editable per order.
 router.post('/:id/create-shipment', adminAuth, async (req, res) => {
   try {
     if (!shiprocket.isConfigured()) {
@@ -577,11 +626,6 @@ router.post('/:id/create-shipment', adminAuth, async (req, res) => {
     if (order.shipment?.awbCode) {
       return res.status(400).json({ error: `This order already has a shipment (AWB ${order.shipment.awbCode}).` });
     }
-    // COD has nothing to verify (cash collected on delivery) — everything
-    // else (UPI, legacy QR/Online Banking, Razorpay) must be paymentStatus
-    // 'paid' before it's eligible for dispatch. Razorpay orders reach that
-    // automatically on checkout; manual-reference orders need the admin's
-    // explicit verify-payment action first.
     if (order.paymentMethod !== 'COD' && order.paymentStatus !== 'paid') {
       return res.status(400).json({ error: 'Payment hasn\'t been verified for this order yet — verify it before creating a shipment.' });
     }
@@ -616,15 +660,6 @@ router.post('/:id/create-shipment', adminAuth, async (req, res) => {
   }
 });
 
-// PATCH /api/orders/admin/:orderId/manual-tracking — free alternative to the
-// Shiprocket route above, for shipping the normal way (courier counter,
-// India Post, etc.) instead of through a paid aggregator account. Admin
-// enters whatever tracking number the courier gave them by hand; if no
-// custom link is given, defaults to 17track.net's free public lookup, which
-// covers virtually every Indian courier with no account needed on either
-// end. Same shape as Shiprocket's result (courierName/awbCode/trackingUrl)
-// so MyOrders.jsx's tracking display works identically either way — it has
-// no idea, and doesn't need to, which path produced this data.
 router.patch('/admin/:orderId/manual-tracking', adminAuth, async (req, res) => {
   try {
     const order = await Order.findById(req.params.orderId);
@@ -663,12 +698,6 @@ router.patch('/admin/:orderId/manual-tracking', adminAuth, async (req, res) => {
   }
 });
 
-// POST /api/orders/shiprocket/webhook — real-time shipment status updates
-// (out for delivery, delivered, RTO, etc.) instead of the static "+9 days"
-// estimate. Verified via a shared secret (set the same value here and in
-// Shiprocket's Settings > API > Webhook config) rather than the HMAC
-// signing Razorpay's webhook uses — Shiprocket's webhook auth is a plain
-// shared token, not a per-payload signature.
 router.post('/shiprocket/webhook', async (req, res) => {
   try {
     const secret = process.env.SHIPROCKET_WEBHOOK_SECRET;

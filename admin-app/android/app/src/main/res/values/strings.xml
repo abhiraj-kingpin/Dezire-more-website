@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Dezire More Admin</string>
+    <string name="title_activity_main">Dezire More Admin</string>
+    <string name="package_name">com.deziremore.admin</string>
+    <string name="custom_url_scheme">com.deziremore.admin</string>
+</resources>

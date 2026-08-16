@@ -16,11 +16,6 @@
 }
 body { font-family: 'Montserrat', sans-serif; background: var(--cream); color: var(--text-dark); overflow-x: hidden; transition: background 0.25s ease, color 0.25s ease; }
 
-/* Casual-copying deterrent — blocks click-drag text selection and the
-   browser's native image drag/long-press "save" affordance across the
-   storefront. Not real protection (devtools/screenshots always work), just
-   removes the one-click copy path for ordinary visitors. Form fields are
-   explicitly re-enabled since typing/pasting into them has to keep working. */
 body {
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -36,9 +31,6 @@ img {
   -webkit-touch-callout: none;
 }
 
-/* Keyboard focus — on-brand instead of the browser's default blue ring, but
-   still always visible for keyboard/screen-reader users. :focus-visible
-   means a mouse click never triggers it, only actual keyboard navigation. */
 :focus-visible {
   outline: 2px solid var(--gold);
   outline-offset: 2px;
@@ -101,12 +93,6 @@ nav {
   border: 1px solid var(--border);
   border-radius: 24px;
   padding: 11px 18px;
-  /* This column is already grid-template-columns: auto 1fr auto's middle
-     1fr track, so the search bar fills it edge to edge (margin:auto only
-     comes into play once the track itself is wider than max-width) — the
-     previous 600px cap left ~287px of empty space on each side on a 1920px
-     screen, which read as "not filling available space" despite the gaps
-     technically being equal. */
   max-width: 900px;
   width: 100%;
   margin: 0 auto;
@@ -156,7 +142,7 @@ nav {
   flex-shrink: 0;
 
   position: relative;
-  top: -8px; /* moves logo upward */
+  top: -8px;
 }
 .logo-text {
   display: flex;
@@ -227,12 +213,6 @@ nav {
   min-width: max-content;
   flex-shrink: 0;
 }
-/* This measured as 6px in live testing at desktop widths despite no
-   matching max-width media query (confirmed via matchMedia) — something in
-   this file's many overlapping mobile breakpoints was winning in a way that
-   didn't reproduce under manual cascade tracing. Scoped to min-width so it
-   can't touch the intentionally tighter mobile gaps (6px/2px) further down;
-   !important guarantees it wins over whatever that unresolved rule is. */
 @media (min-width: 769px) {
   .nav-icons {
     gap: 14px !important;
@@ -241,24 +221,12 @@ nav {
 .mobile-search-btn {
   display: none;
 }
-/* Element+class — a plain `.mobile-account-btn` here loses to the later,
-   equally-specific `.auth-trigger-btn { display: flex }` base rule
-   regardless of source order, since both are single-class selectors and
-   that one sits further down the file. */
 button.mobile-account-btn {
   display: none;
 }
-/* Logged-in state adds a THIRD class (.user-logged-in) — the desktop pill
-   rule `.auth-trigger-btn.user-logged-in { display: flex }` is two classes
-   (0,2,0), which beats the plain button.mobile-account-btn rule above
-   (0,1,1) regardless of order, showing a second bare "A" circle next to
-   the real pill. Needs its own higher-specificity override. */
 button.mobile-account-btn.user-logged-in {
   display: none;
 }
-/* Mobile drawer's own header row (title + close) — only meant to be seen
-   inside the full-screen drawer; unhidden it also renders inline in the
-   normal horizontal desktop nav-links row as a stray "Dezire More ✕" pill. */
 .nav-links-header {
   display: none;
 }
@@ -315,7 +283,6 @@ button.mobile-account-btn.user-logged-in {
 .dropdown-menu-wide li a { white-space: normal; line-height: 1.4; }
 .badge { position: absolute; top: -2px; right: -4px; background: var(--gold); color: #1a1408; border-radius: 50%; width: 16px; height: 16px; font-size: 0.5625rem; display: flex; align-items: center; justify-content: center; font-weight: 700; }
 
-/* ===== HERO ===== */
 .hero {
   position: relative;
   background: linear-gradient(135deg, var(--warm-white) 0%, var(--surface-alt) 50%, var(--border) 100%);
@@ -428,7 +395,6 @@ button.mobile-account-btn.user-logged-in {
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-/* ===== Chat With Us Modal ===== */
 .chatus-overlay {
   position: fixed;
   inset: 0;
@@ -562,7 +528,6 @@ button.mobile-account-btn.user-logged-in {
   .chatus-btn { font-size: 0.75rem; padding: 13px 20px; }
 }
 
-/* Hero deck wrap + deck (single, merged definition — was previously repeated 3x) */
 .hero-deck-wrap {
   position: relative;
   display: flex;
@@ -593,12 +558,6 @@ button.mobile-account-btn.user-logged-in {
 .section-header .divider .diamond { width: 6px; height: 6px; background: var(--gold); transform: rotate(45deg); }
 .section-header p { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.0625rem; color: var(--text-light); }
 .categories { padding: 70px 48px; background: var(--warm-white); }
-/* Flexbox (not a fixed-column grid) so a non-divisible category count — 5 —
-   always wraps into centered, evenly-sized rows instead of leaving a
-   lopsided orphan card on the last row at any viewport width. Verified
-   this only actually settles into 2-per-row (where .cat-card-wide below
-   applies) at real phone widths (<=440px) — wider viewports wrap
-   differently (5 across, 4+1, 3+2) and are left alone. */
 .categories-grid {
   display: flex;
   flex-wrap: wrap;
@@ -637,32 +596,14 @@ button.mobile-account-btn.user-logged-in {
   .cat-overlay h3 { font-size: 1.125rem; }
 }
 
-/* At real phone widths the flex-wrap above always settles into exactly
-   2 cards per row (verified: still 4+1 at 600px, only becomes 2-per-row
-   at <=440px) — 5 cards means the last (Jewelry & Accessories) wraps
-   alone, centered and narrower than a real row instead of looking like
-   part of the grid. Switch to an explicit 2-column grid here so it can
-   deliberately span both columns as a full-width last row instead. */
 @media (max-width: 440px) {
   .categories-grid {
     display: grid;
-    /* Fixed-size columns (not 1fr) so normal cards keep the same ~155px
-       size .cat-card's own max-width already gives them — 1fr would
-       stretch them to fill the row instead, throwing off the height
-       match below. justify-content centers the pair, same as the old
-       flexbox's justify-content:center did. */
     grid-template-columns: repeat(2, 155px);
     justify-content: center;
   }
-  /* Matching .cat-card's 3:4 aspect-ratio at double the width would make
-     this row twice as tall as a normal one — height is pinned to match
-     a normal card's own rendered height instead (155px column => ~207px
-     tall via 3:4, i.e. this row). */
   .cat-card-wide {
     grid-column: 1 / -1;
-    /* .cat-card's own max-width:155px (set above for the 2-up grid
-       columns) otherwise caps this at a single column's width even
-       though its grid area correctly spans both. */
     max-width: none;
     width: 100%;
     aspect-ratio: auto;
@@ -701,7 +642,6 @@ button.mobile-account-btn.user-logged-in {
   z-index: 1;
 }
 
-/* ===== Homepage product rows (Bestsellers / Staff Picks / Recommended) ===== */
 .home-product-row { padding: 50px 48px; }
 .home-product-row-header {
   display: flex;
@@ -774,7 +714,7 @@ button.mobile-account-btn.user-logged-in {
 .product-card { background: var(--surface); border-radius: 2px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.05); transition: box-shadow 0.3s, transform 0.3s; cursor: pointer; }
 .product-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.12); transform: translateY(-3px); }
 .product-img-wrap { position: relative; aspect-ratio: 3/4; overflow: hidden; background: var(--surface-alt); }
-.product-img-wrap img { width: 100%; height: 100%; object-fit: cover; object-position: center; transition: transform 0.5s; }
+.product-img-wrap img { width: 100%; height: 100%; object-fit: contain; object-position: center; transition: transform 0.5s; }
 .product-card:hover .product-img-wrap img { transform: scale(1.05); }
 .wishlist-btn { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
 .wishlist-btn:hover { background: var(--surface); transform: scale(1.1); }
@@ -799,7 +739,6 @@ button.mobile-account-btn.user-logged-in {
 .add-to-bag:disabled { background: #ccc; border-color: #ccc; color: #666; cursor: default; }
 .add-to-bag:disabled:hover { background: #ccc; color: #666; }
 
-/* ===== About Us — Royal ===== */
 .about-section {
   position: relative;
   padding: 90px 48px 100px;
@@ -961,7 +900,6 @@ button.mobile-account-btn.user-logged-in {
   .about-bg { animation: none; }
 }
 
-/* ===== Founder / CEO Spotlight ===== */
 .founder-section {
   position: relative;
   padding: 100px 48px;
@@ -1046,7 +984,6 @@ button.mobile-account-btn.user-logged-in {
   .founder-bio { margin: 0 auto; }
 }
 
-/* ===== Client Testimonials ===== */
 .testimonials-section {
   position: relative;
   padding: 100px 0;
@@ -1119,8 +1056,6 @@ button.mobile-account-btn.user-logged-in {
   transform: translateY(-4px);
   box-shadow: 0 26px 54px rgba(30,58,47,0.13);
 }
-/* Large, subtle watermark quote mark — sits behind the copy instead of
-   crowding the customer's photo like the old circular badge did. */
 .testimonial-quote-mark {
   position: absolute;
   top: 4px;
@@ -1182,7 +1117,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 .footer-bottom p { font-size: 0.6875rem; color: rgba(255,255,255,0.4); }
 .img-placeholder { background: linear-gradient(135deg, #e8e0d0 0%, #d4c9b5 100%); display: flex; align-items: center; justify-content: center; color: var(--text-light); font-size: 0.6875rem; letter-spacing: 1px; text-transform: uppercase; width: 100%; height: 100%; }
 
-/* Product slider (single merged definition — was previously repeated with conflicting values) */
 .products-slider-wrapper { position: relative; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; }
 .products-slider {
   display: flex;
@@ -1212,7 +1146,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 }
 .products-grid-3col { grid-template-columns: repeat(4, 1fr); }
 
-/* ===== FILTER PANEL ===== */
 .filter-toggle-btn {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -1228,8 +1161,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 }
 .filter-toggle-btn:hover { border-color: var(--gold); color: var(--gold); }
 
-/* A product navigated to from the search dropdown gets pinned to the front
-   of its category grid (page 1 only) and outlined so it's easy to spot. */
 .category-search-pin-note {
   font-size: 0.8125rem;
   color: var(--text-mid);
@@ -1339,7 +1270,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   .filter-panel { position: static; }
 }
 
-/* ===== AUTH BUTTON ===== */
 
 .auth-trigger-btn {
   display: flex;
@@ -1364,14 +1294,11 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   color: #fff;
 }
 
-/* ===== MODAL OVERLAY ===== */
 
 .auth-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.45);
-  /* Same fix as .checkout-overlay: the "please log in" prompt can also be
-     triggered from a product card inside the (portalled) search overlay. */
   z-index: 10050;
   display: flex;
   align-items: center;
@@ -1402,7 +1329,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   z-index: 2;
 }
 
-/* ===== TABS ===== */
 
 .auth-tabs {
   display: flex;
@@ -1428,7 +1354,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   border-bottom: 2px solid var(--gold);
 }
 
-/* ===== PANEL ===== */
 
 .auth-panel {
   padding: 1.5rem 1.75rem 1.75rem;
@@ -1572,7 +1497,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   .account-form { padding: 24px 20px; }
 }
 
-/* ── Address Book (Account Dashboard + checkout picker) ── */
 .address-book { display: flex; flex-direction: column; gap: 16px; }
 .address-empty { color: var(--text-light); font-size: 0.875rem; margin-bottom: 4px; }
 
@@ -1629,7 +1553,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 
 .address-book-compact .address-card { padding: 12px 14px; }
 
-/* ── Account Dashboard ── */
 .account-dashboard {
   max-width: 1080px;
   margin: 0 auto;
@@ -1705,7 +1628,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   text-align: center;
 }
 
-/* ── Coupons & Rewards (account page) ─────────────────────────────── */
 .coupon-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -1780,7 +1702,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   color: var(--text-light);
 }
 
-/* ── Payment Methods (account page) ──────────────────────────────── */
 .pm-mode-note {
   font-size: 0.8125rem;
   color: var(--text-light);
@@ -1896,7 +1817,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 }
 .account-wishlist-remove:hover { border-color: #c0392b; color: #c0392b; }
 
-/* ── Membership ── */
 .membership-section { display: flex; flex-direction: column; gap: 32px; }
 
 .membership-status-card {
@@ -2027,7 +1947,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   white-space: nowrap;
 }
 
-/* ===== SAREES PAGE ===== */
 .sarees-page {
   padding: 50px 48px 70px;
 }
@@ -2145,7 +2064,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   gap: 10px;
 }
 
-/* ── Custom luxury Sort dropdown (replaces the native <select>) ── */
 .sort-dd {
   position: relative;
   display: flex;
@@ -2273,9 +2191,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   color: #fff;
 }
 
-/* Moved up onto the image itself (was a tiny 11px text row under the
-   product name that was easy to miss entirely) — same spot shoppers
-   already look for a rating badge on most e-commerce sites. */
 .card-rating-badge {
   position: absolute;
   bottom: 12px;
@@ -2325,7 +2240,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   color: #c0392b;
   letter-spacing: 0.5px;
 }
-/* ===== PRODUCT DETAIL MODAL ===== */
 @keyframes pdOverlayIn {
   from { opacity: 0; }
   to   { opacity: 1; }
@@ -2341,15 +2255,7 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   background: rgba(10, 14, 12, 0.68);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  /* Above .search-overlay (also 10000) — a product's detail modal can now
-     open while search results stay mounted behind it (closing search used
-     to unmount the very card whose modal was opening, so it never showed). */
   z-index: 10001;
-  /* backdrop-filter can otherwise leave a later-mounted, higher z-index
-     sibling (the lightbox) compositing incorrectly on some browsers, letting
-     this modal's content paint through on top of it despite the z-index
-     order — isolation forces this into its own self-contained stacking
-     context so later siblings reliably composite above it. */
   isolation: isolate;
   display: flex;
   align-items: center;
@@ -2393,7 +2299,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 }
 .pd-close:hover { background: var(--dark-green); color: #fff; transform: rotate(90deg); }
 
-/* Product detail image gallery — vertical thumbnail rail + large hero image */
 .pd-left {
   position: relative;
   display: flex;
@@ -2562,7 +2467,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   overflow-y: auto;
 }
 
-/* Badge */
 .pd-badge {
   display: inline-block;
   background: var(--dark-green);
@@ -2580,7 +2484,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   background: var(--gold);
 }
 
-/* Title */
 .pd-title {
   font-family: 'Cormorant Garamond', serif;
   font-size: 1.75rem;
@@ -2601,7 +2504,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   margin-bottom: 14px;
 }
 
-/* ===== STAR RATING ===== */
 .pd-rating-row {
   display: flex;
   align-items: center;
@@ -2644,7 +2546,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   color: var(--text-light);
 }
 
-/* Price */
 .pd-price-row {
   display: flex;
   align-items: center;
@@ -2677,7 +2578,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   margin: 18px 0;
 }
 
-/* Description */
 .pd-description {
   font-size: 0.8125rem;
   line-height: 1.8;
@@ -2686,7 +2586,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   font-weight: 300;
 }
 
-/* Details table */
 .pd-details {
   margin-bottom: 24px;
 }
@@ -2712,7 +2611,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   color: var(--text-dark);
 }
 
-/* ===== PRODUCT MODAL — ACTION BUTTONS ===== */
 .pd-action-row {
   display: flex;
   gap: 10px;
@@ -2850,7 +2748,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 }
 .pd-delivery-icon { flex-shrink: 0; color: var(--gold); }
 
-/* ===== Similar Products + Reviews (full-width rows below the 2-col modal) ===== */
 .pd-related-wrap, .pd-reviews-wrap {
   grid-column: 1 / -1;
   padding: 28px 36px;
@@ -2863,9 +2760,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   gap: 16px;
   margin-top: 14px;
 }
-/* Related items render the real ProductCard (click-to-open-details +
-   independent Add to Bag, same as everywhere else) — these just keep it
-   visually compact for a secondary upsell strip. */
 .pd-related-grid .product-card { border: none; box-shadow: none; }
 .pd-related-grid .product-img-wrap { aspect-ratio: 3/4; border-radius: 6px; }
 .pd-related-grid .product-info { padding: 8px 0 0; }
@@ -2873,7 +2767,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 .pd-related-grid .product-name { font-size: 0.75rem; margin-bottom: 6px; }
 .pd-related-grid .price-row { margin-bottom: 8px; }
 
-/* ── Reviews ── */
 .reviews-summary { display: flex; gap: 40px; flex-wrap: wrap; margin: 16px 0 24px; }
 .reviews-average { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 100px; }
 .reviews-average-num { font-family: 'Cormorant Garamond', serif; font-size: 2.5rem; font-weight: 700; color: var(--text-dark); line-height: 1; }
@@ -2956,7 +2849,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   .pd-related-wrap, .pd-reviews-wrap { padding: 22px 18px; }
 }
 
-/* ===== SIZE SELECT ===== */
 .pd-size-select { margin-bottom: 18px; }
 .pd-size-select-header {
   display: flex;
@@ -2990,7 +2882,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   color: #fff;
 }
 
-/* ===== SIZE CHART LINK ===== */
 .size-chart-link {
   background: none;
   border: none;
@@ -3010,15 +2901,10 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   color: var(--dark-green);
 }
 
-/* ===== SIZE CHART MODAL ===== */
 .size-chart-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
-  /* Opened from within the product modal (.pd-overlay, z-index 10001), so
-     this has to sit strictly above it — it was 10000 (one LOWER than the
-     modal underneath it), which on some Android renderers let the product
-     modal's own content paint on top of this instead of behind it. */
   z-index: 10600;
   display: flex;
   align-items: center;
@@ -3109,7 +2995,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   border-top: 1px solid var(--border);
 }
 
-/* ===== FULL-SCREEN LIGHTBOX (zoom / pan / navigate) ===== */
 @keyframes lightboxIn {
   from { opacity: 0; }
   to   { opacity: 1; }
@@ -3225,7 +3110,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   .lightbox-toolbar { bottom: 16px; padding: 6px 14px; gap: 10px; }
 }
 
-/* ===== WISHLIST DRAWER ===== */
 .wl-overlay {
   position: fixed;
   inset: 0;
@@ -3424,7 +3308,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   color: #c0392b;
 }
 
-/* ===== CART ===== */
 .cart-qty-row {
   display: flex;
   align-items: center;
@@ -3542,7 +3425,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   font-family: inherit;
 }
 
-/* ===== PAYMENT ===== */
 .payment-body {
   flex: 1;
   overflow-y: auto;
@@ -3659,6 +3541,14 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   color: #fff;
 }
 
+.payment-method-card.payment-method-static {
+  cursor: default;
+}
+.payment-method-card.payment-method-static:hover {
+  border-color: var(--dark-green);
+  box-shadow: 0 4px 14px rgba(30,58,47,0.12);
+}
+
 .payment-check {
   margin-left: auto;
   color: var(--dark-green);
@@ -3679,7 +3569,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   width: 15px; height: 15px; accent-color: var(--gold); cursor: pointer;
 }
 
-/* ===== ORDER SUCCESS / DISPATCH SCREEN ===== */
 .order-success {
   display: flex;
   flex-direction: column;
@@ -3787,7 +3676,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   margin: 8px 0 0;
 }
 
-/* ===== My Orders page ===== */
 .orders-month-group {
   max-width: 720px;
   margin: 0 auto 28px;
@@ -4051,7 +3939,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   .order-card-header-top { gap: 8px; }
 }
 
-/* ===== DRAWER ENTRANCE ANIMATIONS (Cart / Wishlist / Settings) ===== */
 @keyframes wlOverlayIn {
   from { opacity: 0; }
   to   { opacity: 1; }
@@ -4077,7 +3964,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   border-radius: 6px;
 }
 
-/* ===== CHECKOUT / PAYMENT — premium centered modal ===== */
 @keyframes checkoutOverlayIn {
   from { opacity: 0; }
   to   { opacity: 1; }
@@ -4093,11 +3979,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   background: rgba(15, 20, 17, 0.55);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  /* Must outrank .search-overlay (also 10000): Buy Now can be triggered on a
-     product card inside the search overlay, and since .search-overlay is
-     portalled to the end of <body> while this modal renders in normal
-     document order, equal z-index let the search overlay win the paint
-     order and cover the checkout modal underneath it. */
   z-index: 10050;
   display: flex;
   align-items: center;
@@ -4210,7 +4091,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   }
 }
 
-/* ===== TOASTS ===== */
 .toast-stack {
   position: fixed;
   top: 88px;
@@ -4289,7 +4169,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   .toast-item { font-size: 0.75rem; padding: 10px 16px; }
 }
 
-/* ===== MICRO-INTERACTIONS: wishlist heart burst, cart bounce, flying image ===== */
 @keyframes heartPop {
   0%   { transform: scale(1); }
   35%  { transform: scale(1.35); }
@@ -4350,7 +4229,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   }
 }
 
-/* ===== SEARCH ===== */
 .search-overlay {
   position: fixed;
   inset: 0;
@@ -4467,7 +4345,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   padding: 0 1px;
 }
 
-/* Amazon-style search-as-you-type: one row per match, thumbnail + name only. */
 .search-results-list {
   list-style: none;
   margin: 0;
@@ -4509,16 +4386,12 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 }
 
 
-/* ── Hero Deck cards ── */
 .deck-card {
   position: absolute;
   inset: 0;
   border-radius: 20px;
   overflow: hidden;
   transform-origin: center center;
-  /* Slow, gentle crossfade between slides (not a snappy cut) — a slide's
-     className changes (top/mid/back) on the same DOM node (keyed by
-     index), so these transitions interpolate automatically. */
   transition: transform 1s ease-in-out,
               opacity 1s ease-in-out,
               box-shadow 1s ease-in-out;
@@ -4557,7 +4430,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   opacity: 0.65;
 }
 
-/* Hero dots */
 .hero-dots {
   display: flex;
   gap: 8px;
@@ -4582,7 +4454,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 .cat-img-visible {
   opacity: 1;
 }
-/* Navbar Responsive Fix */
 @media (max-width: 1400px) {
   .nav-links {
     gap: 20px;
@@ -4686,9 +4557,7 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   }
 }
 
-/* ===== PRODUCT DETAIL — IMAGE GALLERY (older duplicate removed; see .pd-left above) ===== */
 
-/* Skeleton loader */
 .skeleton { pointer-events: none; }
 
 .skeleton-img {
@@ -4717,7 +4586,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   100% { background-position: -200% 0; }
 }
 
-/* Pagination (single merged definition — was previously repeated with conflicting values) */
 .pagination {
   display: flex;
   justify-content: center;
@@ -4739,7 +4607,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 .page-btn.active { background: #1a3c34; color: #fff; border-color: #1a3c34; }
 .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* Filters bar */
 .filters-bar {
   display: flex;
   align-items: center;
@@ -4748,7 +4615,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 }
 .results-count { font-size: 0.875rem; color: var(--text-light); }
 
-/* Search dropdown */
 .search-bar-wrap { position: relative; }
 
 .search-dropdown {
@@ -4802,7 +4668,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 }
 .search-see-all:hover { background: var(--surface-alt); }
 
-/* Product card hover image */
 .product-img-link { position: relative; display: block; overflow: hidden; }
 .product-img-hover {
   position: absolute;
@@ -4813,7 +4678,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 .product-img-link:hover .product-img-hover { opacity: 1; }
 .product-img-link:hover .product-img-main  { opacity: 0; }
 
-/* API error */
 .api-error {
   background: rgba(192, 57, 43, 0.1);
   border: 1px solid rgba(192, 57, 43, 0.35);
@@ -4825,7 +4689,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 }
 [data-theme="light"] .api-error, :root:not([data-theme="dark"]) .api-error { color: #c0392b; }
 
-/* Empty / loading / error states */
 .page-loading { text-align: center; padding: 60px; color: var(--text-light); }
 .page-error   { text-align: center; padding: 60px; color: #e07a6c; }
 .page-empty   { text-align: center; padding: 60px; color: var(--text-light); }
@@ -4836,7 +4699,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   color: var(--text-light);
   font-size: 0.9375rem;
 }
-/* ── Auth Error ── */
 .auth-error {
   background: rgba(217, 83, 79, 0.1);
   border: 1px solid rgba(217, 83, 79, 0.35);
@@ -4884,7 +4746,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   cursor: default;
 }
 
-/* ── User Menu ── */
 .user-menu-wrap { position: relative; }
 
 .auth-trigger-btn.user-logged-in {
@@ -4925,9 +4786,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   flex-shrink: 0;
 }
 
-/* Active premium members get a thin gold ring on the avatar and a small
-   crown next to their name — gated on membership.status === 'active' at
-   the call site, not here, so this is purely presentational. */
 .user-avatar-premium {
   box-shadow: 0 0 0 2px var(--gold);
 }
@@ -4998,7 +4856,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 .user-logout { color: #d9534f !important; }
 .user-logout:hover { background: rgba(217, 83, 79, 0.12) !important; }
 
-/* Hero text transitions */
 .hero-text {
   transition: opacity 0.22s ease, transform 0.22s ease;
 }
@@ -5102,7 +4959,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   color: #4A0E0E;
 }
 
-/* Photo card stack — tilted, peeking, layered like a polaroid pair */
 .sale-photo-stack {
   position: relative;
   z-index: 2;
@@ -5137,7 +4993,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   outline: 1px solid rgba(176, 141, 69, 0.4);
 }
 
-/* Section header for the product grid below the banner */
 #sale-products .section-header {
   text-align: center;
   margin: 64px 0 40px;
@@ -5182,7 +5037,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   display: inline-block;
 }
 
-/* Mobile */
 @media (max-width: 900px) {
   .sale-banner {
     flex-direction: column;
@@ -5206,10 +5060,7 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     height: 360px;
   }
 }
-/* ===== PREMIUM PRODUCT GRID — scoped fixes + royal polish ===== */
 
-/* Slider cards keep their fixed width; grid pages (Sarees, Co-ords, etc)
-   get a responsive fluid grid instead of a fixed card width */
 .products-slider .product-card {
   width: 280px;
   min-width: 280px;
@@ -5323,7 +5174,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   }
 }
 
-/* ===== ROYAL HERO ENHANCEMENT ===== */
 
 .hero-royal-glow {
   position: absolute;
@@ -5406,7 +5256,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   }
 }
 
-/* ===== RESPONSIVE (mobile) ===== */
 @media (max-width: 768px) {
 
   nav {
@@ -5470,10 +5319,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     max-width: 100%;
   }
 
-  /* Icon row (search/wishlist/cart/settings/user) now sits on its own
-     full-width row, right underneath the logo and above the search bar —
-     so it never has to compete for space with the logo and can never
-     get cramped or overlap. */
   .nav-icons {
     grid-column: 1 / -1;
     grid-row: 2;
@@ -5484,8 +5329,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     flex-shrink: 0;
   }
 
-  /* Persistent, always-visible search bar as its own full-width row,
-     matching the reference mobile mockup — not hidden behind an icon. */
   .nav-search-bar {
     display: flex;
     grid-column: 1 / -1;
@@ -5514,8 +5357,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   .nav-icons button:active { background: var(--surface-alt); }
   .nav-icons button svg { width: 18px; height: 18px; }
 
-  /* The search bar is now always visible below the header, so the
-     separate search icon button is redundant — keep it hidden on mobile. */
   .mobile-search-btn {
     display: none;
   }
@@ -5530,13 +5371,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   }
 
   .auth-btn-label { display: none; }
-  /* Sizing/shape for .auth-trigger-btn now lives solely in the "COMPACT
-     SINGLE-ROW MOBILE HEADER" block below (the actually-authoritative one at
-     this same breakpoint) — this rule used to also set width/height/
-     border-radius, which silently persisted (CSS cascades per-property, not
-     per-block) even after that later block stopped mentioning border-radius
-     for the logged-out state, leaving the button a rounded square instead of
-     a circle with a barely-visible icon inside. */
 
   .nav-mobile-backdrop {
     display: block;
@@ -5604,7 +5438,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     font-size: 0.7188rem;
   }
 
-  /* Hero */
   .hero {
     grid-template-columns: 1fr;
     padding: 32px 20px;
@@ -5618,12 +5451,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     width: 260px;
     height: 340px;
   }
-  /* Single clean image on mobile — the stacked peeking cards behind it
-     read as a second slider and can catch the edge-swipe-back gesture.
-     opacity:0 (not display:none) so the outgoing slide crossfades out
-     smoothly instead of vanishing instantly when it becomes mid/back;
-     transform:none keeps it perfectly in place under the top slide so
-     only opacity changes — a plain fade, not a slide/shrink. */
   .deck-mid, .deck-back {
     opacity: 0;
     transform: none;
@@ -5646,7 +5473,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     min-width: 100px;
   }
 
-  /* Categories */
   .categories {
     padding: 40px 20px;
   }
@@ -5676,7 +5502,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     max-width: 100%;
   }
 
-  /* New arrivals / products grid */
   .new-arrivals {
     padding: 40px 20px;
   }
@@ -5690,12 +5515,10 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     min-width: 0 !important;
   }
 
-  /* About section */
   .about-section {
     padding: 40px 20px;
   }
 
-  /* Footer */
   footer {
     padding: 40px 20px 24px;
   }
@@ -5709,7 +5532,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     text-align: center;
   }
 
-  /* Sarees / category page */
   .sarees-page {
     padding: 30px 20px 50px;
   }
@@ -5725,12 +5547,7 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     font-size: 0.5938rem;
   }
 
-  /* Product detail modal */
   .pd-modal {
-    /* Plain 1fr (unlike the desktop rule's minmax(0, ...) tracks) let grid's
-       default min-width:auto win — any child that doesn't wrap (the Add to
-       Cart/Buy Now row, the delivery estimate line) forced this whole column,
-       and the modal with it, wider than the viewport. */
     grid-template-columns: minmax(0, 1fr);
     max-height: 94vh;
     border-radius: 16px;
@@ -5776,28 +5593,18 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     margin-bottom: 14px;
   }
 
-  /* Wishlist / Cart drawer */
   .wl-drawer {
     width: 100%;
   }
 
-  /* Search overlay */
   .search-box {
     max-width: 100%;
     margin: 0 12px;
   }
 
-  /* Auth modal */
   .auth-modal {
     max-width: 92%;
   }
-  /* The close button is absolutely positioned in the top-right corner; at
-     narrow widths the tabs bar (flush with the top of the modal) sat right
-     underneath it and the "Create Account" label ran into the ✕. Reserve
-     space above the tabs instead of overlapping them. Margin here previously
-     left the two exactly touching (0px gap) in testing — real device font
-     metrics can easily tip that into an overlap, so this leaves real
-     clearance rather than the minimum that happens to work in one browser. */
   .auth-close {
     top: 10px;
     right: 10px;
@@ -5895,7 +5702,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   display: none;
 }
 @media (max-width: 480px) {
-  /* Announcement bar: turn into a clean single-line scroller instead of wrapped mess */
   .announcement-bar {
     padding: 8px 16px;
     font-size: 0.5625rem;
@@ -5907,7 +5713,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     margin: 0 10px;
   }
 
-  /* Category card text: shrink + prevent cutoff */
   .cat-overlay h3 {
     font-size: 0.875rem;
     letter-spacing: 1px;
@@ -5919,7 +5724,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     padding: 14px 12px;
   }
 }
-/* ===== SETTINGS DRAWER ===== */
 .settings-btn { position: relative; }
 .settings-body { padding: 20px; overflow-y: auto; }
 .settings-section { padding: 18px 0; border-bottom: 1px solid var(--border); }
@@ -6082,13 +5886,10 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   flex-shrink: 0;
 }
 
-/* Font scale — every font-size in this file is expressed in rem, so scaling
-   the root font-size here scales all text site-wide proportionally. */
 :root[data-font-scale="small"] { font-size: 14px; }
 :root[data-font-scale="normal"] { font-size: 16px; }
 :root[data-font-scale="large"] { font-size: 18px; }
 
-/* Reduce motion */
 :root[data-reduce-motion="true"] *,
 :root[data-reduce-motion="true"] *::before,
 :root[data-reduce-motion="true"] *::after {
@@ -6098,7 +5899,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   scroll-behavior: auto !important;
 }
 
-/* ===== DARK MODE — GLOBAL POLISH ===== */
 [data-theme="dark"] ::selection {
   background: var(--gold);
   color: #1a1a1a;
@@ -6118,15 +5918,11 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   opacity: 0.8;
 }
 
-/* Product image placeholders / empty states should read as a soft dark
-   tile, not a bright white box, when the theme is dark. */
 [data-theme="dark"] .product-img-placeholder,
 [data-theme="dark"] .hero-deck-placeholder {
   background: var(--surface-alt);
 }
 
-/* Cards, drawers and modals get a touch more shadow depth against the
-   darker page background so their edges stay legible. */
 [data-theme="dark"] .product-card,
 [data-theme="dark"] .wl-drawer,
 [data-theme="dark"] .checkout-modal,
@@ -6141,13 +5937,8 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   box-shadow: 0 12px 40px rgba(0,0,0,0.5);
 }
 
-/* Buttons that rely on a plain white background elsewhere in the app */
 [data-theme="dark"] .flying-cart-image { box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
 
-/* The cart/checkout modal keeps its own local --cm-* palette below (rather
-   than driving every value off --surface/--text-dark) so its "premium
-   boutique" look stays intentional rather than diluted — this just gives
-   that local palette a dark-mode variant instead of leaving it fixed-light. */
 [data-theme="dark"] .cart-modal-v2 {
   --cm-bg: var(--surface);
   --cm-bg-2: var(--surface-alt);
@@ -6166,10 +5957,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   background: rgba(0, 0, 0, 0.6);
 }
 
-/* ===================================================================
-   CART MODAL v2 — centered, light "premium boutique" cart.
-   Given a dark-mode variant above instead of being left fixed-light.
-   =================================================================== */
 .cart-modal-overlay {
   position: fixed;
   inset: 0;
@@ -6333,9 +6120,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   margin-bottom: 12px;
 }
 .cm-recommendations-row { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 4px; }
-/* Cart cross-sell renders the real ProductCard (click-to-open-details +
-   independent Add to Bag) instead of a card that only ever added straight
-   to cart — these overrides just keep it compact in the cart drawer. */
 .cm-recommendations-row .product-card {
   flex: 0 0 110px;
   background: none;
@@ -6547,7 +6331,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   transition: transform 0.15s ease;
 }
 
-/* ---- Order Summary panel ---- */
 .cm-summary {
   width: 300px;
   flex-shrink: 0;
@@ -6732,7 +6515,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 }
 .cm-clear-btn:hover { color: #e57373; border-color: rgba(224,115,115,0.4); }
 
-/* ---- Trust badges footer ---- */
 .cm-trust {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -6752,12 +6534,10 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 .cm-trust-item b { display: block; font-size: 0.75rem; color: var(--cm-text); font-weight: 600; }
 .cm-trust-item small { display: block; font-size: 0.6563rem; color: var(--cm-text-light); margin-top: 2px; }
 
-/* ---- Empty cart state ---- */
 .cart-modal-v2 .wl-empty { color: var(--cm-text-light); padding: 60px 30px; }
 .cart-modal-v2 .wl-empty p { color: var(--cm-text); }
 .cart-modal-v2 .wl-empty-icon { color: var(--cm-gold); opacity: 0.85; }
 
-/* ---- Mobile-first responsive rules ---- */
 @media (max-width: 860px) {
   .cart-modal-overlay { padding: 0; align-items: flex-end; }
   .cart-modal-v2 {
@@ -6782,7 +6562,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   .cm-item-bottom { flex-direction: column; align-items: flex-start; gap: 10px; }
 }
 
-/* ---- SSL / accepted-payments strip at the bottom of the cart modal ---- */
 .cm-payments {
   display: flex;
   align-items: center;
@@ -6812,14 +6591,10 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   .cm-payments { padding: 12px 18px 18px; gap: 10px; }
 }
 
-/* ===== COMPACT SINGLE-ROW MOBILE HEADER (final, authoritative — wins over
-   earlier scattered mobile rules since it's the last block in the file) ===== */
 .nav-links-settings {
   display: none;
 }
 @media (max-width: 768px) {
-  /* Row 1: logo + wordmark alone, full width — no icons compete for space.
-     Row 2: hamburger (left) | search bar (center) | Account icon (right). */
   nav {
     grid-template-columns: 40px 1fr 48px;
     grid-template-rows: auto auto;
@@ -6833,21 +6608,9 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     grid-row: 1;
     justify-self: start;
     gap: 12px;
-    /* Base rule sets min-width:max-content, which silently overrides any
-       max-width here once content is narrower than the cap (used width
-       is max(min-width, max-width) per spec) — must reset it or a max-width
-       here would do nothing. Nothing else shares row 1 anymore (Account
-       moved to row 2 below), so the logo can use the full row. */
     min-width: 0;
     max-width: 100%;
   }
-  /* align-items:center on .nav-logo centers the whole (taller) emblem
-     against the whole (name + tagline) text block, which puts the
-     wordmark's own visual center above the emblem's — the tagline line
-     below it pulls the block's midpoint down without the emblem having
-     an equivalent. Nudging the text block down compensates so the
-     wordmark line itself, not the two-line block, lines up with the
-     emblem's center. */
   .logo-text {
     display: flex;
     min-width: 0;
@@ -6866,8 +6629,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     white-space: nowrap;
     text-overflow: ellipsis;
   }
-  /* Restored on mobile now that the single-icon layout leaves room —
-     sized down from the desktop tagline so it doesn't crowd the wordmark. */
   .logo-text .logo-tagline {
     font-size: 0.5625rem;
     letter-spacing: 1.4px;
@@ -6888,28 +6649,15 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     justify-content: flex-end;
     gap: 6px;
   }
-  /* The search bar row below already covers search — no need for a
-     redundant search icon here. */
   .mobile-search-btn {
     display: none !important;
   }
-  /* Wishlist/Cart/Settings/Account collapse into one Account icon on
-     mobile (below) — desktop keeps these four separate. `.nav-icons`-
-     qualified (0,2,0) to reliably beat the earlier `.nav-icons button`
-     (0,1,1) rule at line 5213, which also matches at this breakpoint. */
   .nav-icons .icon-wishlist-btn,
   .nav-icons .icon-cart-btn,
   .nav-icons .icon-settings-btn,
   .nav-icons .icon-account-desktop {
     display: none;
   }
-  /* Account is now the single hub for Orders/Cart/Wishlist/Profile/
-     Addresses/Membership — it should read as the primary action, not a
-     plain outline icon lost among the others. `.nav-icons button` (below)
-     already forces background:none/color:text-dark at higher specificity
-     than plain `.auth-trigger-btn`, which is why the guest icon rendered
-     flat before — matched here with `.nav-icons .mobile-account-btn`
-     (0,2,0) so the gold/green treatment actually wins. */
   .nav-icons .mobile-account-btn {
     display: flex;
     position: relative;
@@ -6918,17 +6666,9 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     border: 1.75px solid var(--gold);
     background: var(--surface-alt);
   }
-  /* The desktop-hiding fix for the logged-in duplicate-"A" bug
-     (button.mobile-account-btn.user-logged-in, 0,2,1 — see base rules)
-     has higher specificity than the plain rule above (0,2,0) and would
-     otherwise also hide this on mobile, where it's the intended single
-     Account icon. Re-asserted at higher specificity (0,3,0) so it wins
-     back here without needing !important. */
   .nav-icons .mobile-account-btn.user-logged-in {
     display: flex;
   }
-  /* Guest state has no inner avatar circle to carry color, so the button
-     itself gets the site's primary dark-green/gold treatment instead. */
   .nav-icons .mobile-account-btn:not(.user-logged-in) {
     background: var(--dark-green);
     color: var(--gold-light);
@@ -6942,14 +6682,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     width: 32px;
     height: 32px;
   }
-  /* Explicit for both auth states (logged-in gets padding:0 below, which
-     needs this too) — previously only .user-logged-in set border-radius,
-     so the logged-out "Login" button fell back to a stale rounded-square
-     radius from an earlier, superseded mobile header block. Selector is
-     `button.auth-trigger-btn` (element+class), not just `.auth-trigger-btn`
-     (class-only) — `.nav-icons button` elsewhere is also element+class, and
-     a plain class selector loses to that regardless of source order no
-     matter how late this rule appears. */
   button.auth-trigger-btn {
     padding: 0;
     display: flex;
@@ -6961,21 +6693,12 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     width: 16px;
     height: 16px;
   }
-  /* Logged-in state is a pill (avatar + first name + chevron) sized for
-     desktop — squeezing that same content into a 32px box just let it
-     overflow and overlap the settings icon next to it instead of actually
-     shrinking. Collapse to the avatar circle alone on mobile; tapping it
-     still opens the full dropdown (name, email, profile/orders/wishlist/
-     sign out), so nothing becomes unreachable. */
   .auth-trigger-btn.user-logged-in {
     padding: 0;
     justify-content: center;
     border-radius: 50%;
     position: relative;
   }
-  /* Collapsing to just the avatar circle on mobile used to hide ANY direct
-     svg child indiscriminately — that included the premium crown once it
-     was added here, not just the intended chevron. */
   .auth-trigger-btn.user-logged-in span,
   .auth-trigger-btn.user-logged-in > svg:not(.premium-crown) {
     display: none;
@@ -6997,14 +6720,10 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     grid-row: 2;
   }
 
-  /* ── Premium hamburger drawer ── */
   .nav-links {
     background: var(--cream) !important;
     padding: 0 0 24px !important;
   }
-  /* Real header row (title + close button) — see the matching JSX comment
-     for why this replaced a decorative ::before banner with a toggle
-     button z-index-layered on top of it from an unrelated position. */
   .nav-links-header {
     display: flex;
     align-items: center;
@@ -7056,11 +6775,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     background: var(--warm-white);
     color: var(--gold);
   }
-  /* Touch devices can get "stuck" simulating :hover after a tap, which fought
-     the .open class toggle and made submenus impossible to close. The old
-     hover rule only ever touched `display`, and display is forced to block
-     unconditionally below — so it's inert now. Visibility is driven purely
-     by max-height off the .open class instead. */
   .dropdown-menu {
     display: block !important;
     position: static !important;
@@ -7096,7 +6810,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
     background: rgba(184,150,78,0.08);
   }
 
-  /* ── Search modal: portalled overlay, compact 2-col results ── */
   .search-overlay {
     padding-top: 60px;
   }
@@ -7109,12 +6822,7 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   }
 }
 
-/* ===== INTRO ANIMATION (app/site launch splash) ===== */
-/* Cormorant Garamond + Jost are loaded via index.html's Google Fonts link. */
 
-/* Custom properties scoped to the overlay only -- the site already has
-   global --gold/--cream/etc variables with different values; declaring
-   these at :root would silently recolor the rest of the site. */
 .intro-overlay {
   --i-cream: #FBF6EC;
   --i-cream-deep: #F1E7D3;
@@ -7208,7 +6916,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   .intro-divider-line { width: 56px !important; }
 }
 
-/* ── Page transition ── */
 .page-fade-in { animation: pageFadeIn 0.35s ease; }
 @keyframes pageFadeIn {
   from { opacity: 0; transform: translateY(6px); }
@@ -7218,15 +6925,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   .page-fade-in { animation: none; }
 }
 
-/* ===== TOUCH DEVICES: kill hover-triggered transforms ==========================
-   Touch browsers simulate a lingering ":hover" the moment you tap or swipe
-   across a card. On cards with a hover transform this caused visible
-   shaking/jitter while scrolling the New Arrivals carousel, and — far worse —
-   could turn the card's own :hover transform into a CSS containing block for
-   any position:fixed modal rendered inside it, crushing that modal down to
-   the card's width. The modals are now portalled (see ProductCard.jsx) which
-   fixes the crushing; this removes the transforms themselves so touch never
-   triggers the shake in the first place. */
 @media (hover: none), (pointer: coarse) {
   .product-card:hover,
   .marquee-card:hover,
@@ -7241,8 +6939,6 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   }
 }
 
-/* ===== NEW ARRIVALS: more compact cards + search results matched to the
-   home page card scale (final, authoritative) ===== */
 @media (max-width: 640px) {
   .marquee-card { flex: 0 0 148px; }
   .marquee-card .product-info { padding: 10px 12px 14px; }

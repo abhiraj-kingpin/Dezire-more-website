@@ -12,9 +12,6 @@ function CouponCard({ coupon, t }) {
     try {
       await navigator.clipboard.writeText(coupon.code);
     } catch {
-      // Clipboard can be unavailable (older WebView, permissions) — the
-      // code is still shown on the card either way, so this is a
-      // non-fatal nicety, not something the shopper needs an error for.
     }
     setCopied(true);
     showToast(`${coupon.code} ${t('coupons_copied')}`, 'success');

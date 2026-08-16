@@ -1,11 +1,8 @@
-// src/hooks/useProducts.js
-// Replaces ALL  import { x } from '../data/products'  lines
 
 import { useState, useEffect, useCallback } from 'react';
 
 export const BASE = import.meta.env.VITE_API_URL || 'https://dezire-more-website-1.onrender.com/api';
 
-// ─── Core fetcher ─────────────────────────────────────────────────────────────
 async function fetcher(endpoint, signal) {
   const res = await fetch(`${BASE}${endpoint}`, { signal });
   if (!res.ok) {
@@ -15,7 +12,6 @@ async function fetcher(endpoint, signal) {
   return res.json();
 }
 
-// ─── Base hook ────────────────────────────────────────────────────────────────
 export function useProducts(endpoint, deps = []) {
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
@@ -31,7 +27,6 @@ export function useProducts(endpoint, deps = []) {
     } finally {
       setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [endpoint, ...deps]);
 
   useEffect(() => {
@@ -43,8 +38,6 @@ export function useProducts(endpoint, deps = []) {
   return { data, loading, error, refetch: () => run() };
 }
 
-// ─── useCategory ──────────────────────────────────────────────────────────────
-// const { products, total, totalPages, loading, error } = useCategory('sarees', { sort: 'rating', page: 1 })
 export function useCategory(category, filters = {}) {
   const params = new URLSearchParams(
     Object.entries(filters).filter(([, v]) => v !== undefined && v !== '')
@@ -64,8 +57,6 @@ export function useCategory(category, filters = {}) {
   };
 }
 
-// ─── useFacets ────────────────────────────────────────────────────────────────
-// const { colors, sizes, fabrics, occasions, minPrice, maxPrice } = useFacets('sarees')
 export function useFacets(category) {
   const endpoint = `/products/facets${category ? `?category=${category}` : ''}`;
   const { data, loading } = useProducts(endpoint, [category]);
@@ -80,8 +71,6 @@ export function useFacets(category) {
   };
 }
 
-// ─── useTag ───────────────────────────────────────────────────────────────────
-// useTag('bestseller') / useTag('new-arrival') / useTag('sale')
 export function useTag(tag, filters = {}) {
   const params = new URLSearchParams(
     Object.entries(filters).filter(([, v]) => v !== undefined && v !== '')
@@ -101,8 +90,6 @@ export function useTag(tag, filters = {}) {
   };
 }
 
-// ─── useProduct ───────────────────────────────────────────────────────────────
-// const { product, related, loading } = useProduct('64abc123...')
 export function useProduct(id) {
   const { data, loading, error } = useProducts(`/products/${id}`, [id]);
   return {
@@ -113,8 +100,6 @@ export function useProduct(id) {
   };
 }
 
-// ─── useHomeData ──────────────────────────────────────────────────────────────
-// const { newArrivals, bestsellers, sale, stats, loading } = useHomeData()
 export function useHomeData() {
   const { data, loading, error } = useProducts('/products/home');
   return {

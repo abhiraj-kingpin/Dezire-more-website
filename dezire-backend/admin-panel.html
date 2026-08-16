@@ -21,7 +21,6 @@
 
     body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-    /* ── Login ── */
     #login-screen {
       min-height: 100vh;
       display: flex; align-items: center; justify-content: center;
@@ -33,7 +32,6 @@
     .login-card h1 { font-size: 20px; margin-bottom: 4px; }
     .login-card p  { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
 
-    /* ── Layout ── */
     #app { display: none; }
     .sidebar {
       position: fixed; top: 0; left: 0; bottom: 0; width: 220px;
@@ -53,7 +51,6 @@
     .page { display: none; }
     .page.active { display: block; }
 
-    /* ── Shared UI ── */
     h2 { font-size: 22px; margin-bottom: 6px; }
     .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
 
@@ -87,7 +84,6 @@
     .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
     .btn:disabled { opacity: .5; cursor: not-allowed; }
 
-    /* ── Image upload zone ── */
     .upload-zone {
       border: 2px dashed var(--border); border-radius: 10px;
       padding: 32px; text-align: center; cursor: pointer; transition: all .2s;
@@ -108,7 +104,6 @@
       display: flex; align-items: center; justify-content: center;
     }
 
-    /* ── Toast ── */
     #toast {
       position: fixed; bottom: 28px; right: 28px; padding: 14px 20px;
       border-radius: 8px; color: #fff; font-size: 14px; font-weight: 500;
@@ -119,7 +114,6 @@
     #toast.success { background: var(--success); }
     #toast.error   { background: var(--danger); }
 
-    /* ── Products table ── */
     .products-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .products-table th { text-align: left; padding: 10px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); border-bottom: 1px solid var(--border); }
     .products-table td { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
@@ -134,13 +128,11 @@
     .search-bar { display: flex; gap: 10px; margin-bottom: 16px; }
     .search-bar input { flex: 1; }
 
-    /* ── Stats row ── */
     .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
     .stat-box { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
     .stat-box .num { font-size: 28px; font-weight: 700; color: var(--green); }
     .stat-box .lbl { font-size: 12px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .05em; }
 
-    /* ── Tags checkboxes ── */
     .tags-grid { display: flex; flex-wrap: wrap; gap: 8px; }
     .tag-check { display: flex; align-items: center; gap: 6px; }
     .tag-check input { width: auto; }
@@ -150,13 +142,51 @@
 
     .loading { text-align: center; padding: 40px; color: var(--muted); }
     .empty { text-align: center; padding: 60px; color: var(--muted); }
+
+    .sidebar-toggle {
+      display: none;
+      position: fixed; top: 14px; left: 14px; z-index: 20;
+      width: 40px; height: 40px; border-radius: 8px;
+      background: var(--green); color: #fff; border: none;
+      align-items: center; justify-content: center; cursor: pointer;
+    }
+    .sidebar-overlay {
+      display: none;
+      position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 9;
+    }
+    .sidebar-overlay.open { display: block; }
+
+    @media (max-width: 860px) {
+      .sidebar-toggle { display: flex; }
+      .sidebar {
+        transform: translateX(-100%);
+        transition: transform .25s ease;
+        width: 250px;
+        z-index: 15;
+        box-shadow: 4px 0 24px rgba(0,0,0,.25);
+      }
+      .sidebar.open { transform: translateX(0); }
+
+      .main { margin-left: 0; padding: 70px 16px 32px; }
+      .login-card { width: 90vw; max-width: 360px; padding: 28px 24px; }
+
+      h2 { font-size: 19px; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .row, .row-3 { grid-template-columns: 1fr; }
+      .two-col-grid { grid-template-columns: 1fr !important; }
+
+      .products-table { display: block; overflow-x: auto; white-space: nowrap; }
+    }
+
+    @media (max-width: 420px) {
+      .stats-row { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
 
-<!-- ── Login Screen ── -->
 <div id="login-screen">
-  <div class="login-card">
+  <div class="login-card" id="login-form-card">
     <h1>Dezire More</h1>
     <p>Admin Panel — sign in to continue</p>
     <label>Email</label>
@@ -165,18 +195,42 @@
     <input type="password" id="login-password" placeholder="••••••••" />
     <div id="login-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none"></div>
     <button class="btn btn-primary" style="width:100%;margin-top:20px" onclick="login()">Sign In</button>
+    <button type="button" onclick="showForgotPassword()" style="background:none;border:none;color:var(--muted);font-size:12px;margin-top:14px;cursor:pointer;text-decoration:underline">Forgot password?</button>
+  </div>
+
+  <div class="login-card" id="forgot-form-card" style="display:none">
+    <h1>Reset Password</h1>
+    <p>Enter your registered admin email — we'll send a reset link if it matches.</p>
+    <label>Email</label>
+    <input type="email" id="forgot-email" placeholder="admin@deziremore.com" />
+    <div id="forgot-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none"></div>
+    <div id="forgot-success" style="color:var(--success,#2e7d32);font-size:13px;margin-top:8px;display:none"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:20px" id="forgot-send-btn" onclick="sendAdminResetLink()">Send Reset Link</button>
+    <button type="button" onclick="showLoginForm()" style="background:none;border:none;color:var(--muted);font-size:12px;margin-top:14px;cursor:pointer;text-decoration:underline">Back to sign in</button>
+  </div>
+
+  <div class="login-card" id="reset-form-card" style="display:none">
+    <h1>Set New Password</h1>
+    <p>Choose a new password for the admin account.</p>
+    <label>New Password</label>
+    <input type="password" id="reset-new-password" placeholder="At least 8 characters" />
+    <div id="reset-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:20px" id="reset-submit-btn" onclick="submitAdminReset()">Set Password &amp; Sign In</button>
   </div>
 </div>
 
-<!-- ── Main App ── -->
 <div id="app">
-  <nav class="sidebar">
+  <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Open menu">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+  <nav class="sidebar" id="sidebar">
     <div class="sidebar-logo">DEZIRE MORE <span>ADMIN PANEL</span></div>
     <button class="nav-item active" onclick="showPage('dashboard')">Dashboard</button>
     <button class="nav-item" onclick="showPage('analytics')">Analytics</button>
+    <button class="nav-item" onclick="showPage('gst')">GST Reports</button>
     <button class="nav-item" onclick="showPage('orders')">Orders</button>
     <button class="nav-item" onclick="showPage('verify')">Pending Verification</button>
-    <button class="nav-item" onclick="showPage('exchanges')">Exchanges</button>
     <button class="nav-item" onclick="showPage('customers')">Customers</button>
     <button class="nav-item" onclick="showPage('coupons')">Coupons</button>
     <button class="nav-item" onclick="showPage('love')">Client Love</button>
@@ -186,12 +240,12 @@
     <button class="nav-item" onclick="showPage('add')">Add Product</button>
     <button class="nav-item" onclick="showPage('bulk')">Bulk Import</button>
     <button class="nav-item" onclick="showPage('activity')">Activity Log</button>
+    <button class="nav-item" onclick="showPage('settings')">Account Settings</button>
     <button class="nav-item" style="margin-top:auto;position:absolute;bottom:20px;left:0;width:100%;color:rgba(255,255,255,.5)" onclick="logout()">Sign Out</button>
   </nav>
 
   <main class="main">
 
-    <!-- Dashboard -->
     <div class="page active" id="page-dashboard">
       <h2>Dashboard</h2>
       <p class="subtitle">Live overview of your store</p>
@@ -207,7 +261,6 @@
       </div>
     </div>
 
-    <!-- Analytics -->
     <div class="page" id="page-analytics">
       <h2>Analytics</h2>
       <p class="subtitle">Revenue and sales performance</p>
@@ -222,7 +275,7 @@
         <div id="revenue-chart-empty" style="margin-top:16px"></div>
         <div style="height:220px;margin-top:16px"><canvas id="revenue-chart-canvas"></canvas></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px">
+      <div class="two-col-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px">
         <div class="card">
           <strong>Top 5 Products by Units Sold</strong>
           <div id="top-products-empty" style="margin-top:16px"></div>
@@ -240,7 +293,52 @@
       </div>
     </div>
 
-    <!-- Orders -->
+    <div class="page" id="page-gst">
+      <h2>GST Reports</h2>
+      <p class="subtitle">GST collected on paid orders, by date range — for tax filing. Only counts orders that have actually been paid.</p>
+
+      <div class="card" style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end">
+        <div>
+          <label style="font-size:12px;display:block;margin-bottom:4px">Period</label>
+          <select id="gst-period" style="width:160px" onchange="handleGstPeriodChange()">
+            <option value="month">This month</option>
+            <option value="last-month">Last month</option>
+            <option value="quarter">This quarter</option>
+            <option value="custom">Custom range</option>
+          </select>
+        </div>
+        <div id="gst-custom-range" style="display:none;gap:14px;flex-wrap:wrap">
+          <div>
+            <label style="font-size:12px;display:block;margin-bottom:4px">From</label>
+            <input type="date" id="gst-from" style="width:160px" />
+          </div>
+          <div>
+            <label style="font-size:12px;display:block;margin-bottom:4px">To</label>
+            <input type="date" id="gst-to" style="width:160px" />
+          </div>
+        </div>
+        <button class="btn btn-gold" onclick="loadGstReport()">Run Report</button>
+        <button class="btn btn-outline" onclick="exportGstReportCsv()" id="gst-export-btn" disabled>Export CSV</button>
+      </div>
+
+      <div class="stats-row" style="margin-top:20px">
+        <div class="stat-box"><div class="num" id="gst-orders">—</div><div class="lbl">Paid Orders</div></div>
+        <div class="stat-box"><div class="num" id="gst-subtotal">—</div><div class="lbl">Subtotal (pre-GST)</div></div>
+        <div class="stat-box"><div class="num" id="gst-total-gst">—</div><div class="lbl">Total GST Collected</div></div>
+        <div class="stat-box"><div class="num" id="gst-total">—</div><div class="lbl">Total Revenue (incl. GST)</div></div>
+      </div>
+      <div class="stats-row" style="margin-top:12px">
+        <div class="stat-box"><div class="num" id="gst-gst5">—</div><div class="lbl">GST @ 5%</div></div>
+        <div class="stat-box"><div class="num" id="gst-gst18">—</div><div class="lbl">GST @ 18%</div></div>
+        <div class="stat-box"><div class="num" id="gst-cgst">—</div><div class="lbl">CGST (50%)</div></div>
+        <div class="stat-box"><div class="num" id="gst-sgst">—</div><div class="lbl">SGST (50%)</div></div>
+      </div>
+
+      <div class="card" style="margin-top:20px;padding:0;overflow:hidden">
+        <div id="gst-orders-list"><p class="empty">Choose a period and click Run Report</p></div>
+      </div>
+    </div>
+
     <div class="page" id="page-orders">
       <h2>Orders</h2>
       <p class="subtitle">Every order placed on the store, newest first</p>
@@ -249,7 +347,6 @@
       </div>
     </div>
 
-    <!-- Pending Verification -->
     <div class="page" id="page-verify">
       <h2>Pending Verification</h2>
       <p class="subtitle">Manual UPI / bank transfer orders awaiting a human check against your real UPI or bank app — COD and Razorpay orders never appear here.</p>
@@ -258,16 +355,6 @@
       </div>
     </div>
 
-    <!-- Exchanges -->
-    <div class="page" id="page-exchanges">
-      <h2>Exchanges</h2>
-      <p class="subtitle">Customer-raised exchange requests</p>
-      <div class="card" style="padding:0;overflow:hidden">
-        <div id="exchanges-list"><p class="loading" style="padding:40px">Loading…</p></div>
-      </div>
-    </div>
-
-    <!-- Customers -->
     <div class="page" id="page-customers">
       <h2>Customers</h2>
       <p class="subtitle">Registered accounts and their membership status</p>
@@ -279,7 +366,6 @@
       </div>
     </div>
 
-    <!-- Coupons -->
     <div class="page" id="page-coupons">
       <h2>Coupons</h2>
       <p class="subtitle">Discount codes customers can apply at checkout</p>
@@ -306,7 +392,6 @@
       </div>
     </div>
 
-    <!-- Client Love (testimonials) -->
     <div class="page" id="page-love">
       <h2>Client Love</h2>
       <p class="subtitle">Testimonials shown on the "Our Story" page — previously hardcoded, now managed here</p>
@@ -340,7 +425,6 @@
       </div>
     </div>
 
-    <!-- Payment Settings -->
     <div class="page" id="page-payment">
       <h2>Payment Settings</h2>
       <p class="subtitle">Powers the "Pay via UPI" checkout option — a direct-to-bank-account alternative to Razorpay with no gateway fee. The QR code is generated automatically from this UPI ID plus each order's actual total, so it's never a stale image and always shows the right amount. This option only appears at checkout once a UPI ID is set here.</p>
@@ -353,7 +437,27 @@
       </div>
     </div>
 
-    <!-- Owner / Founder -->
+    <div class="page" id="page-settings">
+      <h2>Account Settings</h2>
+      <p class="subtitle">Change the admin login email and/or password. Requires your current password.</p>
+      <div class="card" style="max-width:480px">
+        <div style="margin-bottom:14px">
+          <label style="font-size:12px;display:block;margin-bottom:4px">Current Password</label>
+          <input type="password" id="settings-current-password" placeholder="Required to make any change" style="width:100%" />
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="font-size:12px;display:block;margin-bottom:4px">New Email (optional)</label>
+          <input type="email" id="settings-new-email" placeholder="Leave blank to keep the current email" style="width:100%" />
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="font-size:12px;display:block;margin-bottom:4px">New Password (optional)</label>
+          <input type="password" id="settings-new-password" placeholder="Leave blank to keep the current password" style="width:100%" />
+        </div>
+        <div id="settings-error" style="color:var(--danger);font-size:13px;margin-bottom:10px;display:none"></div>
+        <button class="btn btn-gold" id="settings-save-btn" onclick="changeAdminCredentials()">Save Changes</button>
+      </div>
+    </div>
+
     <div class="page" id="page-founder">
       <h2>Owner / Founder</h2>
       <p class="subtitle">Powers the "Founder" section on the Our Story page — photo, name, title, quote, and bio</p>
@@ -378,7 +482,6 @@
       </div>
     </div>
 
-    <!-- All Products -->
     <div class="page" id="page-products">
       <h2>All Products</h2>
       <p class="subtitle">Click edit to update details or manage images</p>
@@ -399,7 +502,6 @@
       </div>
     </div>
 
-    <!-- Add / Edit Product -->
     <div class="page" id="page-add">
       <h2 id="form-title">Add New Product</h2>
       <p class="subtitle">Fill in the details and upload photos — product goes live instantly</p>
@@ -532,7 +634,6 @@
       </div>
     </div>
 
-    <!-- Bulk Import -->
     <div class="page" id="page-bulk">
       <h2>Bulk Import</h2>
       <p class="subtitle">Add many products at once with a spreadsheet + all your photos</p>
@@ -582,7 +683,6 @@
       </div>
     </div>
 
-    <!-- Activity Log -->
     <div class="page" id="page-activity">
       <h2>Activity Log</h2>
       <p class="subtitle">Recent admin actions — order/payment status, product, coupon, and membership changes</p>
@@ -600,7 +700,6 @@
   </main>
 </div>
 
-<!-- Toast -->
 <div id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
@@ -612,7 +711,15 @@ let selectedFiles = [];
 let selectedVideoFile = null;
 let allProducts = [];
 
-// ── Auth ──────────────────────────────────────────────────────────────────────
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+}
+
 
 async function login() {
   const email    = document.getElementById('login-email').value.trim();
@@ -645,6 +752,131 @@ function logout() {
   document.getElementById('login-screen').style.display = 'flex';
 }
 
+
+function showForgotPassword() {
+  document.getElementById('login-form-card').style.display = 'none';
+  document.getElementById('forgot-form-card').style.display = 'block';
+}
+
+function showLoginForm() {
+  document.getElementById('forgot-form-card').style.display = 'none';
+  document.getElementById('login-form-card').style.display = 'block';
+}
+
+async function sendAdminResetLink() {
+  const email = document.getElementById('forgot-email').value.trim();
+  const errEl = document.getElementById('forgot-error');
+  const okEl  = document.getElementById('forgot-success');
+  const btn   = document.getElementById('forgot-send-btn');
+  errEl.style.display = 'none';
+  okEl.style.display = 'none';
+  if (!email) { errEl.textContent = 'Enter an email address.'; errEl.style.display = 'block'; return; }
+
+  btn.disabled = true;
+  try {
+    const res  = await fetch(`${API}/admin/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    okEl.textContent = data.message;
+    okEl.style.display = 'block';
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+const resetTokenParam = new URLSearchParams(window.location.search).get('reset-token');
+if (resetTokenParam) {
+  window.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('login-form-card').style.display = 'none';
+    document.getElementById('reset-form-card').style.display = 'block';
+  });
+}
+
+async function submitAdminReset() {
+  const newPassword = document.getElementById('reset-new-password').value;
+  const errEl = document.getElementById('reset-error');
+  const btn   = document.getElementById('reset-submit-btn');
+  errEl.style.display = 'none';
+  if (!newPassword || newPassword.length < 8) {
+    errEl.textContent = 'Password must be at least 8 characters.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  try {
+    const res  = await fetch(`${API}/admin/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: resetTokenParam, newPassword }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    window.history.replaceState({}, '', window.location.pathname);
+    document.getElementById('reset-form-card').style.display = 'none';
+    document.getElementById('login-form-card').style.display = 'block';
+    document.getElementById('login-error').textContent = 'Password updated — sign in below.';
+    document.getElementById('login-error').style.color = 'var(--success, #2e7d32)';
+    document.getElementById('login-error').style.display = 'block';
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function changeAdminCredentials() {
+  const currentPassword = document.getElementById('settings-current-password').value;
+  const newEmail        = document.getElementById('settings-new-email').value.trim();
+  const newPassword     = document.getElementById('settings-new-password').value;
+  const errEl           = document.getElementById('settings-error');
+  const btn             = document.getElementById('settings-save-btn');
+  errEl.style.display = 'none';
+
+  if (!currentPassword) {
+    errEl.textContent = 'Enter your current password to make any change.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!newEmail && !newPassword) {
+    errEl.textContent = 'Enter a new email and/or a new password.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API}/admin/credentials`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ currentPassword, newEmail: newEmail || undefined, newPassword: newPassword || undefined }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    token = data.token;
+    localStorage.setItem('dm_admin_token', token);
+    document.getElementById('settings-current-password').value = '';
+    document.getElementById('settings-new-email').value = '';
+    document.getElementById('settings-new-password').value = '';
+    toast('Account settings updated', 'success');
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 async function showApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
@@ -652,7 +884,6 @@ async function showApp() {
   loadProductsList();
 }
 
-// Check token on page load
 window.addEventListener('load', async () => {
   if (!token) return;
   try {
@@ -666,7 +897,6 @@ document.getElementById('login-password').addEventListener('keydown', e => {
   if (e.key === 'Enter') login();
 });
 
-// ── Navigation ────────────────────────────────────────────────────────────────
 
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -675,23 +905,29 @@ function showPage(name) {
   document.querySelectorAll('.nav-item').forEach(n => {
     if (n.textContent.toLowerCase().includes(name === 'add' ? 'add' : name)) n.classList.add('active');
   });
+  closeSidebar();
 
   if (name === 'products') loadProductsList();
   if (name === 'dashboard') loadDashboard();
   if (name === 'analytics') loadAnalytics();
+  if (name === 'gst') loadGstReport();
   if (name === 'orders') loadOrdersList();
   if (name === 'verify') loadVerifyList();
-  if (name === 'exchanges') loadExchangesList();
   if (name === 'customers') loadCustomersList();
   if (name === 'coupons') loadCouponsList();
   if (name === 'love') loadTestimonialsList();
   if (name === 'payment') loadPaymentSettings();
   if (name === 'founder') loadFounderSettings();
   if (name === 'activity') loadAuditLog();
+  if (name === 'settings') {
+    document.getElementById('settings-current-password').value = '';
+    document.getElementById('settings-new-email').value = '';
+    document.getElementById('settings-new-password').value = '';
+    document.getElementById('settings-error').style.display = 'none';
+  }
   if (name === 'add' && !document.getElementById('edit-product-id').value) resetForm();
 }
 
-// ── Dashboard ─────────────────────────────────────────────────────────────────
 
 async function loadDashboard() {
   try {
@@ -724,11 +960,7 @@ async function loadDashboard() {
   }
 }
 
-// ── Analytics ─────────────────────────────────────────────────────────────────
 
-// Chart.js instances, kept around so a repeat visit to this tab destroys the
-// old chart before drawing a new one on the same <canvas> — Chart.js throws
-// "Canvas is already in use" otherwise.
 let revenueChart = null;
 let topProductsChart = null;
 let signupsChart = null;
@@ -751,8 +983,6 @@ async function loadAnalytics() {
     const gold = cssVar('--gold') || '#b8963e';
     const muted = cssVar('--muted') || '#6b6b6b';
 
-    // Revenue + order count over time — line chart, two datasets/axes since
-    // they're different units.
     document.getElementById('revenue-chart-empty').innerHTML = data.revenueByDay.length
       ? '' : '<p class="empty">No paid orders in the last 30 days yet</p>';
     if (revenueChart) revenueChart.destroy();
@@ -781,7 +1011,6 @@ async function loadAnalytics() {
           </div>`).join('')
       : '<p class="empty">No orders yet</p>';
 
-    // Top-selling products — bar chart.
     document.getElementById('top-products-empty').innerHTML = data.topProducts.length
       ? '' : '<p class="empty">No paid orders yet</p>';
     if (topProductsChart) topProductsChart.destroy();
@@ -794,7 +1023,6 @@ async function loadAnalytics() {
       options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } } },
     });
 
-    // New customer signups over time — line chart.
     document.getElementById('signups-chart-empty').innerHTML = (data.signupsByDay || []).length
       ? '' : '<p class="empty">No new signups in the last 30 days yet</p>';
     if (signupsChart) signupsChart.destroy();
@@ -811,7 +1039,124 @@ async function loadAnalytics() {
   }
 }
 
-// ── Orders ────────────────────────────────────────────────────────────────────
+
+let lastGstReport = null;
+
+function handleGstPeriodChange() {
+  document.getElementById('gst-custom-range').style.display =
+    document.getElementById('gst-period').value === 'custom' ? 'flex' : 'none';
+}
+
+function gstDateRangeForPeriod() {
+  const period = document.getElementById('gst-period').value;
+  const toYMD = (d) => d.toISOString().slice(0, 10);
+  const now = new Date();
+
+  if (period === 'custom') {
+    const from = document.getElementById('gst-from').value;
+    const to = document.getElementById('gst-to').value;
+    if (!from || !to) throw new Error('Pick both a from and to date for a custom range.');
+    return { from, to };
+  }
+  if (period === 'last-month') {
+    const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const to = new Date(now.getFullYear(), now.getMonth(), 0);
+    return { from: toYMD(from), to: toYMD(to) };
+  }
+  if (period === 'quarter') {
+    const qStartMonth = Math.floor(now.getMonth() / 3) * 3;
+    const from = new Date(now.getFullYear(), qStartMonth, 1);
+    return { from: toYMD(from), to: toYMD(now) };
+  }
+  const from = new Date(now.getFullYear(), now.getMonth(), 1);
+  return { from: toYMD(from), to: toYMD(now) };
+}
+
+async function loadGstReport() {
+  const listEl = document.getElementById('gst-orders-list');
+  document.getElementById('gst-export-btn').disabled = true;
+  try {
+    const { from, to } = gstDateRangeForPeriod();
+    listEl.innerHTML = '<p class="loading" style="padding:40px">Loading…</p>';
+
+    const res = await fetch(`${API}/orders/admin/gst-report?from=${from}&to=${to}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    lastGstReport = data;
+
+    const money = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+    document.getElementById('gst-orders').textContent = data.orders;
+    document.getElementById('gst-subtotal').textContent = money(data.subtotal);
+    document.getElementById('gst-total-gst').textContent = money(data.totalGST);
+    document.getElementById('gst-total').textContent = money(data.total);
+    document.getElementById('gst-gst5').textContent = money(data.gst5);
+    document.getElementById('gst-gst18').textContent = money(data.gst18);
+    document.getElementById('gst-cgst').textContent = money(data.cgst);
+    document.getElementById('gst-sgst').textContent = money(data.sgst);
+
+    if (!data.orderDetails.length) {
+      listEl.innerHTML = '<p class="empty">No paid orders in this period</p>';
+      return;
+    }
+    listEl.innerHTML = `
+      <table class="products-table">
+        <thead><tr>
+          <th>Order</th><th>Date</th><th>Subtotal</th><th>GST 5%</th><th>GST 18%</th><th>Total GST</th><th>Total</th>
+        </tr></thead>
+        <tbody>
+          ${data.orderDetails.map(o => `
+            <tr>
+              <td><strong>${o.orderNumber}</strong></td>
+              <td>${new Date(o.date).toLocaleDateString('en-IN')}</td>
+              <td>${money(o.subtotal)}</td>
+              <td>${o.gst5 > 0 ? money(o.gst5) : '—'}</td>
+              <td>${o.gst18 > 0 ? money(o.gst18) : '—'}</td>
+              <td>${money(o.totalGST)}</td>
+              <td>${money(o.total)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+    document.getElementById('gst-export-btn').disabled = false;
+  } catch (err) {
+    listEl.innerHTML = `<p class="empty">${err.message}</p>`;
+    toast(err.message, 'error');
+  }
+}
+
+function exportGstReportCsv() {
+  if (!lastGstReport) return;
+  const rows = lastGstReport.orderDetails.map(o => ({
+    'Order Number': o.orderNumber,
+    'Date': new Date(o.date).toLocaleDateString('en-IN'),
+    'Subtotal': o.subtotal,
+    'GST 5%': o.gst5,
+    'GST 18%': o.gst18,
+    'Total GST': o.totalGST,
+    'Delivery': o.deliveryCharge,
+    'Discount': o.discountAmount,
+    'Total': o.total,
+  }));
+  const csv = Papa.unparse(rows) + '\n\n' +
+    Papa.unparse({
+      fields: ['Period', 'Orders', 'Subtotal', 'GST 5%', 'GST 18%', 'Total GST', 'CGST', 'SGST', 'Total'],
+      data: [[
+        `${new Date(lastGstReport.from).toLocaleDateString('en-IN')} to ${new Date(lastGstReport.to).toLocaleDateString('en-IN')}`,
+        lastGstReport.orders, lastGstReport.subtotal, lastGstReport.gst5, lastGstReport.gst18,
+        lastGstReport.totalGST, lastGstReport.cgst, lastGstReport.sgst, lastGstReport.total,
+      ]],
+    });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `dezire-more-gst-report-${lastGstReport.from.slice(0, 10)}-to-${lastGstReport.to.slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 
 const ORDER_STATUSES = [
   'Order Placed', 'Payment Confirmed', 'Processing', 'Packed',
@@ -832,8 +1177,6 @@ async function loadOrdersList() {
   }
 }
 
-// Manual-reference orders (UPI / legacy QR / Online Banking) not yet marked
-// paid — COD has nothing to verify, Razorpay confirms itself automatically.
 async function loadVerifyList() {
   try {
     const res = await fetch(`${API}/orders/admin/all`, { headers: { Authorization: `Bearer ${token}` } });
@@ -904,12 +1247,6 @@ async function updateOrderStatus(id, orderStatus) {
   }
 }
 
-// Razorpay orders confirm themselves automatically (signature verification
-// on checkout success, backed by a webhook) — this button (shown both here
-// and on the dedicated Pending Verification tab) is for manual UPI/bank-
-// transfer orders, or a fallback for the rare Razorpay case that fails.
-// Check the UTR + amount in your real UPI/bank app before clicking — this
-// is a human confirmation, nothing here validates it automatically.
 async function confirmOrderPayment(id) {
   if (!confirm('Have you verified this payment against your UPI/bank app? This will mark the order as Paid.')) return;
   try {
@@ -925,17 +1262,12 @@ async function confirmOrderPayment(id) {
     renderOrdersTable();
     renderVerifyTable();
     toast('Payment verified', 'success');
-    // There's no automatic email/SMS/WhatsApp API wired in, so the customer
-    // isn't notified unless someone tells them. This opens WhatsApp Web/App
-    // with the confirmation pre-typed — you still have to hit Send yourself.
     window.open(waLinkForOrder(data.order, waPaymentConfirmedMessage(data.order)), '_blank', 'noreferrer');
   } catch (err) {
     toast(err.message, 'error');
   }
 }
 
-// The other half of confirmOrderPayment above — admin checked their real
-// UPI/bank app and the claimed UTR/amount never actually showed up.
 async function rejectOrderPayment(id) {
   if (!confirm('Mark this payment as not received? This cancels the order and cannot be undone.')) return;
   try {
@@ -958,10 +1290,6 @@ async function rejectOrderPayment(id) {
   }
 }
 
-// Same "no API, admin sends it by hand" pattern as confirmOrderPayment —
-// covers the other lifecycle stages (Shipped/Delivered/etc.) that the
-// site's own FAQ/Shipping Policy pages already promise customers a
-// WhatsApp update for.
 const WA_STATUS_MESSAGES = {
   'Payment Confirmed': (o) => `Hi ${o.customerName.split(' ')[0]}! We've confirmed your payment of Rs.${o.total.toLocaleString('en-IN')} for order ${o.orderNumber}. Your order is now being prepared. Thank you for shopping with Dezire More!`,
   'Processing':        (o) => `Hi ${o.customerName.split(' ')[0]}, your Dezire More order ${o.orderNumber} is being processed. We'll keep you posted!`,
@@ -991,9 +1319,6 @@ function sendWhatsAppUpdate(id) {
   window.open(waLinkForOrder(order), '_blank', 'noreferrer');
 }
 
-// Weight/dimensions aren't tracked per-product anywhere in this app, so
-// they're entered once here at shipment time — defaults are a reasonable
-// guess for a typical single-saree/kurta package, always editable per order.
 function renderShipmentSection(o) {
   if (o.shipment?.awbCode) {
     const isDelhivery = o.shipment.provider === 'delhivery';
@@ -1182,96 +1507,6 @@ function renderOrdersTable() {
     </table>`;
 }
 
-// ── Exchanges ─────────────────────────────────────────────────────────────────
-
-const EXCHANGE_STATUSES = ['Requested', 'Approved', 'Rejected', 'Completed'];
-const EXCHANGE_REASON_LABELS = {
-  'wrong-item': 'Wrong item delivered',
-  'defective': 'Defective or damaged product received',
-  'size-mismatch': 'Size mismatch (stitched items only)',
-  'other': 'Other',
-};
-let allExchanges = [];
-
-async function loadExchangesList() {
-  try {
-    const res = await fetch(`${API}/exchanges/admin/all`, { headers: { Authorization: `Bearer ${token}` } });
-    const data = await res.json();
-    allExchanges = data.data || [];
-    renderExchangesTable();
-  } catch (err) {
-    document.getElementById('exchanges-list').innerHTML = `<p class="empty">Failed to load exchanges: ${err.message}</p>`;
-  }
-}
-
-async function updateExchangeStatus(id, status) {
-  try {
-    const res = await fetch(`${API}/exchanges/admin/${id}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ status }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-    const idx = allExchanges.findIndex(e => e._id === id);
-    if (idx > -1) allExchanges[idx] = data.exchange;
-    renderExchangesTable();
-    toast('Exchange status updated', 'success');
-  } catch (err) {
-    toast(err.message, 'error');
-  }
-}
-
-// This is for removing a stray/duplicate/test request entirely — changing
-// the dropdown above to "Rejected" is the normal way to resolve a real one.
-async function deleteExchange(id) {
-  if (!confirm('Delete this exchange request? This cannot be undone.')) return;
-  try {
-    const res = await fetch(`${API}/exchanges/admin/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-    allExchanges = allExchanges.filter(e => e._id !== id);
-    renderExchangesTable();
-    toast('Exchange request deleted', 'success');
-  } catch (err) {
-    toast(err.message, 'error');
-  }
-}
-
-function renderExchangesTable() {
-  const el = document.getElementById('exchanges-list');
-  if (!allExchanges.length) {
-    el.innerHTML = '<p class="empty">No exchange requests yet</p>';
-    return;
-  }
-  el.innerHTML = `
-    <table class="products-table">
-      <thead><tr>
-        <th>Order</th><th>Item</th><th>Reason</th><th>Description</th><th>Status</th><th></th>
-      </tr></thead>
-      <tbody>
-        ${allExchanges.map(e => `
-          <tr>
-            <td><strong>${e.orderNumber}</strong><br/><span style="font-size:11px;color:var(--muted)">${new Date(e.createdAt).toLocaleDateString('en-IN')}</span></td>
-            <td>${e.productName}${e.size ? ` (${e.size})` : ''}<br/><span style="font-size:11px;color:var(--muted)">${e.customerEmail}</span></td>
-            <td>${EXCHANGE_REASON_LABELS[e.reason] || e.reason}</td>
-            <td style="max-width:220px;font-size:12px">${e.description}</td>
-            <td>
-              <select onchange="updateExchangeStatus('${e._id}', this.value)" style="width:auto;padding:6px 8px;font-size:12px">
-                ${EXCHANGE_STATUSES.map(s => `<option value="${s}" ${s === e.status ? 'selected' : ''}>${s}</option>`).join('')}
-              </select>
-            </td>
-            <td><button class="btn btn-outline" style="padding:6px 10px;font-size:11px;color:var(--danger)" onclick="deleteExchange('${e._id}')">Delete</button></td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>`;
-}
-
-// ── Customers ─────────────────────────────────────────────────────────────────
 
 let allCustomers = [];
 let expandedCustomerId = null;
@@ -1310,8 +1545,6 @@ async function confirmMembership(userId) {
   }
 }
 
-// Orders keep the customer's email directly (not a foreign key to their
-// account), so deleting the account here doesn't touch their order history.
 async function deleteCustomer(id, email) {
   if (!confirm(`Delete the account for "${email}"? This cannot be undone. Their past orders are kept for your records either way.`)) return;
   try {
@@ -1397,7 +1630,6 @@ function renderCustomersTable() {
     </table>`;
 }
 
-// ── Activity Log ──────────────────────────────────────────────────────────────
 
 let allActivityLogs = [];
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -1414,9 +1646,6 @@ async function loadAuditLog() {
   }
 }
 
-// Options are derived from months that actually have entries (not every
-// calendar month ever), so the dropdown only ever offers something there's
-// actually something to clear.
 function populateActivityMonthSelect() {
   const months = [...new Set(allActivityLogs.map(l => {
     const d = new Date(l.createdAt);
@@ -1494,7 +1723,6 @@ async function clearAuditLogMonth() {
   }
 }
 
-// ── Coupons ───────────────────────────────────────────────────────────────────
 
 let allCoupons = [];
 
@@ -1592,7 +1820,6 @@ function renderCouponsTable() {
     </table>`;
 }
 
-// ── Client Love (testimonials) ──────────────────────────────────────────────
 
 let allTestimonials = [];
 
@@ -1735,7 +1962,6 @@ function renderTestimonialsTable() {
     </table>`;
 }
 
-// ── Payment Settings ──────────────────────────────────────────────────────────
 
 async function loadPaymentSettings() {
   try {
@@ -1767,7 +1993,6 @@ async function savePaymentSettings() {
   }
 }
 
-// ── Owner / Founder ───────────────────────────────────────────────────────────
 
 async function loadFounderSettings() {
   try {
@@ -1818,7 +2043,6 @@ async function saveFounderSettings() {
   }
 }
 
-// ── Products List ─────────────────────────────────────────────────────────────
 
 async function loadProductsList() {
   const search = document.getElementById('search-input')?.value || '';
@@ -1883,10 +2107,6 @@ function renderProductsTable(products) {
     </table>`;
 }
 
-// Quick in-stock/out-of-stock flip straight from the product list — the full
-// Add/Edit form still has the In Stock dropdown + Stock Count for when more
-// detail is needed, but flagging an outfit as sold out shouldn't require
-// opening the whole edit form and scrolling to find it.
 async function toggleProductStock(id, currentlyInStock) {
   try {
     const res = await fetch(`${API}/products/${id}`, {
@@ -1905,7 +2125,6 @@ async function toggleProductStock(id, currentlyInStock) {
   }
 }
 
-// ── Add / Edit Product ────────────────────────────────────────────────────────
 
 function resetForm() {
   document.getElementById('edit-product-id').value = '';
@@ -1955,17 +2174,12 @@ function editProduct(id) {
     document.getElementById(`tag-${tag}`).checked = (p.tags||[]).includes(tag);
   });
 
-  // Show existing images — marked data-existing so renderPreviews() (below)
-  // knows to leave these alone and never re-render them itself; they're
-  // server-side images with their own dedicated remove path
-  // (deleteExistingImage), not part of the selectedFiles upload queue.
   document.getElementById('image-previews').innerHTML = (p.images||[]).map(img => `
     <div class="preview-item" data-existing="true">
       <img src="${img.url}" />
       <button class="remove-img" onclick="deleteExistingImage('${id}','${img.publicId}',this.parentElement)">×</button>
     </div>`).join('');
 
-  // Show existing video
   const videoPreviewEl = document.getElementById('video-preview');
   if (p.video?.url) {
     videoPreviewEl.innerHTML = `
@@ -2034,7 +2248,6 @@ async function saveProduct() {
     let res;
 
     if (editId) {
-      // PATCH — update details (no image re-upload here)
       res = await fetch(`${API}/products/${editId}`, {
         method: 'PATCH',
         headers: {
@@ -2059,7 +2272,6 @@ async function saveProduct() {
         }),
       });
 
-      // Upload new images if any were selected
       if (selectedFiles.length) {
         const fd = new FormData();
         selectedFiles.forEach(f => fd.append('images', f));
@@ -2071,7 +2283,6 @@ async function saveProduct() {
         });
       }
 
-      // Upload a new/replacement video if one was selected
       if (selectedVideoFile) {
         const vfd = new FormData();
         vfd.append('video', selectedVideoFile);
@@ -2082,7 +2293,6 @@ async function saveProduct() {
         });
       }
     } else {
-      // POST — create new product with images
       const fd = new FormData();
       fd.append('name', name);
       fd.append('category', cat);
@@ -2136,7 +2346,6 @@ async function deleteProduct(id, name) {
   }
 }
 
-// ── Image upload ──────────────────────────────────────────────────────────────
 
 function handleFiles(files) {
   const newFiles = Array.from(files).slice(0, 10 - selectedFiles.length);
@@ -2154,14 +2363,6 @@ function handleDragLeave()  { document.getElementById('upload-zone').classList.r
 
 function renderPreviews() {
   const el = document.getElementById('image-previews');
-  // Bug was here: this used to re-scan the DOM for ".preview-item:not([data-new])"
-  // and prepend whatever it found — but previous calls' own newly-selected-file
-  // previews matched that same selector (nothing ever marked them "new"), so
-  // every re-render re-added them on top of the fresh copy generated just below,
-  // duplicating every already-selected file each time a photo was added or
-  // removed. Only genuinely pre-existing server images (marked data-existing in
-  // editProduct() above) need to survive a re-render; the selectedFiles portion
-  // is authoritative and always safe to fully rebuild from scratch.
   const existing = el.querySelectorAll('.preview-item[data-existing]');
   const newPreviews = selectedFiles.map((file, i) => {
     const url = URL.createObjectURL(file);
@@ -2190,7 +2391,6 @@ function handleVideoFile(files) {
     </div>`;
 }
 
-// ── Discount preview ──────────────────────────────────────────────────────────
 
 document.addEventListener('input', e => {
   if (e.target.id === 'f-price' || e.target.id === 'f-original-price') updateDiscountPreview();
@@ -2208,7 +2408,6 @@ function updateDiscountPreview() {
   }
 }
 
-// ── Bulk Import ───────────────────────────────────────────────────────────────
 
 const BULK_TEMPLATE_HEADERS = [
   'name','category','subcategory','price','originalPrice','fabric','sku',
@@ -2221,7 +2420,7 @@ const BULK_TEMPLATE_EXAMPLE = [
 ];
 
 let bulkRows = [];
-let bulkImageMap = {}; // filename -> File
+let bulkImageMap = {};
 
 function downloadBulkTemplate() {
   const csv = Papa.unparse({ fields: BULK_TEMPLATE_HEADERS, data: [BULK_TEMPLATE_EXAMPLE] });
@@ -2279,10 +2478,6 @@ function splitField(value) {
   return (value || '').split(';').map(s => s.trim()).filter(Boolean);
 }
 
-// Row is flagged bad the same way runBulkImport() itself would reject it —
-// missing a required field, or an images/video filename not (yet) matched
-// to a selected file — so the admin sees the problem before committing
-// anything, rather than only in the per-row failure log after the fact.
 function bulkRowProblem(row) {
   if (!row.name || !row.category || !row.price) return 'Missing name, category, or price';
   const imageNames = splitField(row.images);
@@ -2395,7 +2590,6 @@ async function runBulkImport() {
   loadDashboard();
 }
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
 
 function toast(msg, type = 'success') {
   const el = document.getElementById('toast');

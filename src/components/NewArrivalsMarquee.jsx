@@ -15,8 +15,6 @@ function MarqueeRow({ products, reverse, secondary }) {
 
   const SPEED = reverse ? -0.6 : 0.6;
 
-  // Keep the track sitting on the middle copy of the list so it can drift
-  // infinitely in either direction without ever hitting a real edge.
   const recenterIfNeeded = useCallback(() => {
     const track = trackRef.current;
     if (!track) return;
@@ -32,17 +30,6 @@ function MarqueeRow({ products, reverse, secondary }) {
     track.scrollLeft = track.scrollWidth / 3;
   }, [loopProducts]);
 
-  // Ambient auto-drift. Runs on a plain interval (not rAF fighting the
-  // browser's own scroll handling) and — critically — does nothing at all
-  // while `interactingRef` is true, so it never competes with a user's
-  // touch-scroll or the arrow buttons' smooth-scroll animation.
-  //
-  // Skipped entirely on touch/coarse-pointer devices: it's a desktop "eye
-  // candy while browsing" effect, and continuously mutating scrollLeft 60x/
-  // second keeps this element's compositor layer constantly active, which
-  // on mid-range phones made the browser noticeably slower to recognize a
-  // vertical swipe as page-scroll rather than a horizontal drag on this
-  // track — felt like the page was "stuck" here specifically.
   useEffect(() => {
     if (window.matchMedia('(hover: none), (pointer: coarse)').matches) return;
     intervalRef.current = setInterval(() => {
@@ -54,19 +41,6 @@ function MarqueeRow({ products, reverse, secondary }) {
     return () => clearInterval(intervalRef.current);
   }, [SPEED, recenterIfNeeded]);
 
-  // Pauses ambient drift immediately and keeps it paused until scrolling has
-  // genuinely stopped, then resyncs the loop position and resumes.
-  //
-  // Recentering used to fire a fixed delay after touchend (or after a
-  // button's smooth-scroll click), guessing how long momentum/animation
-  // would take. A strong flick's native momentum can keep scrolling well
-  // past that guess, so the guessed timer fired while the track was still
-  // sliding — snapping scrollLeft by a whole loop-width mid-motion, a visible
-  // jump that read as jank. Native 'scroll' events keep firing for as long as
-  // anything is actually still moving the track (touch momentum, mouse-wheel
-  // momentum, or the arrow buttons' smooth-scroll), so debouncing off those
-  // instead of a fixed delay waits out however long the motion actually
-  // takes, whatever that turns out to be.
   const markInteracting = () => {
     interactingRef.current = true;
     clearTimeout(idleTimeoutRef.current);
@@ -80,8 +54,6 @@ function MarqueeRow({ products, reverse, secondary }) {
   };
 
   const handleTouchStart = () => markInteracting();
-  // Fallback for a tap with negligible movement — no further scroll events
-  // will follow to debounce off of.
   const handleTouchEnd   = () => scheduleResume(300);
   const handleScroll     = () => scheduleResume(120);
 
@@ -94,9 +66,6 @@ function MarqueeRow({ products, reverse, secondary }) {
     const cardWidth = card ? card.getBoundingClientRect().width + 18 : 166;
     track.scrollBy({ left: dir * cardWidth, behavior: 'smooth' });
 
-    // handleScroll (firing throughout the smooth-scroll animation) takes
-    // over from here; this is just a fallback in case it's already at an
-    // edge and the browser coalesces this into zero scroll events.
     scheduleResume(500);
   };
 

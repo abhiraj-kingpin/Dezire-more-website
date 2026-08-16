@@ -69,9 +69,6 @@ function Sarees() {
 
   const { products, total, totalPages, loading, error } = useCategory('sarees', filters);
 
-  // A product picked from the search dropdown lands here with ?q= set —
-  // pin/highlight it (and any other matches) at the front of page 1 rather
-  // than opening a separate results view.
   const pinnedQuery = searchParams.get('q') || '';
   const { allProducts } = useSearch();
   const pinnedMatches = (page === 1 && pinnedQuery)

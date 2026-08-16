@@ -8,11 +8,6 @@ const { logAdminAction } = require('../utils/auditLog');
 const delhivery = require('../services/delhivery.service');
 const fcm = require('../services/fcm');
 
-// POST /api/shipping/create — admin creates a real Delhivery shipment for an
-// order and gets back a live AWB/tracking number. A dedicated /api/shipping
-// namespace (rather than nesting under /api/orders like Shiprocket's older
-// route) so this and future courier integrations have one predictable place
-// to live, per the agreed Delhivery-as-a-third-option scope.
 router.post('/create', adminAuth, async (req, res) => {
   try {
     if (!delhivery.isConfigured()) {
@@ -57,8 +52,6 @@ router.post('/create', adminAuth, async (req, res) => {
   }
 });
 
-// GET /api/shipping/:orderId — current shipment info stored on the order
-// (a cheap DB read, not a live Delhivery call — use /track/:awb for that).
 router.get('/:orderId', adminAuth, async (req, res) => {
   try {
     const order = await Order.findById(req.params.orderId).select('orderNumber shipment').lean();
@@ -69,9 +62,6 @@ router.get('/:orderId', adminAuth, async (req, res) => {
   }
 });
 
-// POST /api/shipping/cancel — cancels the Delhivery shipment and reverts the
-// order so it can be re-shipped (manually or via Delhivery again) rather
-// than being stuck showing a dead AWB.
 router.post('/cancel', adminAuth, async (req, res) => {
   try {
     if (!delhivery.isConfigured()) {
@@ -100,9 +90,6 @@ router.post('/cancel', adminAuth, async (req, res) => {
   }
 });
 
-// GET /api/shipping/track/:awb — live status pull from Delhivery, also
-// persisted onto the order so the customer-facing MyOrders page (which
-// reads shipment.lastTrackingStatus, not a live call) reflects it too.
 router.get('/track/:awb', adminAuth, async (req, res) => {
   try {
     if (!delhivery.isConfigured()) {

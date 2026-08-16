@@ -3,18 +3,15 @@ function AnnouncementBar() {
     truck: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 3h13v13H1z"/><path d="M14 8h4l4 4v4h-8V8z"/><circle cx="6" cy="18.5" r="1.8"/><circle cx="17.5" cy="18.5" r="1.8"/></svg>,
     sparkle: <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"/></svg>,
     tag: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.5 12.5 12.9 20a1.5 1.5 0 0 1-2.1 0L3 12.2V4h8.2l9.3 9.3a1.5 1.5 0 0 1 0 2.1Z"/><circle cx="7.5" cy="8.5" r="1.5"/></svg>,
-    refresh: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 0 1 15.3-6.4M21 12a9 9 0 0 1-15.3 6.4"/><path d="M18.5 2v5h-5M5.5 22v-5h5"/></svg>,
   };
 
   const items = [
     { icon: 'sparkle', text: 'ETHNIC ELEGANCE. MODERN YOU.' },
     { icon: 'sparkle', text: 'NEW ARRIVALS EVERY WEEK' },
-    { icon: 'truck', text: 'FREE SHIPPING ABOVE ₹1899' },
+    { icon: 'truck', text: 'FREE SHIPPING ABOVE ₹2500' },
     { icon: 'tag', text: 'USE CODE DEZIRE10' },
-    { icon: 'refresh', text: '7-DAY EASY EXCHANGE' },
   ];
 
-  // Duplicate so the scroll loops seamlessly
   const ticker = [...items, ...items];
 
   return (

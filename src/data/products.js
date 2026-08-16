@@ -5,7 +5,7 @@ export const sarees = [
     price: 8299,
     originalPrice: 9999,
     image: '/assets/sarees/banarasi-silk-1.jpeg',
-    images: ['/assets/sarees/banarasi-silk-1.jpeg'], // add more angles here, e.g. '/assets/sarees/banarasi-silk-2.jpeg'
+    images: ['/assets/sarees/banarasi-silk-1.jpeg'],
     isNew: true,
     isBestseller: false,
     material: 'Pure Banarasi Silk',

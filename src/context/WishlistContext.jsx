@@ -10,16 +10,12 @@ export function WishlistProvider({ children }) {
   const { user, promptLogin, authHeaders } = useAuth();
   const [wishlist, setWishlist] = useState([]);
 
-  // Wishlist is persisted per-account on the backend (previously only lived
-  // in React state and was lost on every page refresh) — load it whenever
-  // a user logs in / a session is restored.
   useEffect(() => {
     if (!user) return;
     fetch(`${BASE}/auth/wishlist`, { headers: authHeaders() })
       .then(res => res.json())
       .then(data => setWishlist(data?.data || []))
       .catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   useEffect(() => {
@@ -27,10 +23,7 @@ export function WishlistProvider({ children }) {
     window.addEventListener('dm:logout', onLogout);
     return () => window.removeEventListener('dm:logout', onLogout);
   }, []);
-  // Drawer state lives here (not in Navbar) so any component — e.g. a
-  // product card's "Add to Wishlist" button — can open the wishlist drawer.
   const [wishlistOpen, setWishlistOpen] = useState(false);
-  // Id of the item most recently added, used to briefly highlight it in the drawer.
   const [lastAddedId, setLastAddedId] = useState(null);
 
   const persistAdd = (product) => {
@@ -45,9 +38,6 @@ export function WishlistProvider({ children }) {
     fetch(`${BASE}/auth/wishlist/${id}`, { method: 'DELETE', headers: authHeaders() }).catch(() => {});
   };
 
-  // Toggle from the small heart icon on a product card / search result.
-  // Adding surfaces the drawer + a toast; removing stays quiet so repeatedly
-  // un-hearting items doesn't spam the UI.
   const toggleWishlist = (product) => {
     if (!user) { promptLogin('Log in to save items to your wishlist'); return false; }
 
@@ -65,11 +55,9 @@ export function WishlistProvider({ children }) {
       setWishlistOpen(true);
       showToast('Added to your Wishlist', 'wishlist');
     }
-    return !exists; // true if the item was just added
+    return !exists;
   };
 
-  // Explicit "Add to Wishlist" action (e.g. from the product detail modal) —
-  // always surfaces the drawer with clear feedback, even if already saved.
   const addToWishlist = (product) => {
     if (!user) { promptLogin('Log in to save items to your wishlist'); return false; }
 

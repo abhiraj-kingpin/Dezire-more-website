@@ -17,6 +17,8 @@ const orderSchema = new mongoose.Schema(
         quantity:  { type: Number, required: true, min: 1 },
         size:      { type: String },
         color:     { type: String },
+        gstRate:   { type: Number },
+        gstAmount: { type: Number },
       },
     ],
 
@@ -28,6 +30,11 @@ const orderSchema = new mongoose.Schema(
     },
 
     subtotal:       { type: Number, required: true },
+    totalGST:       { type: Number, required: true, default: 0 },
+    gstBreakdown: {
+      gst5:  { type: Number, default: 0 },
+      gst18: { type: Number, default: 0 },
+    },
     deliveryCharge: { type: Number, required: true, default: 0 },
     total:          { type: Number, required: true },
     couponCode:     { type: String },
@@ -35,12 +42,6 @@ const orderSchema = new mongoose.Schema(
 
     paymentMethod: {
       type: String,
-      // 'Pay Online (QR)'/'Online Banking' kept valid only so historical
-      // orders placed before Razorpay still pass validation on updates.
-      // 'UPI' is frontend-selectable again as the manual bank-transfer
-      // option (scan QR / pay to a UPI ID, customer enters a reference,
-      // admin confirms manually) -- a zero-gateway-fee alternative to
-      // Razorpay, admin-configured via PaymentSettings.
       enum: ['Pay Online (QR)', 'UPI', 'Online Banking', 'Razorpay', 'COD'],
       required: true,
     },
@@ -49,31 +50,13 @@ const orderSchema = new mongoose.Schema(
       enum: ['pending', 'paid', 'failed'],
       default: 'pending',
     },
-    // UPI/UTR transaction reference the customer enters after paying via the
-    // old manual QR/UPI flow — superseded by Razorpay's own verified
-    // payment IDs below for new orders, kept for historical ones.
     paymentReference: { type: String, trim: true },
-    // What the customer claims they paid, entered alongside paymentReference
-    // for manual UPI orders — compared against `total` by the admin against
-    // their real bank/UPI app, not validated automatically (there's nothing
-    // to validate it against on this end).
     amountPaid: { type: Number },
-    // Audit trail for PATCH /orders/admin/:id/verify-payment — who manually
-    // confirmed a manual-reference payment actually landed, and when.
     paymentVerifiedAt: { type: Date },
     paymentVerifiedBy: { type: String, trim: true },
-    // Razorpay's own order for this purchase — created right after our
-    // Order exists so its amount can't be tampered with client-side.
     razorpayOrderId: { type: String },
-    // Set once the payment signature is verified (checkout callback or
-    // webhook, whichever arrives first) — this is what actually flips
-    // paymentStatus to 'paid', not a client-asserted claim.
     razorpayPaymentId: { type: String },
 
-    // Customer-initiated "remove from my order history" — orders stay
-    // intact for business/audit records (admin panel, revenue analytics,
-    // etc. never look at this field), it just filters out of the
-    // customer's own GET /orders list.
     hiddenFromCustomer: { type: Boolean, default: false },
 
     orderStatus: {
@@ -86,26 +69,14 @@ const orderSchema = new mongoose.Schema(
     },
 
     estimatedDelivery: { type: Date },
-    // Set the moment an admin marks the order Delivered — the exchange
-    // window (3 days, per the site's Exchange Policy) is measured from this,
-    // not from createdAt/updatedAt which change for unrelated reasons.
     deliveredAt: { type: Date },
 
     isGift:      { type: Boolean, default: false },
     giftMessage: { type: String, trim: true },
 
-    // Optional, customer-provided when they cancel their own order —
-    // useful for admin analytics, never required to actually cancel.
     cancellationReason: { type: String, trim: true },
 
-    // Populated once an admin creates a real Shiprocket shipment for this
-    // order (see services/shiprocket.js) — absent for orders shipped
-    // before this existed, or for a site that hasn't configured
-    // SHIPROCKET_EMAIL/PASSWORD at all.
     shipment: {
-      // Which path produced this shipment — lets admin's Track/Cancel
-      // buttons call the right service without guessing from the data
-      // shape. Absent on shipments created before this field existed.
       provider:            { type: String, enum: ['shiprocket', 'delhivery', 'manual'] },
       shiprocketOrderId:   { type: String },
       shiprocketShipmentId: { type: String },

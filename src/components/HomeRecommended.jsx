@@ -3,10 +3,6 @@ import ProductCard from './ProductCard';
 import { useCategory } from '../hooks/useProducts';
 import { getRecentlyViewed, categoryToPath } from '../utils/recentlyViewed';
 
-// A light, honest form of "personalization": whichever category the
-// customer has actually been browsing (from Recently Viewed) gets more of
-// its products surfaced here — no fabricated AI/ML claims, just a simple,
-// transparent heuristic.
 function mostViewedCategory() {
   const items = getRecentlyViewed();
   if (items.length === 0) return null;

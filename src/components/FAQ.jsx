@@ -4,12 +4,8 @@ const FAQ_ITEMS = [
     a: 'Most orders are delivered within 7–10 business days, depending on your location. Every piece is made by professional tailors, so quality takes a little time. Remote or hilly areas may take up to 10–12 business days.',
   },
   {
-    q: 'What is your exchange policy?',
-    a: 'We offer exchanges only (no refunds) within 3 days of delivery for eligible items — wrong item, defective product, or size mismatch on stitched pieces. Message us on WhatsApp with your order number and a photo to start an exchange.',
-  },
-  {
     q: 'Do you offer free shipping?',
-    a: 'Yes — shipping is free on all orders above ₹1,699. A flat fee of ₹79 applies below that.',
+    a: 'Yes — shipping is free on all orders above ₹2,500. A flat fee of ₹99 applies below that.',
   },
   {
     q: 'How can I track my order?',

@@ -1,12 +1,3 @@
-// Push notifications to the Android app via Firebase Cloud Messaging.
-// Uses the Admin SDK directly from this regular Express server — FCM
-// sending doesn't require Cloud Functions or the Blaze billing plan, only
-// a Firebase project (free Spark tier is enough) and a service account key.
-//
-// Required env var: FIREBASE_SERVICE_ACCOUNT — the *entire contents* of the
-// service account JSON key file (Firebase Console > Project Settings >
-// Service Accounts > Generate new private key), pasted as one env var
-// value. Paste it exactly as downloaded; this parses it as JSON.
 
 const admin = require('firebase-admin');
 
@@ -36,9 +27,6 @@ function isConfigured() {
   return !!getApp();
 }
 
-// Sends to every registered device for this user, dropping any token FCM
-// reports as no-longer-valid (app uninstalled, token rotated, etc.) so
-// User.fcmTokens doesn't slowly accumulate dead entries.
 async function sendToUser(user, { title, body, data = {} }) {
   const firebaseApp = getApp();
   if (!firebaseApp || !user?.fcmTokens?.length) return { sent: 0 };
@@ -65,8 +53,6 @@ async function sendToUser(user, { title, body, data = {} }) {
   return { sent: res.successCount };
 }
 
-// Same customer-facing copy the order-status email already uses, so a
-// customer with both channels enabled sees a consistent message.
 const { ORDER_STATUS_MESSAGES } = require('../utils/notifications');
 
 async function sendOrderStatusPush(user, order) {

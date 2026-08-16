@@ -10,10 +10,6 @@ export function SearchProvider({ children }) {
   const [productsLoading, setProductsLoading] = useState(false);
   const fetchedRef = useRef(false);
 
-  // Fetch the full catalog once, on app load, so every keystroke in the
-  // search dropdown can be scored instantly on the client — and so category
-  // pages can also pin a searched-for product to the top of their grid
-  // without waiting on the search overlay ever having been opened.
   useEffect(() => {
     if (fetchedRef.current) return;
     fetchedRef.current = true;

@@ -10,7 +10,6 @@ export function recordRecentlyViewed(product) {
     const next = [entry, ...getRecentlyViewed().filter(p => p.id !== id)].slice(0, MAX_ITEMS);
     localStorage.setItem(KEY, JSON.stringify(next));
   } catch {
-    // localStorage unavailable (private browsing etc.) — recently-viewed is a nicety, skip silently.
   }
 }
 

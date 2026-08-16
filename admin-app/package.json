@@ -1,0 +1,19 @@
+{
+  "name": "dezire-more-admin-app",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Native Android/iOS wrapper for the Dezire More admin panel (dezire-backend/admin-panel.html), via Capacitor. Kept as its own project — separate from the main storefront app's Capacitor setup at the repo root — since this is a genuinely different app: a different appId (com.deziremore.admin), a different audience (the store owner/admin, not customers), and no shared web build step (www/index.html is a checked-in copy of admin-panel.html, not something Vite builds).",
+  "scripts": {
+    "sync": "cap sync",
+    "android": "cap open android",
+    "ios": "cap open ios",
+    "sync-panel": "node sync-panel.js"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.4.2",
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.4.2",
+    "@capacitor/core": "^8.4.2",
+    "@capacitor/ios": "^8.4.2"
+  }
+}

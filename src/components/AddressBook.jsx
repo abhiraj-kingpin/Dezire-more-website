@@ -4,8 +4,6 @@ import { useToast } from '../context/ToastContext';
 
 const EMPTY_FORM = { label: 'Home', line1: '', city: '', state: '', pin: '' };
 
-// Shared address management UI — used both on the Account Dashboard (full
-// manage view) and, in "compact" mode, as the picker at checkout.
 function AddressBook({ compact = false, selectedId, onSelect }) {
   const { user, addAddress, updateAddress, deleteAddress } = useAuth();
   const { showToast } = useToast();

@@ -24,8 +24,6 @@ import { Search, Heart, ShoppingCart, Settings, User, Menu as MenuIcon, X, Crown
 const FALLBACK_SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 const SUGGESTION_LIMIT = 8;
 
-// Loaded once, on demand, the first time someone actually reaches checkout —
-// keeps Razorpay's script out of the main bundle for everyone just browsing.
 let razorpayScriptPromise = null;
 function loadRazorpayScript() {
   if (window.Razorpay) return Promise.resolve();
@@ -43,10 +41,6 @@ function loadRazorpayScript() {
   return razorpayScriptPromise;
 }
 
-// Amazon-style search-as-you-type: thumbnail + name only, substring-matched,
-// refined on every keystroke. Selecting a row navigates to that product's
-// category page (with the query pinned/highlighted there) instead of
-// opening a separate results view.
 function SearchResults({ query, onNavigate }) {
   const { allProducts, productsLoading } = useSearch();
   const trimmed = query.trim();
@@ -91,28 +85,14 @@ function SearchResults({ query, onNavigate }) {
 
 function Navbar() {
   const [activeTab, setActiveTab] = useState('login');
-  // 'login' | 'signup' | 'check-email' — 'check-email' covers both the
-  // post-signup "we sent you a link" screen and the prompt shown after an
-  // unverified login attempt.
   const [authStep, setAuthStep] = useState('login');
   const [pendingEmail, setPendingEmail] = useState('');
-  // Held only long enough to auto-complete login once verify-status polling
-  // (below) detects the email got verified — never sent anywhere except
-  // that one follow-up login() call, cleared with the rest on modal close.
   const [pendingPassword, setPendingPassword] = useState('');
   const [verifyError, setVerifyError] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
   const [pendingAddress, setPendingAddress] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState('');
-  const [paymentReferenceInput, setPaymentReferenceInput] = useState('');
-  const [amountPaidInput, setAmountPaidInput] = useState('');
+  const paymentMethod = 'UPI';
   const [upiSettings, setUpiSettings] = useState({ upiId: '' });
-  // "Save this card" at checkout — only offered once Razorpay is actually
-  // configured (razorpayCustomerId comes back null otherwise, same
-  // graceful-degradation as the UPI option above) and the shopper is
-  // logged in, since saved cards live on their account.
-  const [razorpayCustomerId, setRazorpayCustomerId] = useState(null);
-  const [saveCard, setSaveCard] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [lastOrderId, setLastOrderId] = useState('');
   const [readyToWearOpen, setReadyToWearOpen] = useState(false);
@@ -146,7 +126,6 @@ function Navbar() {
   const [signupPhone, setSignupPhone] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  // Signup delivery address (new)
   const [signupAddress, setSignupAddress] = useState('');
   const [signupCity, setSignupCity] = useState('');
   const [signupState, setSignupState] = useState('');
@@ -168,7 +147,6 @@ function Navbar() {
     navigate(`${categoryRouteFor(product)}?q=${encodeURIComponent(term)}`);
   };
 
-  // Enter jumps straight to the top match's category page, same as clicking it.
   const handleSearchEnter = (e) => {
     if (e.key !== 'Enter') return;
     const [top] = searchSubstring(allProducts, searchQuery.trim());
@@ -178,16 +156,10 @@ function Navbar() {
   const anyOverlayOpen = cartOpen || wishlistOpen || authOpen || settingsOpen || searchOpen;
   useLockBodyScroll(anyOverlayOpen);
 
-  // Settings/Cart/Wishlist/Search/Auth are drawers layered on top of
-  // whatever page is open, not route changes — so on Home, opening any of
-  // them left the Style Assistant bubble showing underneath, since the
-  // route (and therefore the Home-only check in Layout.jsx) never changed.
-  // HelplineWidget listens for this to hide itself while any of them are open.
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('dm:overlay-visibility', { detail: { open: anyOverlayOpen } }));
   }, [anyOverlayOpen]);
 
-  // Esc closes whichever overlay is currently open, most-specific first.
   useEffect(() => {
     const onKeyDown = (e) => {
       if (e.key !== 'Escape') return;
@@ -205,19 +177,12 @@ function Navbar() {
     return () => window.removeEventListener('keydown', onKeyDown);
   });
 
-  // Phone/Android-app hardware back button (or a browser back click) closes
-  // whichever overlay is open, mirroring the Escape-key behavior above —
-  // mobile has no Escape key, so without this back-swipe used to do nothing
-  // (or leave the page entirely) instead of dismissing the drawer.
   useBackDismiss(searchOpen, closeSearch);
   useBackDismiss(authOpen, () => closeAuthModal());
   useBackDismiss(settingsOpen, () => setSettingsOpen(false));
   useBackDismiss(cartOpen, () => { if (paymentStep) setPaymentStep(false); else setCartOpen(false); });
   useBackDismiss(wishlistOpen, () => setWishlistOpen(false));
 
-  // Listens for the "fly to cart" signal dispatched by product cards/modals
-  // on Add to Cart, and animates a clone of the product image flying into
-  // the cart icon, followed by a cart bounce.
   useEffect(() => {
     const handler = (e) => {
       const cartBtn = document.getElementById('nav-cart-icon');
@@ -226,7 +191,6 @@ function Navbar() {
 
       const bounce = () => {
         cartBtn.classList.remove('cart-bounce');
-        // Force reflow so the animation can re-trigger on rapid clicks.
         void cartBtn.offsetWidth;
         cartBtn.classList.add('cart-bounce');
         setTimeout(() => cartBtn.classList.remove('cart-bounce'), 550);
@@ -269,7 +233,6 @@ function Navbar() {
     return () => window.removeEventListener('dm:fly-to-cart', handler);
   }, []);
 
-  // Checkout delivery address (controlled, pre-filled from account if available)
   const [checkoutName, setCheckoutName] = useState('');
   const [checkoutEmail, setCheckoutEmail] = useState('');
   const [checkoutPhone, setCheckoutPhone] = useState('');
@@ -299,15 +262,26 @@ function Navbar() {
     if (defaultAddress) applyAddress(defaultAddress);
   }, [user]);
 
-  const DELIVERY_CHARGE = cartTotal >= 1899 ? 0 : 99;
+  const FREE_SHIPPING_THRESHOLD = 2500;
+  const DELIVERY_CHARGE = cartTotal >= FREE_SHIPPING_THRESHOLD ? 0 : 99;
+
+  const GST_RATE_THRESHOLD = 2499;
+  const gstRateFor = (price) => (price >= GST_RATE_THRESHOLD ? 18 : 5);
+  const cartGstBreakdown = cart.reduce((acc, p) => {
+    const rate = gstRateFor(p.price);
+    const amount = Math.round(p.price * p.quantity * rate) / 100;
+    if (rate === 18) acc.gst18 += amount; else acc.gst5 += amount;
+    return acc;
+  }, { gst5: 0, gst18: 0 });
+  const cartGST = cartGstBreakdown.gst5 + cartGstBreakdown.gst18;
 
   const [couponInput, setCouponInput] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState(null); // { code, discount }
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponError, setCouponError] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
 
   const discountAmount = appliedCoupon?.discount || 0;
-  const finalTotal = Math.max(0, cartTotal - discountAmount) + DELIVERY_CHARGE;
+  const finalTotal = Math.max(0, cartTotal - discountAmount) + cartGST + DELIVERY_CHARGE;
   const cartSavings = cart.reduce((sum, p) => sum + Math.max(0, (p.originalPrice || p.price) - p.price) * p.quantity, 0);
 
   const handleApplyCoupon = async () => {
@@ -341,8 +315,6 @@ function Navbar() {
   const estimatedDeliveryDate = new Date(Date.now() + 9 * 24 * 60 * 60 * 1000)
     .toLocaleDateString('en-IN', { day: 'numeric', month: 'long' });
 
-  // "You may also like" — a light cross-sell strip in the cart, based on
-  // the category of whatever's already in the bag.
   const [cartRecommendations, setCartRecommendations] = useState([]);
   useEffect(() => {
     if (cart.length === 0) { setCartRecommendations([]); return; }
@@ -352,11 +324,8 @@ function Navbar() {
       .then(res => res.json())
       .then(data => setCartRecommendations((data.data || []).filter(p => !cart.some(c => c.id === p._id)).slice(0, 4)))
       .catch(() => setCartRecommendations([]));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cart.length > 0 ? cart[0].id : null]);
 
-  // Ticks the resend-email cooldown down to 0 once a link has been (re)sent.
-  // Matches the backend's own 60s rate limit on resend-verification.
   const RESEND_COOLDOWN_SECONDS = 60;
   useEffect(() => {
     if (resendCooldown <= 0) return;
@@ -414,10 +383,6 @@ function Navbar() {
     }
   };
 
-  // Auto-detects verification instead of requiring the user to notice the
-  // email landed and come back to manually log in again — polls a cheap
-  // status-only endpoint, then completes the real (password-checked) login
-  // exactly once verification is actually confirmed.
   useEffect(() => {
     if (!authOpen || authStep !== 'check-email' || !pendingEmail || !pendingPassword) return;
     const interval = setInterval(async () => {
@@ -430,40 +395,20 @@ function Navbar() {
         resetAuthFields();
         showToast("Email verified — you're logged in!", 'success');
       } else {
-        // Extremely unlikely (password changed mid-poll, etc.) — fall back
-        // to letting them complete it manually instead of leaving the
-        // "check your email" screen showing a stale, dead-end message.
         setPendingPassword('');
         setLoginEmail(pendingEmail);
         setAuthStep('login');
       }
     }, 3000);
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authOpen, authStep, pendingEmail, pendingPassword]);
 
-  // The pending address (if any) is saved once verification actually
-  // completes — but that happens on the separate /verify-email page, not
-  // here, so stash it where that page's own logic can't reach it directly.
-  // Simplest robust option: persist it to localStorage keyed by email.
   useEffect(() => {
     if (pendingAddress?.line1 && pendingEmail) {
       localStorage.setItem(`dm-pending-address:${pendingEmail}`, JSON.stringify(pendingAddress));
     }
   }, [pendingAddress, pendingEmail]);
 
-  // Powers the "Pay via UPI" checkout option — fetched at mount rather than
-  // on cart open, since it rarely changes and this way it's already
-  // available the instant checkout renders. The QR shown at checkout is
-  // generated fresh from this UPI ID plus the real order total (see the
-  // upiLink built below), not a static image. The option only shows up once
-  // an admin has set a UPI ID, so an unconfigured site just silently has one
-  // less option — which used to also silently happen for a CONFIGURED site
-  // if this one-shot, un-retried fetch landed while Render's free-tier
-  // backend was still waking from a cold start (30-50s) and it never got a
-  // second chance. Retries with backoff, plus a final attempt right when
-  // checkout actually opens (by then other API calls have almost certainly
-  // already woken the backend up).
   const fetchUpiSettings = () => {
     fetch(`${BASE}/payment-settings`)
       .then(res => res.json())
@@ -478,21 +423,7 @@ function Navbar() {
   }, []);
   useEffect(() => {
     if (paymentStep && !upiSettings.upiId) fetchUpiSettings();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paymentStep]);
-
-  // Looked up once checkout actually opens (not on every render) so a
-  // logged-in shopper sees the "Save this card" option the moment they pick
-  // Razorpay — silently absent rather than erroring if Razorpay isn't
-  // configured yet or the lookup fails, same spirit as fetchUpiSettings.
-  useEffect(() => {
-    if (!paymentStep || !user) return;
-    fetch(`${BASE}/payment-methods/customer-id`, { headers: authHeaders() })
-      .then(res => res.json())
-      .then(data => setRazorpayCustomerId(data.customerId || null))
-      .catch(() => setRazorpayCustomerId(null));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paymentStep, user]);
 
   const handleResendVerification = async () => {
     if (resendCooldown > 0) return;
@@ -511,7 +442,7 @@ function Navbar() {
 
     if (navigator.share) {
       try { await navigator.share({ title: 'My Dezire More Wishlist', text }); }
-      catch { /* user cancelled the share sheet — nothing to do */ }
+      catch { }
       return;
     }
     try {
@@ -523,7 +454,7 @@ function Navbar() {
   };
 
   const handlePlaceOrder = async () => {
-    if (isPlacingOrder) return; // guards against double-click / duplicate orders
+    if (isPlacingOrder) return;
 
     if (!user) {
       setCartOpen(false);
@@ -544,12 +475,8 @@ function Navbar() {
       setOrderError('Please enter a valid email address for your order confirmation.');
       return;
     }
-    if (paymentMethod === 'UPI' && !paymentReferenceInput.trim()) {
-      setOrderError('Please enter the UPI transaction reference / UTR number after paying.');
-      return;
-    }
-    if (paymentMethod === 'UPI' && !(Number(amountPaidInput) > 0)) {
-      setOrderError('Please enter the amount you paid.');
+    if (!upiSettings.upiId) {
+      setOrderError('Payment isn\'t available right now — please try again shortly.');
       return;
     }
 
@@ -577,23 +504,14 @@ function Navbar() {
             state: checkoutState.trim(),
             pin: checkoutPin.trim(),
           },
-          subtotal: cartTotal,
-          deliveryCharge: DELIVERY_CHARGE,
-          total: finalTotal,
           couponCode: appliedCoupon?.code,
           paymentMethod,
-          paymentReference: paymentMethod === 'UPI' ? paymentReferenceInput.trim() : undefined,
-          amountPaid: paymentMethod === 'UPI' ? Number(amountPaidInput) : undefined,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not place your order. Please try again.');
 
-      if (paymentMethod === 'Razorpay') {
-        await payWithRazorpay(data.order);
-      } else {
-        finishOrderSuccess(data.order);
-      }
+      finishOrderSuccess(data.order);
     } catch (err) {
       setOrderError(err.message);
     } finally {
@@ -608,15 +526,8 @@ function Navbar() {
     clearCart();
     setAppliedCoupon(null);
     setCouponInput('');
-    setPaymentReferenceInput('');
-    setAmountPaidInput('');
   };
 
-  // The order already exists at this point (created just above, status
-  // 'pending') — this only opens Razorpay's checkout for it and shows the
-  // success screen once the payment signature is verified server-side. If
-  // the customer closes the modal or the payment fails, the order stays
-  // pending rather than a second order getting created.
   const payWithRazorpay = async (order) => {
     await loadRazorpayScript();
 
@@ -640,14 +551,7 @@ function Navbar() {
           email: checkoutEmail.trim(),
           contact: checkoutPhone.trim(),
         },
-        // Tokenizes the card being used right now onto this shopper's
-        // Razorpay customer record — that's the only way a card ever lands
-        // on the Payment Methods account page (see razorpayCustomer.js for
-        // why there's no separate "add a card" flow). Both are omitted
-        // entirely (not just false) when the checkbox is off or the
-        // customer id lookup came back empty, since Razorpay treats a
-        // present-but-falsy customer_id as an error rather than "skip this".
-        ...(saveCard && razorpayCustomerId ? { customer_id: razorpayCustomerId, save: 1 } : {}),
+        method: { upi: true, card: false, netbanking: false, wallet: false, paylater: false, emi: false },
         theme: { color: '#1e3a2f' },
         handler: async (response) => {
           try {
@@ -697,9 +601,6 @@ function Navbar() {
         className="nav-logo"
         style={{ flexShrink: 0 }}
         onClick={(e) => {
-          // Already home — a same-path Link click is a no-op in React
-          // Router, so force an actual refresh instead (the ask was
-          // "logo = back to home, or reload if already there").
           if (window.location.pathname === '/') {
             e.preventDefault();
             window.location.reload();
@@ -711,8 +612,6 @@ function Navbar() {
           <span className="logo-royal-tag">Quintessential Queens</span>
         </div>
         <div className="logo-text">
-          {/* Site branding, not page content — the actual page heading
-              (rendered by each route) is the document's one <h1>. */}
           <p className="logo-name">Dezire More</p>
           <p className="logo-tagline">Ethnic Elegance. Modern You.</p>
         </div>
@@ -753,9 +652,6 @@ function Navbar() {
           )}
         </div>
 
-        {/* Mobile-only: Wishlist/Cart/Settings/Account fold into this single
-            icon (opens the same SettingsDrawer that already lists all of
-            them) — desktop keeps the four separate icons above unchanged. */}
         <button
           aria-label="Account"
           className={`auth-trigger-btn mobile-account-btn ${user ? 'user-logged-in' : ''}`}
@@ -776,10 +672,6 @@ function Navbar() {
       {mobileMenuOpen && <div className="nav-mobile-backdrop" onClick={closeMobileMenu} />}
 
       <ul className={`nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
-        {/* Real header row (title + close), not a decorative ::before with
-            the toggle button z-index-layered over it from its collapsed-bar
-            position — that let the "X" land on top of whichever list item
-            happened to sit at that fixed coordinate once the header grew. */}
         <li className="nav-links-header">
           <span>Dezire More</span>
           <button className="nav-links-close" onClick={closeMobileMenu} aria-label={t('nav_closeMenu')}>
@@ -812,8 +704,6 @@ function Navbar() {
         </li>
       </ul>
 
-      {/* Search Overlay — portalled to document.body so it always covers the
-          true viewport, regardless of any transformed/stacked ancestor. */}
       {searchOpen && createPortal(
         <div className="search-overlay" onClick={closeSearch}>
           <div className="search-box" onClick={e => e.stopPropagation()}>
@@ -844,7 +734,6 @@ function Navbar() {
         document.body
       )}
 
-      {/* Wishlist Drawer */}
       {wishlistOpen && (
         <div className="wl-overlay" onClick={() => setWishlistOpen(false)}>
           <div className="wl-drawer" onClick={e => e.stopPropagation()}>
@@ -906,7 +795,6 @@ function Navbar() {
         </div>
       )}
 
-      {/* Cart Modal — centered, always-dark "premium boutique" cart */}
       {cartOpen && !paymentStep && !orderPlaced && (
         <div className="cart-modal-overlay" onClick={() => setCartOpen(false)}>
           <div className="cart-modal-v2" onClick={e => e.stopPropagation()}>
@@ -1028,16 +916,24 @@ function Navbar() {
                       {DELIVERY_CHARGE === 0 ? 'FREE' : `₹${DELIVERY_CHARGE}`}
                     </span>
                   </div>
-                  <div className="cm-summary-row">
-                    <span>Tax</span>
-                    <span>Included</span>
-                  </div>
+                  {cartGstBreakdown.gst5 > 0 && (
+                    <div className="cm-summary-row">
+                      <span>GST (5%)</span>
+                      <span>₹{cartGstBreakdown.gst5.toLocaleString('en-IN')}</span>
+                    </div>
+                  )}
+                  {cartGstBreakdown.gst18 > 0 && (
+                    <div className="cm-summary-row">
+                      <span>GST (18%)</span>
+                      <span>₹{cartGstBreakdown.gst18.toLocaleString('en-IN')}</span>
+                    </div>
+                  )}
                   <div className="cm-summary-row cm-delivery-estimate-row">
                     <span>Estimated Delivery</span>
                     <span>{estimatedDeliveryDate}</span>
                   </div>
                   {DELIVERY_CHARGE > 0 && (
-                    <p className="cart-free-msg cm-free-msg">Add ₹{(1899 - cartTotal).toLocaleString('en-IN')} more for free delivery!</p>
+                    <p className="cart-free-msg cm-free-msg">Add ₹{(FREE_SHIPPING_THRESHOLD - cartTotal).toLocaleString('en-IN')} more for free delivery!</p>
                   )}
 
                   <div className="cm-coupon-block">
@@ -1104,7 +1000,7 @@ function Navbar() {
                 </div>
                 <div className="cm-trust-item">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="7.5" cy="18" r="1.5"/><circle cx="17.5" cy="18" r="1.5"/></svg>
-                  <div><b>Free Shipping</b><small>On orders above ₹1899</small></div>
+                  <div><b>Free Shipping</b><small>On orders above ₹{FREE_SHIPPING_THRESHOLD.toLocaleString('en-IN')}</small></div>
                 </div>
               </div>
             )}
@@ -1126,7 +1022,6 @@ function Navbar() {
         </div>
       )}
 
-      {/* Checkout / Payment — premium centered modal, decoupled from the side drawer */}
       {cartOpen && paymentStep && !orderPlaced && (
         <div className="checkout-overlay" onClick={() => setCartOpen(false)}>
           <div className="checkout-modal" onClick={e => e.stopPropagation()}>
@@ -1144,16 +1039,28 @@ function Navbar() {
                     <span>₹{(p.price * p.quantity).toLocaleString('en-IN')}</span>
                   </div>
                 ))}
-                <div className="payment-item">
-                  <span>Delivery</span>
-                  <span className={DELIVERY_CHARGE === 0 ? 'cart-free' : ''}>{DELIVERY_CHARGE === 0 ? 'FREE' : `₹${DELIVERY_CHARGE}`}</span>
-                </div>
+                {cartGstBreakdown.gst5 > 0 && (
+                  <div className="payment-item">
+                    <span>GST (5%)</span>
+                    <span>₹{cartGstBreakdown.gst5.toLocaleString('en-IN')}</span>
+                  </div>
+                )}
+                {cartGstBreakdown.gst18 > 0 && (
+                  <div className="payment-item">
+                    <span>GST (18%)</span>
+                    <span>₹{cartGstBreakdown.gst18.toLocaleString('en-IN')}</span>
+                  </div>
+                )}
                 {discountAmount > 0 && (
                   <div className="payment-item">
                     <span>Coupon ({appliedCoupon.code})</span>
                     <span className="cart-free">−₹{discountAmount.toLocaleString('en-IN')}</span>
                   </div>
                 )}
+                <div className="payment-item">
+                  <span>Delivery</span>
+                  <span className={DELIVERY_CHARGE === 0 ? 'cart-free' : ''}>{DELIVERY_CHARGE === 0 ? 'FREE' : `₹${DELIVERY_CHARGE}`}</span>
+                </div>
                 <div className="payment-item payment-total">
                   <span>Total</span>
                   <span>₹{finalTotal.toLocaleString('en-IN')}</span>
@@ -1171,46 +1078,7 @@ function Navbar() {
               </div>
               <div className="payment-section">
                 <h4 className="payment-section-title">Payment Method</h4>
-                <div className="payment-methods">
-                  {[
-                    { key: 'Razorpay', label: 'Pay Online — Card / UPI / Netbanking', icon: 'card' },
-                    ...(upiSettings.upiId ? [{ key: 'UPI', label: 'Pay via UPI (Scan QR / UPI ID)', icon: 'upi' }] : []),
-                    { key: 'COD', label: 'Cash on Delivery', icon: 'cod' },
-                  ].map(({ key, label, icon }) => (
-                    <label key={key} className={`payment-method-card ${paymentMethod === key ? 'selected' : ''}`}>
-                      <input type="radio" name="payment" value={key} checked={paymentMethod === key} onChange={() => setPaymentMethod(key)} style={{ display: 'none' }} />
-                      <span className="payment-method-icon">
-                        {icon === 'card' && (
-                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-                        )}
-                        {icon === 'upi' && (
-                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="14" y1="14" x2="21" y2="14"/><line x1="14" y1="18" x2="21" y2="18"/><line x1="17" y1="14" x2="17" y2="21"/></svg>
-                        )}
-                        {icon === 'cod' && (
-                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></svg>
-                        )}
-                      </span>
-                      <span>{label}</span>
-                      {paymentMethod === key && <span className="payment-check">✓</span>}
-                    </label>
-                  ))}
-                </div>
-                {paymentMethod === 'Razorpay' && razorpayCustomerId && (
-                  <label className="payment-save-card-row">
-                    <input type="checkbox" checked={saveCard} onChange={e => setSaveCard(e.target.checked)} />
-                    Save this card for faster checkout next time
-                  </label>
-                )}
-
-                {paymentMethod === 'Razorpay' && (
-                  <div className="payment-verify-block">
-                    <p className="payment-verify-hint">
-                      You'll be securely redirected to complete payment. Your order is confirmed automatically the moment payment succeeds — no reference number to enter.
-                    </p>
-                  </div>
-                )}
-
-                {paymentMethod === 'UPI' && (
+                {upiSettings.upiId ? (
                   <div className="payment-upi-card">
                     <p className="payment-upi-amount">₹{finalTotal.toLocaleString('en-IN')}</p>
                     <div className="payment-upi-qr-box">
@@ -1222,30 +1090,17 @@ function Navbar() {
                     </div>
                     <p className="payment-upi-id">UPI ID: <strong>{upiSettings.upiId}</strong></p>
                     <p className="payment-verify-hint">
-                      Scan with any UPI app — the amount is pre-filled, but please don't change it. After paying, enter the transaction reference / UTR number and amount paid below; we'll confirm your payment manually, which can take a few hours.
+                      Scan with any UPI app — the amount is pre-filled. Once you've paid, tap Place Order below; we'll confirm your payment and notify you once it's verified, usually within a few hours.
                     </p>
-                    <input
-                      type="text"
-                      className="payment-input"
-                      placeholder="UPI transaction reference / UTR number"
-                      value={paymentReferenceInput}
-                      onChange={e => setPaymentReferenceInput(e.target.value)}
-                    />
-                    <input
-                      type="number"
-                      className="payment-input payment-input-spaced"
-                      placeholder="Amount paid"
-                      value={amountPaidInput}
-                      onChange={e => setAmountPaidInput(e.target.value)}
-                      onFocus={() => { if (!amountPaidInput) setAmountPaidInput(finalTotal.toFixed(2)); }}
-                    />
                   </div>
+                ) : (
+                  <p className="payment-error">Payment isn't available right now — please try again shortly.</p>
                 )}
               </div>
               {orderError && <p className="payment-error">{orderError}</p>}
               <button
                 className="cart-checkout-btn"
-                disabled={!paymentMethod || isPlacingOrder}
+                disabled={isPlacingOrder || !upiSettings.upiId}
                 onClick={handlePlaceOrder}
               >
                 {isPlacingOrder ? 'Placing Order…' : `Place Order — ₹${finalTotal.toLocaleString('en-IN')}`}
@@ -1255,15 +1110,11 @@ function Navbar() {
         </div>
       )}
 
-      {/* Order Confirmation — centered modal */}
       {cartOpen && orderPlaced && placedOrder && (
         <div className="checkout-overlay" onClick={() => {
           setOrderPlaced(false);
           setCartOpen(false);
           setPaymentStep(false);
-          setPaymentMethod('');
-          setPaymentReferenceInput('');
-          setAmountPaidInput('');
           setPlacedOrder(null);
         }}>
           <div className="checkout-modal checkout-modal-narrow" onClick={e => e.stopPropagation()}>
@@ -1278,11 +1129,7 @@ function Navbar() {
                 <div className="order-success-row">
                   <span>Payment Status</span>
                   <span className={placedOrder.paymentStatus === 'paid' ? 'order-status-paid' : 'order-status-pending'}>
-                    {placedOrder.paymentStatus === 'paid'
-                      ? 'Paid'
-                      : placedOrder.paymentMethod === 'UPI'
-                        ? 'Pending Verification'
-                        : 'Pending (Pay on Delivery)'}
+                    {placedOrder.paymentStatus === 'paid' ? 'Paid' : 'Pending Verification'}
                   </span>
                 </div>
                 <div className="order-success-row"><span>Amount</span><span>₹{placedOrder.total.toLocaleString('en-IN')}</span></div>
@@ -1321,7 +1168,6 @@ function Navbar() {
                   setOrderPlaced(false);
                   setCartOpen(false);
                   setPaymentStep(false);
-                  setPaymentMethod('');
                   setPlacedOrder(null);
                 }}
               >
@@ -1332,7 +1178,6 @@ function Navbar() {
         </div>
       )}
 
-      {/* Auth Modal */}
       {authOpen && (
         <div className="auth-overlay" onClick={closeAuthModal}>
           <div className="auth-modal" onClick={(e) => e.stopPropagation()}>

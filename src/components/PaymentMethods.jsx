@@ -12,7 +12,7 @@ function PaymentMethods() {
   const { t } = useLanguage();
   const { showToast } = useToast();
 
-  const [mode, setMode] = useState(null); // 'razorpay' | 'reference'
+  const [mode, setMode] = useState(null);
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
@@ -30,7 +30,7 @@ function PaymentMethods() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(load, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(load, []);
 
   const handleRemove = async (id) => {
     setRemovingId(id);

@@ -1,9 +1,5 @@
 const mongoose = require('mongoose');
 
-// Singleton document (always _id: 'default') backing the "Founder" section on
-// the Our Story page. Defaults match the copy that used to be hardcoded in
-// FounderSection.jsx, so the page keeps working even before an admin has
-// saved anything here.
 const founderSettingsSchema = new mongoose.Schema(
   {
     _id: { type: String, default: 'default' },

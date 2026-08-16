@@ -37,14 +37,11 @@ function publicReview(review, userId) {
     verifiedPurchase: review.verifiedPurchase,
     helpfulCount: review.helpfulVotes.length,
     helpfulByMe: userId ? review.helpfulVotes.some(v => String(v) === String(userId)) : false,
-    // Lets the frontend show a Delete button on the reviewer's own card
-    // without exposing the raw userId to every other visitor.
     isMine: userId ? String(review.userId) === String(userId) : false,
     createdAt: review.createdAt,
   };
 }
 
-// GET /api/reviews/product/:productId?sort=helpful&minRating=4
 router.get('/product/:productId', async (req, res) => {
   try {
     const { productId } = req.params;
@@ -58,15 +55,13 @@ router.get('/product/:productId', async (req, res) => {
       oldest:  { createdAt: 1 },
       highest: { rating: -1 },
       lowest:  { rating: 1 },
-      helpful: null, // sorted in JS below since it depends on array length
+      helpful: null,
     };
     const sortKey = req.query.sort || 'helpful';
 
     let reviews = await Review.find(filter).sort(sortMap[sortKey] || { createdAt: -1 }).lean();
     if (sortKey === 'helpful') reviews.sort((a, b) => b.helpfulVotes.length - a.helpfulVotes.length);
 
-    // Breakdown is computed over ALL reviews for the product (unfiltered by
-    // minRating), so the bar chart always reflects the true distribution.
     const allReviews = await Review.find({ productId }).select('rating').lean();
     const breakdown = [5, 4, 3, 2, 1].map(star => ({
       star,
@@ -88,7 +83,6 @@ router.get('/product/:productId', async (req, res) => {
   }
 });
 
-// POST /api/reviews — create a review (one per customer per product)
 router.post('/', requireAuth, upload.array('images', 4), async (req, res) => {
   try {
     const { productId, rating, title, text } = req.body;
@@ -127,7 +121,6 @@ router.post('/', requireAuth, upload.array('images', 4), async (req, res) => {
   }
 });
 
-// POST /api/reviews/:id/helpful — toggle "helpful" vote
 router.post('/:id/helpful', requireAuth, async (req, res) => {
   try {
     const review = await Review.findById(req.params.id);
@@ -147,9 +140,6 @@ router.post('/:id/helpful', requireAuth, async (req, res) => {
   }
 });
 
-// DELETE /api/reviews/:id — a customer removing their own review. Not an
-// admin moderation tool (there's no admin route for this) — ownership is
-// required, no exceptions.
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
     const review = await Review.findById(req.params.id);

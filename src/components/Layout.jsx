@@ -9,16 +9,6 @@ import { titleForPath, descriptionForPath, robotsForPath, urlForPath } from '../
 import useOnlineStatus from '../hooks/useOnlineStatus';
 import { useToast } from '../context/ToastContext';
 
-// index.html ships static description/OG/Twitter/canonical tags as a
-// fallback for crawlers that never execute JavaScript at all (they only
-// ever see those raw bytes, on every route, since this is a client-only
-// SPA). Real browsers and JS-rendering crawlers like Googlebot do execute
-// this app, and react-helmet-async manages the same tag types from here
-// down — without removing the static ones first, both would coexist as
-// duplicate <meta>/<link> tags once Helmet mounts, which is what actually
-// happened before this ran (verified: two og:title tags, two canonical
-// links). Runs once; Helmet's own tags carry a data-rh attribute the static
-// ones never have, so this can't ever remove something Helmet added.
 function removeStaticSeoTags() {
   const selectors = [
     'meta[name="description"]',
@@ -34,11 +24,6 @@ function removeStaticSeoTags() {
   });
 }
 
-// Casual-copying deterrent for the storefront (not a real DRM — anyone using
-// devtools or a screenshot still gets the content, this just removes the
-// one-click "Save Image"/"Copy" affordances for ordinary visitors). Right-
-// click and drag-to-save are blocked everywhere except form fields, where
-// normal text selection/paste has to keep working.
 function blockContextMenu(e) {
   if (e.target.closest('input, textarea, [contenteditable="true"]')) return;
   e.preventDefault();
@@ -66,16 +51,12 @@ function Layout() {
     };
   }, []);
 
-  // A quiet confirmation the moment connectivity actually comes back —
-  // the persistent banner below already covers "you're offline right now",
-  // this is just the "you're good again" bookend.
   useEffect(() => {
     if (!isOnline) { wasOffline.current = true; return; }
     if (wasOffline.current) {
       wasOffline.current = false;
       showToast("You're back online", 'success');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOnline]);
 
   const title = titleForPath(pathname);

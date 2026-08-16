@@ -1,12 +1,3 @@
-// Email is fully optional — if Resend isn't configured, notifications are
-// silently skipped (logged once) rather than crashing order creation.
-// Required env vars: RESEND_API_KEY, RESEND_FROM_EMAIL
-//
-// Sends over Resend's HTTPS API rather than raw SMTP. Render (and most
-// PaaS hosts) block outbound SMTP ports (25/465/587) on free web services
-// as an anti-spam measure — that's a platform-level firewall rule, not
-// something fixable in app code. HTTPS (443) is never blocked, so an API-
-// based provider works regardless of hosting plan.
 let warned = false;
 
 async function sendViaResend({ to, subject, html }) {
@@ -40,9 +31,6 @@ function formatCurrency(n) {
   return `₹${Number(n).toLocaleString('en-IN')}`;
 }
 
-// Shared branded shell — dark green header, serif body (Georgia, since
-// email clients don't reliably load custom web fonts), gold accents,
-// matching the site's luxury look. `bodyHtml` is the email-specific content.
 function emailShell(bodyHtml) {
   return `
   <div style="background:#f4f1ea;padding:32px 16px;font-family:Georgia,'Times New Roman',serif;">
@@ -87,6 +75,9 @@ async function sendOrderConfirmationEmail(order) {
       <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
         ${orderItemsHtml(order)}
         <tr><td style="padding-top:12px;border-top:1px solid #ddd;">Subtotal</td><td style="text-align:right;padding-top:12px;border-top:1px solid #ddd;">${formatCurrency(order.subtotal)}</td></tr>
+        ${order.gstBreakdown?.gst5 > 0 ? `<tr><td>GST (5%)</td><td style="text-align:right;">${formatCurrency(order.gstBreakdown.gst5)}</td></tr>` : ''}
+        ${order.gstBreakdown?.gst18 > 0 ? `<tr><td>GST (18%)</td><td style="text-align:right;">${formatCurrency(order.gstBreakdown.gst18)}</td></tr>` : ''}
+        ${order.discountAmount > 0 ? `<tr><td>Coupon Discount</td><td style="text-align:right;">−${formatCurrency(order.discountAmount)}</td></tr>` : ''}
         <tr><td>Delivery</td><td style="text-align:right;">${order.deliveryCharge === 0 ? 'FREE' : formatCurrency(order.deliveryCharge)}</td></tr>
         <tr><td style="font-weight:bold;padding-top:8px;">Total</td><td style="text-align:right;font-weight:bold;padding-top:8px;">${formatCurrency(order.total)}</td></tr>
       </table>
@@ -136,8 +127,6 @@ const STATUS_MESSAGES = {
   'Cancelled':           'Your order has been cancelled.',
 };
 
-// Sent whenever the admin panel moves an order to a customer-meaningful
-// status — not every internal state, just the ones worth an email.
 async function sendOrderStatusEmail(order) {
   const message = STATUS_MESSAGES[order.orderStatus];
   if (!message) return { sent: false, reason: 'status-not-notifiable' };
@@ -149,6 +138,9 @@ async function sendOrderStatusEmail(order) {
       ${order.estimatedDelivery && order.orderStatus !== 'Delivered' && order.orderStatus !== 'Cancelled'
         ? `<p style="font-size:14px;"><strong>Estimated Delivery:</strong> ${new Date(order.estimatedDelivery).toDateString()}</p>`
         : ''}
+      ${order.orderStatus === 'Shipped' && order.shipment?.trackingUrl
+        ? `<p style="font-size:14px;"><strong>Tracking:</strong> <a href="${order.shipment.trackingUrl}" style="color:#1e3a2f;">${order.shipment.awbCode}</a> (${order.shipment.courierName || 'courier'})</p>`
+        : ''}
   `);
 
   return sendViaResend({
@@ -158,9 +150,6 @@ async function sendOrderStatusEmail(order) {
   });
 }
 
-// Link-based email verification (signup). The button is the primary path;
-// the raw URL is included as a fallback for email clients that strip links
-// out of buttons or block images/styling.
 async function sendVerificationEmail(email, verifyUrl) {
   const html = emailShell(`
       <h2 style="color:#1e3a2f;margin:0 0 12px;font-size:20px;">Verify Your Email</h2>
@@ -178,9 +167,6 @@ async function sendVerificationEmail(email, verifyUrl) {
   });
 }
 
-// Batches every price-drop / back-in-stock alert for one user into a single
-// email (run periodically by utils/wishlistWatcher.js) rather than one email
-// per product, so a wishlist with several changes doesn't spam the inbox.
 async function sendWishlistAlertEmail(user, alerts) {
   const rows = alerts
     .map(a => `
@@ -210,27 +196,19 @@ async function sendWishlistAlertEmail(user, alerts) {
   });
 }
 
-// Sent when an exchange request's status changes (Approved/Rejected/Completed).
-async function sendExchangeStatusEmail(exchange) {
-  const messages = {
-    Approved: 'Your exchange request has been approved. We\'ll arrange a pickup of the original item shortly.',
-    Rejected: 'Your exchange request could not be approved.',
-    Completed: 'Your exchange has been completed. We hope you love the replacement!',
-  };
-  const message = messages[exchange.status];
-  if (!message) return { sent: false, reason: 'status-not-notifiable' };
-
+async function sendAdminResetEmail(email, resetUrl) {
   const html = emailShell(`
-      <h2 style="color:#1e3a2f;margin:0 0 12px;font-size:20px;">Exchange ${exchange.status}</h2>
-      <p style="margin:0 0 16px;">Hi ${exchange.customerName}, ${message}</p>
-      <p style="font-size:14px;"><strong>Order:</strong> ${exchange.orderNumber}<br/>
-         <strong>Item:</strong> ${exchange.productName}</p>
-      ${exchange.adminNote ? `<p style="font-size:14px;"><strong>Note from our team:</strong> ${exchange.adminNote}</p>` : ''}
+      <h2 style="color:#1e3a2f;margin:0 0 12px;font-size:20px;">Reset Admin Password</h2>
+      <p style="margin:0 0 8px;">A password reset was requested for the Dezire More admin account registered to this email address.</p>
+      ${emailButton(resetUrl, 'Reset Password')}
+      <p style="font-size:12px;color:#888;margin:0 0 4px;">Button not working? Copy and paste this link into your browser:</p>
+      <p style="font-size:12px;color:#1e3a2f;word-break:break-all;margin:0 0 20px;">${resetUrl}</p>
+      <p style="font-size:13px;color:#888;">This link expires in 1 hour. If you didn't request this, you can safely ignore this email — your password won't change unless the link above is used.</p>
   `);
 
   return sendViaResend({
-    to: exchange.customerEmail,
-    subject: `Exchange ${exchange.status} — ${exchange.orderNumber} | Dezire More`,
+    to: email,
+    subject: 'Reset your admin password — Dezire More',
     html,
   });
 }
@@ -241,6 +219,6 @@ module.exports = {
   sendVerificationEmail,
   sendOrderStatusEmail,
   sendWishlistAlertEmail,
-  sendExchangeStatusEmail,
+  sendAdminResetEmail,
   ORDER_STATUS_MESSAGES: STATUS_MESSAGES,
 };

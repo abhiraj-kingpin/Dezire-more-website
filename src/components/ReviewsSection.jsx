@@ -145,7 +145,6 @@ function ReviewsSection({ productId }) {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productId, sort, minRating]);
 
   useEffect(() => { load(); }, [load]);

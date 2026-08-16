@@ -5,9 +5,6 @@ const adminAuth = require('../middleware/auth');
 const { upload, cloudinary } = require('../middleware/cloudinary');
 const { logAdminAction } = require('../utils/auditLog');
 
-// GET /api/founder-settings — public, powers the "Founder" section on the
-// Our Story page. Falls back to the schema defaults (the copy that used to
-// be hardcoded) if no admin has saved anything yet.
 router.get('/', async (req, res) => {
   try {
     let settings = await FounderSettings.findById('default').lean();
@@ -24,8 +21,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// PATCH /api/founder-settings — admin only. A new photo replaces (and
-// deletes) the old Cloudinary image, same as testimonials.
 router.patch('/', adminAuth, upload.single('founderPhoto'), async (req, res) => {
   try {
     const settings = (await FounderSettings.findById('default')) || new FounderSettings();

@@ -67,7 +67,6 @@ function SettingsDrawer({ open, onClose, onOpenAuth, onOpenWishlist, onOpenCart,
 
         <div className="settings-body">
 
-          {/* Account */}
           <div className="settings-account-card">
             {user ? (
               <>
@@ -225,7 +224,6 @@ function SettingsDrawer({ open, onClose, onOpenAuth, onOpenWishlist, onOpenCart,
               <MenuLink to="/help-support" onClose={onClose}>{t('settings_helpSupport')}</MenuLink>
               <MenuLink to="/faq" onClose={onClose}>{t('footer_faq')}</MenuLink>
               <MenuLink to="/contact" onClose={onClose}>{t('footer_contactUs')}</MenuLink>
-              <MenuLink to="/exchange-policy" onClose={onClose}>{t('settings_exchangePolicy')}</MenuLink>
               <MenuLink to="/shipping-policy" onClose={onClose}>{t('footer_shippingPolicy')}</MenuLink>
               <MenuLink to="/size-guide" onClose={onClose}>{t('footer_sizeGuide')}</MenuLink>
               <MenuLink to="/privacy-policy" onClose={onClose}>{t('footer_privacyPolicy')}</MenuLink>

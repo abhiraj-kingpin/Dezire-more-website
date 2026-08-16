@@ -5,7 +5,6 @@ const adminAuth = require('../middleware/auth');
 const { upload, cloudinary } = require('../middleware/cloudinary');
 const { logAdminAction } = require('../utils/auditLog');
 
-// GET /api/testimonials — public, powers the homepage "Client Love" section
 router.get('/', async (req, res) => {
   try {
     const testimonials = await Testimonial.find({ isActive: true })
@@ -17,9 +16,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// ── Admin ────────────────────────────────────────────────────────────────────
 
-// GET /api/testimonials/admin/all — includes inactive ones, for management
 router.get('/admin/all', adminAuth, async (req, res) => {
   try {
     const testimonials = await Testimonial.find().sort({ displayOrder: 1, createdAt: -1 }).lean();
@@ -29,8 +26,6 @@ router.get('/admin/all', adminAuth, async (req, res) => {
   }
 });
 
-// POST /api/testimonials — create, photo upload optional (falls back to
-// initials on the frontend if no photo is set, same as before)
 router.post('/', adminAuth, upload.single('photo'), async (req, res) => {
   try {
     const { name, location, rating, text, displayOrder } = req.body;
@@ -53,8 +48,6 @@ router.post('/', adminAuth, upload.single('photo'), async (req, res) => {
   }
 });
 
-// PATCH /api/testimonials/:id — update fields; a new photo replaces (and
-// deletes) the old Cloudinary image, if there was one
 router.patch('/:id', adminAuth, upload.single('photo'), async (req, res) => {
   try {
     const testimonial = await Testimonial.findById(req.params.id);
@@ -84,7 +77,6 @@ router.patch('/:id', adminAuth, upload.single('photo'), async (req, res) => {
   }
 });
 
-// DELETE /api/testimonials/:id
 router.delete('/:id', adminAuth, async (req, res) => {
   try {
     const testimonial = await Testimonial.findByIdAndDelete(req.params.id);

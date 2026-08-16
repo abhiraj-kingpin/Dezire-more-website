@@ -1,6 +1,3 @@
-// Lightweight fuzzy product search. The full catalog is small enough
-// (a few dozen items) to score entirely client-side on every keystroke,
-// so search feels instant and needs no server round-trip or debounce.
 
 const SYNONYMS = {
   sari: 'saree', saris: 'sarees', sary: 'saree',
@@ -122,12 +119,6 @@ export function searchProducts(products, query) {
     .map(({ product }) => product);
 }
 
-// Plain case-insensitive substring search for the search-as-you-type
-// dropdown — deliberately not the fuzzy/typo-tolerant scorer above, so a
-// single letter like "s" immediately surfaces every product containing it,
-// refining further with each additional character. Name matches (what the
-// dropdown actually displays) rank above matches found only in other
-// fields, so the most relevant items lead.
 export function searchSubstring(products, query) {
   const needle = normalize(query);
   if (!needle || !Array.isArray(products)) return [];
@@ -147,7 +138,6 @@ export function searchSubstring(products, query) {
   return [...nameMatches, ...otherMatches];
 }
 
-// Wraps substrings of `text` that match a query token in <mark> for highlighting.
 export function highlightMatch(text, query) {
   const tokens = [...new Set(tokenize(query).filter(t => t.length >= 2))];
   if (!text || tokens.length === 0) return text;

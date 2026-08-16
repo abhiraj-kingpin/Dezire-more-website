@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "delhivery-one": {
+      "command": "uvx",
+      "args": ["d1-mcp-mint@latest"],
+      "env": {
+        "D1_CLIENT_ID": "${D1_CLIENT_ID}",
+        "D1_CLIENT_SECRET": "${D1_CLIENT_SECRET}",
+        "D1_AUTH_URL": "${D1_AUTH_URL}",
+        "D1_REALM": "${D1_REALM}",
+        "D1_CLIENT_CMS": "${D1_CLIENT_CMS}",
+        "D1_MCP_URL": "${D1_MCP_URL}"
+      }
+    }
+  }
+}

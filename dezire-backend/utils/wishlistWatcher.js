@@ -2,11 +2,6 @@ const User = require('../models/User');
 const Product = require('../models/Product');
 const { sendWishlistAlertEmail } = require('./notifications');
 
-// Runs periodically (see server.js) — compares each wishlisted item's
-// current price/stock against what's on file for that user and emails a
-// batched summary of anything worth telling them about. No-ops quietly if
-// SMTP isn't configured (sendWishlistAlertEmail already handles that), so
-// this is safe to run before email is set up.
 async function checkWishlistAlerts() {
   const users = await User.find({ 'wishlist.0': { $exists: true } });
 
@@ -20,7 +15,7 @@ async function checkWishlistAlerts() {
 
     for (const item of user.wishlist) {
       const product = productMap.get(String(item.productId));
-      if (!product) continue; // deleted since being wishlisted
+      if (!product) continue;
 
       const referencePrice = item.lastNotifiedPrice ?? item.priceAtAdd;
       if (product.price < referencePrice) {

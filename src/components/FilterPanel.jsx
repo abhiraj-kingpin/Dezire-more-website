@@ -3,9 +3,6 @@ import { useState, useEffect } from 'react';
 const DISCOUNT_PRESETS = [10, 20, 30, 50];
 const RATING_PRESETS = [4, 3];
 
-// Shared filter sidebar for category/tag listing pages. `facets` comes from
-// useFacets(category) — only values that actually exist in that category are
-// ever offered, so a selection can never lead to a guaranteed-empty result.
 function FilterPanel({ facets, filters, onChange, onClear }) {
   const [priceMin, setPriceMin] = useState(filters.minPrice ?? facets.minPrice);
   const [priceMax, setPriceMax] = useState(filters.maxPrice ?? facets.maxPrice);

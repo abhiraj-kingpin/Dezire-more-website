@@ -1,16 +1,3 @@
-// Central translation dictionary. Every language has the same key set, so
-// t(key) can always fall back to English if a key is ever missing from a
-// non-English table (safer than a component crashing on an undefined string).
-//
-// Scope, deliberately: this covers the site's chrome — navigation, footer,
-// homepage, account dashboard, settings, order-status labels, membership —
-// the parts a shopper reads on every visit regardless of what they're
-// browsing. It does NOT cover the checkout/payment/auth form internals
-// (still English-only — see Navbar.jsx), the admin panel (internal tooling,
-// not customer-facing), or long-form legal text on the Privacy Policy /
-// Terms & Conditions pages (machine-translating legal text without review
-// is a real liability, not just a nice-to-have — left in English on
-// purpose, with the surrounding page chrome translated).
 
 export const LANGUAGES = {
   en: { nativeName: 'English', englishName: 'English' },
@@ -23,7 +10,6 @@ export const LANGUAGES = {
 
 export const translations = {
   en: {
-    // Nav
     nav_sarees: 'Sarees',
     nav_dressMaterials: 'Dress Materials',
     nav_readyToWear: 'Ready to Wear',
@@ -40,27 +26,23 @@ export const translations = {
     nav_login: 'Login',
     nav_closeMenu: 'Close menu',
     nav_openMenu: 'Open menu',
-    // Footer
     footer_tagline: 'Ethnic Elegance. Modern You.',
     footer_about: 'Curated ethnic fashion for the modern Indian woman. Timeless silhouettes, contemporary spirit.',
     footer_help: 'Help',
     footer_faq: 'FAQ',
     footer_sizeGuide: 'Size Guide',
     footer_shippingPolicy: 'Shipping Policy',
-    footer_exchangePolicy: 'Exchange Policy',
     footer_contactUs: 'Contact Us',
     footer_privacyPolicy: 'Privacy Policy',
     footer_termsConditions: 'Terms & Conditions',
     footer_trackWhatsapp: 'Track order on WhatsApp',
     footer_contact: 'Contact',
     footer_rights: 'All rights reserved.',
-    // Home
     home_ourStory: 'Our Story',
     home_storyHeadline: 'Crafted With Purpose, Worn With Pride',
     home_storyBody: 'Every Dezire More piece is designed for the modern Indian woman — timeless silhouettes, contemporary spirit.',
     home_discoverStory: 'Discover Our Story',
     home_staffPicks: 'Staff Picks',
-    // Common actions
     action_addToBag: 'Add to Bag',
     action_buyNow: 'Buy Now',
     action_addToWishlist: 'Add to Wishlist',
@@ -73,7 +55,6 @@ export const translations = {
     action_continue: 'Continue',
     action_backToHome: 'Back to Home',
     action_outOfStock: 'Out of Stock',
-    // Account dashboard
     account_myAccount: 'My Account',
     account_welcome: 'Welcome',
     account_manage: 'Manage your profile, orders, addresses, and membership all in one place.',
@@ -90,7 +71,6 @@ export const translations = {
     account_paymentMethods: 'Payment Methods',
     account_support: 'Support',
     account_logout: 'Logout',
-    // Settings
     settings_title: 'Settings',
     settings_darkMode: 'Dark Mode',
     settings_darkModeDesc: 'Easier on the eyes in low light',
@@ -105,9 +85,7 @@ export const translations = {
     settings_loginRegister: 'Login / Register',
     settings_aboutUs: 'About Us',
     settings_helpSupport: 'Help & Support',
-    settings_exchangePolicy: 'Return & Exchange Policy',
     settings_profile: 'Profile',
-    // Order status
     status_orderPlaced: 'Order Placed',
     status_paymentConfirmed: 'Payment Confirmed',
     status_processing: 'Processing',
@@ -116,12 +94,10 @@ export const translations = {
     status_outForDelivery: 'Out for Delivery',
     status_delivered: 'Delivered',
     status_cancelled: 'Cancelled',
-    // Membership
     membership_gold: 'Gold',
     membership_platinum: 'Platinum',
     membership_subscribe: 'Subscribe',
     membership_active: 'Active',
-    // Coupons page
     coupons_title: 'Coupons & Rewards',
     coupons_available: 'Available Coupons',
     coupons_empty: 'No active coupons right now — check back soon.',
@@ -131,7 +107,6 @@ export const translations = {
     coupons_expires: 'Expires',
     coupons_offPercent: 'off',
     coupons_flatOff: 'off',
-    // Payment methods page
     payment_title: 'Payment Methods',
     payment_savedCards: 'Saved Cards',
     payment_addCard: 'Add a Card',
@@ -164,7 +139,6 @@ export const translations = {
     footer_faq: 'सामान्य प्रश्न',
     footer_sizeGuide: 'साइज़ गाइड',
     footer_shippingPolicy: 'शिपिंग नीति',
-    footer_exchangePolicy: 'एक्सचेंज नीति',
     footer_contactUs: 'संपर्क करें',
     footer_privacyPolicy: 'गोपनीयता नीति',
     footer_termsConditions: 'नियम व शर्तें',
@@ -218,7 +192,6 @@ export const translations = {
     settings_loginRegister: 'लॉग इन / रजिस्टर करें',
     settings_aboutUs: 'हमारे बारे में',
     settings_helpSupport: 'सहायता और समर्थन',
-    settings_exchangePolicy: 'वापसी और एक्सचेंज नीति',
     settings_profile: 'प्रोफ़ाइल',
     status_orderPlaced: 'ऑर्डर दिया गया',
     status_paymentConfirmed: 'भुगतान की पुष्टि हुई',
@@ -273,7 +246,6 @@ export const translations = {
     footer_faq: 'ਅਕਸਰ ਪੁੱਛੇ ਸਵਾਲ',
     footer_sizeGuide: 'ਸਾਈਜ਼ ਗਾਈਡ',
     footer_shippingPolicy: 'ਸ਼ਿਪਿੰਗ ਨੀਤੀ',
-    footer_exchangePolicy: 'ਵਟਾਂਦਰਾ ਨੀਤੀ',
     footer_contactUs: 'ਸੰਪਰਕ ਕਰੋ',
     footer_privacyPolicy: 'ਗੋਪਨੀਯਤਾ ਨੀਤੀ',
     footer_termsConditions: 'ਨਿਯਮ ਅਤੇ ਸ਼ਰਤਾਂ',
@@ -327,7 +299,6 @@ export const translations = {
     settings_loginRegister: 'ਲੌਗ ਇਨ / ਰਜਿਸਟਰ ਕਰੋ',
     settings_aboutUs: 'ਸਾਡੇ ਬਾਰੇ',
     settings_helpSupport: 'ਸਹਾਇਤਾ ਅਤੇ ਸਮਰਥਨ',
-    settings_exchangePolicy: 'ਵਾਪਸੀ ਅਤੇ ਵਟਾਂਦਰਾ ਨੀਤੀ',
     settings_profile: 'ਪ੍ਰੋਫਾਈਲ',
     status_orderPlaced: 'ਆਰਡਰ ਦਿੱਤਾ ਗਿਆ',
     status_paymentConfirmed: 'ਭੁਗਤਾਨ ਦੀ ਪੁਸ਼ਟੀ ਹੋਈ',
@@ -382,7 +353,6 @@ export const translations = {
     footer_faq: 'সাধারণ প্রশ্ন',
     footer_sizeGuide: 'সাইজ গাইড',
     footer_shippingPolicy: 'শিপিং নীতি',
-    footer_exchangePolicy: 'বিনিময় নীতি',
     footer_contactUs: 'যোগাযোগ করুন',
     footer_privacyPolicy: 'গোপনীয়তা নীতি',
     footer_termsConditions: 'শর্তাবলী',
@@ -436,7 +406,6 @@ export const translations = {
     settings_loginRegister: 'লগ ইন / রেজিস্টার করুন',
     settings_aboutUs: 'আমাদের সম্পর্কে',
     settings_helpSupport: 'সাহায্য ও সহায়তা',
-    settings_exchangePolicy: 'ফেরত ও বিনিময় নীতি',
     settings_profile: 'প্রোফাইল',
     status_orderPlaced: 'অর্ডার করা হয়েছে',
     status_paymentConfirmed: 'পেমেন্ট নিশ্চিত হয়েছে',
@@ -491,7 +460,6 @@ export const translations = {
     footer_faq: 'વારંવાર પુછાતા પ્રશ્નો',
     footer_sizeGuide: 'સાઈઝ ગાઈડ',
     footer_shippingPolicy: 'શિપિંગ નીતિ',
-    footer_exchangePolicy: 'એક્સચેન્જ નીતિ',
     footer_contactUs: 'સંપર્ક કરો',
     footer_privacyPolicy: 'ગોપનીયતા નીતિ',
     footer_termsConditions: 'નિયમો અને શરતો',
@@ -545,7 +513,6 @@ export const translations = {
     settings_loginRegister: 'લોગ ઇન / રજિસ્ટર કરો',
     settings_aboutUs: 'અમારા વિશે',
     settings_helpSupport: 'સહાય અને સપોર્ટ',
-    settings_exchangePolicy: 'રિટર્ન અને એક્સચેન્જ નીતિ',
     settings_profile: 'પ્રોફાઇલ',
     status_orderPlaced: 'ઓર્ડર આપ્યો',
     status_paymentConfirmed: 'ચુકવણીની પુષ્ટિ થઈ',
@@ -600,7 +567,6 @@ export const translations = {
     footer_faq: 'அடிக்கடி கேட்கப்படும் கேள்விகள்',
     footer_sizeGuide: 'சைஸ் கையேடு',
     footer_shippingPolicy: 'ஷிப்பிங் கொள்கை',
-    footer_exchangePolicy: 'பரிமாற்றக் கொள்கை',
     footer_contactUs: 'எங்களை தொடர்பு கொள்ள',
     footer_privacyPolicy: 'தனியுரிமைக் கொள்கை',
     footer_termsConditions: 'விதிமுறைகள் & நிபந்தனைகள்',
@@ -654,7 +620,6 @@ export const translations = {
     settings_loginRegister: 'உள்நுழை / பதிவு செய்',
     settings_aboutUs: 'எங்களைப் பற்றி',
     settings_helpSupport: 'உதவி & ஆதரவு',
-    settings_exchangePolicy: 'திரும்பப்பெறல் & பரிமாற்றக் கொள்கை',
     settings_profile: 'சுயவிவரம்',
     status_orderPlaced: 'ஆர்டர் செய்யப்பட்டது',
     status_paymentConfirmed: 'கட்டணம் உறுதி செய்யப்பட்டது',
@@ -691,9 +656,6 @@ export function translate(language, key) {
   return translations[language]?.[key] ?? translations.en[key] ?? key;
 }
 
-// Maps the backend's literal Order.orderStatus strings (English, fixed
-// values — see dezire-backend/models/Order.js) to a translation key. Used
-// anywhere a raw order status needs to render in the shopper's language.
 const ORDER_STATUS_KEYS = {
   'Order Placed': 'status_orderPlaced',
   'Payment Confirmed': 'status_paymentConfirmed',

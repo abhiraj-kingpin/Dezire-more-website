@@ -3,16 +3,6 @@ const router = express.Router();
 const { requireAuth } = require('./auth');
 const razorpayCustomer = require('../services/razorpayCustomer');
 
-// GET /api/payment-methods — lists this customer's saved payment methods.
-// Two modes, chosen automatically based on whether Razorpay is configured
-// (same graceful-degradation pattern as the courier integrations):
-//   - 'razorpay': real tokenized cards, fetched live from Razorpay. Cards
-//     land here as a side effect of checking out with "Save this card"
-//     ticked — there's no separate add-a-card-without-paying flow (see
-//     services/razorpayCustomer.js for why).
-//   - 'reference': a lightweight, admin-free fallback so the page still
-//     works before Razorpay is live — customers can jot down a label/last 4
-//     for their own reference. Never charged automatically.
 router.get('/', requireAuth, async (req, res) => {
   try {
     if (!razorpayCustomer.isConfigured()) {
@@ -36,11 +26,6 @@ router.get('/', requireAuth, async (req, res) => {
   }
 });
 
-// GET /api/payment-methods/customer-id — used by checkout to attach the
-// shopper's Razorpay customer id + save=1 to the payment, which is what
-// actually tokenizes the card at payment time (see Navbar.jsx). Returns
-// { customerId: null } rather than erroring when Razorpay isn't configured,
-// so checkout can just skip offering "Save this card" in that case.
 router.get('/customer-id', requireAuth, async (req, res) => {
   try {
     if (!razorpayCustomer.isConfigured()) return res.json({ customerId: null });
@@ -51,14 +36,10 @@ router.get('/customer-id', requireAuth, async (req, res) => {
     }
     res.json({ customerId: customer.id });
   } catch (err) {
-    // Non-fatal from checkout's point of view — just means "Save this
-    // card" won't be offered this time, not that payment itself fails.
     res.json({ customerId: null });
   }
 });
 
-// POST /api/payment-methods — reference mode only (Razorpay cards can only
-// arrive via a real checkout payment, not this endpoint).
 router.post('/', requireAuth, async (req, res) => {
   try {
     if (razorpayCustomer.isConfigured()) {
@@ -76,7 +57,6 @@ router.post('/', requireAuth, async (req, res) => {
   }
 });
 
-// PATCH /api/payment-methods/:id/default — reference mode only.
 router.patch('/:id/default', requireAuth, async (req, res) => {
   try {
     if (razorpayCustomer.isConfigured()) {
@@ -96,7 +76,6 @@ router.patch('/:id/default', requireAuth, async (req, res) => {
   }
 });
 
-// DELETE /api/payment-methods/:id — works in both modes.
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
     if (!razorpayCustomer.isConfigured()) {

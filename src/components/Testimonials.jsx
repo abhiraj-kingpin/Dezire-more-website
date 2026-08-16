@@ -31,9 +31,6 @@ function ReviewCard({ review }) {
   );
 }
 
-// Managed from the admin panel's "Client Love" page — previously nine
-// testimonials hardcoded directly here, meaning updating one meant editing
-// source code and redeploying.
 function Testimonials() {
   const [reviews, setReviews] = useState([]);
 

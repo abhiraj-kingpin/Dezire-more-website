@@ -2,9 +2,6 @@ import { Link } from 'react-router-dom';
 import ProductCard from './ProductCard';
 import { useTag } from '../hooks/useProducts';
 
-// A simple horizontal-scroll product row for homepage sections (Bestsellers,
-// Staff Picks) — deliberately not a re-implementation of the New Arrivals
-// marquee's auto-scroll carousel, just a straightforward "browse and view all".
 function HomeProductRow({ title, tag, viewAllLink, limit = 8 }) {
   const { products, loading } = useTag(tag, { limit });
 

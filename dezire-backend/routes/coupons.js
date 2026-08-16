@@ -4,10 +4,6 @@ const Coupon = require('../models/Coupon');
 const adminAuth = require('../middleware/auth');
 const { logAdminAction } = require('../utils/auditLog');
 
-// Computes the discount a coupon yields for a given subtotal, or an error
-// message if it can't be applied. Shared by the checkout validate endpoint
-// and order creation, so a client can never sneak through a stale/expired
-// discount that was only checked once earlier in the flow.
 async function resolveCoupon(code, subtotal) {
   if (!code) return { error: null, discount: 0, coupon: null };
 
@@ -26,7 +22,6 @@ async function resolveCoupon(code, subtotal) {
   return { error: null, discount, coupon };
 }
 
-// POST /api/coupons/validate — checkout calls this live as the customer types a code
 router.post('/validate', async (req, res) => {
   try {
     const { code, subtotal } = req.body;
@@ -39,12 +34,6 @@ router.post('/validate', async (req, res) => {
   }
 });
 
-// GET /api/coupons/active — public listing for the storefront's "Coupons &
-// Rewards" account page. Deliberately excludes usedCount (internal
-// bookkeeping, not shopper-facing) and coupons that are inactive, expired,
-// or already at their usage cap — same eligibility rules resolveCoupon()
-// enforces at checkout, so nothing shown here can fail to apply for those
-// reasons (minOrderValue can still make it inapplicable to a given cart).
 router.get('/active', async (req, res) => {
   try {
     const now = new Date();
@@ -68,7 +57,6 @@ router.get('/active', async (req, res) => {
   }
 });
 
-// ── Admin ────────────────────────────────────────────────────────────────────
 
 router.get('/admin/all', adminAuth, async (req, res) => {
   try {

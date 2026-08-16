@@ -7,8 +7,6 @@ function ProductSlider({ products }) {
   const resumeTimeoutRef = useRef(null);
   const recenterTimeoutRef = useRef(null);
 
-  // Triple the list: buffer on both sides so manual clicks never
-  // run out of track to scroll into.
   const loopProducts = [...products, ...products, ...products];
 
   const getSetWidth = () => {
@@ -36,7 +34,6 @@ function ProductSlider({ products }) {
       intervalRef.current = null;
     }
 
-    // Start centred in the middle copy so there's room to move either way
     const setWidth = getSetWidth();
     if (setWidth && slider.scrollLeft < setWidth * 0.5) {
       slider.scrollLeft = setWidth;
@@ -68,14 +65,8 @@ function ProductSlider({ products }) {
       if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
       if (recenterTimeoutRef.current) clearTimeout(recenterTimeoutRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fix: previously the auto-scroll interval kept running while the user
-  // was swiping/dragging the slider, fighting against the touch scroll and
-  // causing a "vibrating" / juddery feel instead of a smooth swipe. Now we
-  // pause auto-scroll the moment the user touches the slider, and only
-  // resume once their scroll gesture (including momentum) has settled.
   useEffect(() => {
     const slider = sliderRef.current;
     if (!slider) return;
@@ -88,8 +79,6 @@ function ProductSlider({ products }) {
       stopAutoScroll();
       if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
       if (settleTimeout) clearTimeout(settleTimeout);
-      // Fallback: if it turns out to be a tap/click rather than a drag
-      // (no scroll event follows), don't leave auto-scroll paused forever.
       settleTimeout = setTimeout(() => {
         userInteracting = false;
         resumeTimeoutRef.current = setTimeout(startAutoScroll, 1200);
@@ -102,7 +91,7 @@ function ProductSlider({ products }) {
     };
 
     const handleScroll = () => {
-      if (!userInteracting) return; // ignore auto-scroll's own scroll events
+      if (!userInteracting) return;
       if (settleTimeout) clearTimeout(settleTimeout);
       settleTimeout = setTimeout(() => {
         userInteracting = false;
@@ -121,7 +110,6 @@ function ProductSlider({ products }) {
       slider.removeEventListener('scroll', handleScroll);
       if (settleTimeout) clearTimeout(settleTimeout);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const scroll = (direction) => {

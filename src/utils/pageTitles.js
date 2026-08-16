@@ -20,16 +20,11 @@ const TITLES = {
   '/contact': 'Contact Us',
   '/size-guide': 'Size Guide',
   '/shipping-policy': 'Shipping Policy',
-  '/exchange-policy': 'Exchange Policy',
   '/privacy-policy': 'Privacy Policy',
   '/terms-conditions': 'Terms & Conditions',
   '/verify-email': 'Verify Your Email',
 };
 
-// Only for routes worth having Google/social-share show something distinct
-// from the homepage description — account/orders/verify-email are
-// private/utility pages excluded from robots.txt anyway, so they fall back
-// to the default rather than getting their own entry here.
 const DESCRIPTIONS = {
   '/': DEFAULT_DESCRIPTION,
   '/sarees': 'Shop premium sarees at Dezire More — Banarasi silk, chiffon, organza, and embroidered styles for every occasion.',
@@ -41,21 +36,15 @@ const DESCRIPTIONS = {
   '/new-arrivals': 'The latest drops from Dezire More — new sarees, dress materials, and accessories added every week.',
   '/membership': 'Join Dezire More Premium Membership for exclusive pricing, early access, and member-only perks.',
   '/our-story': 'The story behind Dezire More — crafting ethnic elegance for the modern Indian woman.',
-  '/faq': 'Answers to common questions about Dezire More orders, shipping, exchanges, and more.',
+  '/faq': 'Answers to common questions about Dezire More orders, shipping, and more.',
   '/help-support': 'Get help with your Dezire More order — contact our support team.',
   '/contact': 'Contact Dezire More — reach us via WhatsApp, email, or phone for any queries.',
   '/size-guide': 'Find your perfect fit with the Dezire More size guide.',
   '/shipping-policy': 'Dezire More shipping policy — delivery timelines, charges, and tracking information.',
-  '/exchange-policy': 'Dezire More exchange policy — hassle-free exchanges within 3 days of delivery.',
   '/privacy-policy': 'Dezire More privacy policy — how we collect, use, and protect your information.',
   '/terms-conditions': 'Dezire More terms & conditions of use.',
 };
 
-// Private/account-gated routes intentionally excluded from robots.txt —
-// no reason to spend effort giving them unique social-share copy.
-// /account/* is a prefix match since it's a nested route (/account/profile,
-// /account/addresses, etc.) — an exact match on '/account' alone stopped
-// covering any of them the moment those became real sub-routes.
 const NOINDEX_PATHS = new Set(['/orders', '/verify-email']);
 const NOINDEX_PREFIXES = ['/account'];
 
