@@ -158,6 +158,16 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
     if (naturalWidth && naturalHeight) setMainImgRatio(clampImageRatio(naturalWidth / naturalHeight));
   };
 
+  // Same measure-the-real-file, size-the-frame-to-match treatment as
+  // handleMainImgLoad above, for video — most product videos here are shot
+  // on a phone (commonly tall/portrait, unlike a DSLR's usual landscape),
+  // and the frame needs to match whichever orientation the actual file
+  // turns out to be, not assume one.
+  const handleMainVideoLoad = (e) => {
+    const { videoWidth, videoHeight } = e.target;
+    if (videoWidth && videoHeight) setMainImgRatio(clampImageRatio(videoWidth / videoHeight));
+  };
+
   useEffect(() => {
     if (!modalOpen) return;
     fetch(`${BASE}/products/${product.id}`)
@@ -411,7 +421,7 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
 
                 <div
                   className="pd-main-img-wrap"
-                  style={!isVideoActive && mainImgRatio ? { aspectRatio: mainImgRatio } : undefined}
+                  style={mainImgRatio ? { aspectRatio: mainImgRatio } : undefined}
                   onClick={isVideoActive ? undefined : openLightbox}
                   onTouchStart={isVideoActive ? undefined : handleGalleryTouchStart}
                   onTouchEnd={isVideoActive ? undefined : handleGalleryTouchEnd}
@@ -425,6 +435,7 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
                       muted
                       loop
                       playsInline
+                      onLoadedMetadata={handleMainVideoLoad}
                     />
                   ) : (
                     <>
