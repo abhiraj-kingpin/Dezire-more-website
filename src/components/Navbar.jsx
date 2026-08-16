@@ -528,6 +528,32 @@ function Navbar() {
     setCouponInput('');
   };
 
+  // Manual UPI orders start 'pending' — an admin confirms them from the
+  // Pending Verification tab once the payment actually lands (see
+  // PATCH /admin/:orderId/verify-payment, which also auto-creates the
+  // Delhivery shipment and sends the confirmation email/push). Rather than
+  // making the customer close this screen and come check My Orders later,
+  // poll the same public GET /orders/:id every few seconds while this
+  // screen is open and still pending, so it flips to "Payment Verified"
+  // live, with no action from the customer. Stops as soon as it's paid, or
+  // the screen is closed.
+  useEffect(() => {
+    if (!orderPlaced || !placedOrder || placedOrder.paymentStatus === 'paid') return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`${BASE}/orders/${placedOrder._id}`);
+        const data = await res.json();
+        if (res.ok && data.order?.paymentStatus === 'paid') {
+          setPlacedOrder(data.order);
+        }
+      } catch {
+        // A transient network hiccup here just means the next tick tries
+        // again — nothing to show the customer for a single failed poll.
+      }
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [orderPlaced, placedOrder?._id, placedOrder?.paymentStatus]);
+
   const payWithRazorpay = async (order) => {
     await loadRazorpayScript();
 
@@ -1120,8 +1146,20 @@ function Navbar() {
           <div className="checkout-modal checkout-modal-narrow" onClick={e => e.stopPropagation()}>
             <div className="order-success">
               <div className="order-success-icon">✓</div>
-              <h3 className="order-success-title">Order Placed Successfully!</h3>
-              <p className="order-success-sub">Thank you, {placedOrder.customerName.split(' ')[0]} — we're preparing your order.</p>
+              {placedOrder.paymentStatus === 'paid' ? (
+                <>
+                  <h3 className="order-success-title">Thank you for ordering!</h3>
+                  <p className="order-success-sub">
+                    It's our pleasure to serve you.<br />
+                    Hope you order again! 💚
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h3 className="order-success-title">Order Placed Successfully!</h3>
+                  <p className="order-success-sub">Thank you, {placedOrder.customerName.split(' ')[0]} — we're preparing your order.</p>
+                </>
+              )}
 
               <div className="order-success-card">
                 <div className="order-success-row"><span>Order ID</span><span>{placedOrder.orderNumber}</span></div>
@@ -1129,9 +1167,14 @@ function Navbar() {
                 <div className="order-success-row">
                   <span>Payment Status</span>
                   <span className={placedOrder.paymentStatus === 'paid' ? 'order-status-paid' : 'order-status-pending'}>
-                    {placedOrder.paymentStatus === 'paid' ? 'Paid' : 'Pending Verification'}
+                    {placedOrder.paymentStatus === 'paid' ? '✓ Payment Verified' : 'Pending Verification'}
                   </span>
                 </div>
+                {placedOrder.paymentStatus !== 'paid' && (
+                  <p className="order-success-note" style={{ marginTop: '4px' }}>
+                    We're watching for your payment automatically — this updates on its own the moment it's confirmed, usually within a few hours. No need to refresh or contact us.
+                  </p>
+                )}
                 <div className="order-success-row"><span>Amount</span><span>₹{placedOrder.total.toLocaleString('en-IN')}</span></div>
                 {placedOrder.estimatedDelivery && (
                   <div className="order-success-row">
