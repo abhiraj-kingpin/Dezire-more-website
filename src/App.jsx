@@ -29,7 +29,6 @@ import VerifyEmail from './components/VerifyEmail';
 import NotFound from './components/NotFound';
 import SizeGuide from './components/SizeGuide';
 import ShippingPolicy from './components/ShippingPolicy';
-import ExchangePolicy from './components/ExchangePolicy';
 import ContactUs from './components/ContactUs';
 import FAQ from './components/FAQ';
 import HelpSupport from './components/HelpSupport';
@@ -84,7 +83,6 @@ function App() {
                     {/* Help Pages */}
                     <Route path="size-guide" element={<SizeGuide />} />
                     <Route path="shipping-policy" element={<ShippingPolicy />} />
-                    <Route path="exchange-policy" element={<ExchangePolicy />} />
                     <Route path="contact" element={<ContactUs />} />
                     <Route path="faq" element={<FAQ />} />
                     <Route path="help-support" element={<HelpSupport />} />

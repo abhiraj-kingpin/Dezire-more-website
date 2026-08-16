@@ -17,6 +17,11 @@ const orderSchema = new mongoose.Schema(
         quantity:  { type: Number, required: true, min: 1 },
         size:      { type: String },
         color:     { type: String },
+        // GST — computed server-side at order creation (see routes/orders.js
+        // GST_RATE_THRESHOLD), never trusted from the client: 5% below
+        // ₹2,499, 18% at/above it, based on this item's own unit price.
+        gstRate:   { type: Number },
+        gstAmount: { type: Number },
       },
     ],
 
@@ -28,6 +33,16 @@ const orderSchema = new mongoose.Schema(
     },
 
     subtotal:       { type: Number, required: true },
+    // GST total and its 5%/18% split — see the items[].gstRate/gstAmount
+    // comment above for how each item's rate is picked. gst5+gst18 always
+    // equals totalGST; kept as two fields (rather than derived on read)
+    // since the admin GST report (Section 10.2 of the spec) and the emailed
+    // invoice both need the split, not just the sum.
+    totalGST:       { type: Number, required: true, default: 0 },
+    gstBreakdown: {
+      gst5:  { type: Number, default: 0 },
+      gst18: { type: Number, default: 0 },
+    },
     deliveryCharge: { type: Number, required: true, default: 0 },
     total:          { type: Number, required: true },
     couponCode:     { type: String },
@@ -35,12 +50,11 @@ const orderSchema = new mongoose.Schema(
 
     paymentMethod: {
       type: String,
-      // 'Pay Online (QR)'/'Online Banking' kept valid only so historical
-      // orders placed before Razorpay still pass validation on updates.
-      // 'UPI' is frontend-selectable again as the manual bank-transfer
-      // option (scan QR / pay to a UPI ID, customer enters a reference,
-      // admin confirms manually) -- a zero-gateway-fee alternative to
-      // Razorpay, admin-configured via PaymentSettings.
+      // COD is no longer offered at checkout (UPI-only, via Razorpay — see
+      // POST / below) but stays a valid enum value so historical COD orders
+      // still pass validation on updates. Same for 'Pay Online (QR)' /
+      // 'Online Banking' / manual 'UPI' — all superseded by Razorpay, kept
+      // valid only for orders placed before/during each transition.
       enum: ['Pay Online (QR)', 'UPI', 'Online Banking', 'Razorpay', 'COD'],
       required: true,
     },
@@ -86,9 +100,9 @@ const orderSchema = new mongoose.Schema(
     },
 
     estimatedDelivery: { type: Date },
-    // Set the moment an admin marks the order Delivered — the exchange
-    // window (3 days, per the site's Exchange Policy) is measured from this,
-    // not from createdAt/updatedAt which change for unrelated reasons.
+    // Set the moment an admin marks the order Delivered — kept separate
+    // from createdAt/updatedAt (which change for unrelated reasons) so the
+    // order timeline can show the real delivery date.
     deliveredAt: { type: Date },
 
     isGift:      { type: Boolean, default: false },

@@ -1,5 +1,3 @@
-import { Link } from 'react-router-dom';
-
 function TermsConditions() {
   return (
     <div className="policy-page">
@@ -31,11 +29,6 @@ function TermsConditions() {
             <li>We reserve the right to cancel any order suspected of fraud or error.</li>
             <li>Estimated delivery timelines are indicative and may vary due to courier or logistical delays.</li>
           </ul>
-        </div>
-
-        <div className="policy-note-block">
-          <h2>Exchanges</h2>
-          <p>All exchanges are governed by our <Link to="/exchange-policy">Exchange Policy</Link>. We currently offer exchanges only — refunds are not available except where an order is cancelled by us.</p>
         </div>
 
         <div className="policy-note-block">

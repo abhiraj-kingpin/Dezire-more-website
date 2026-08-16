@@ -103,16 +103,15 @@ function Navbar() {
   const [verifyError, setVerifyError] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
   const [pendingAddress, setPendingAddress] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState('');
-  const [paymentReferenceInput, setPaymentReferenceInput] = useState('');
-  const [amountPaidInput, setAmountPaidInput] = useState('');
+  // Checkout is UPI-only — the free manual QR flow (scan/pay, admin
+  // confirms from the Pending Verification tab), not Razorpay. Razorpay is
+  // on hold (its checkout code below — payWithRazorpay/loadRazorpayScript —
+  // is left in place, just unused, so it's a one-line swap to bring back
+  // later) since it charges a per-transaction gateway fee and this manual
+  // flow doesn't. COD is gone entirely. Nothing to choose between anymore,
+  // so this is a constant rather than selectable state.
+  const paymentMethod = 'UPI';
   const [upiSettings, setUpiSettings] = useState({ upiId: '' });
-  // "Save this card" at checkout — only offered once Razorpay is actually
-  // configured (razorpayCustomerId comes back null otherwise, same
-  // graceful-degradation as the UPI option above) and the shopper is
-  // logged in, since saved cards live on their account.
-  const [razorpayCustomerId, setRazorpayCustomerId] = useState(null);
-  const [saveCard, setSaveCard] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [lastOrderId, setLastOrderId] = useState('');
   const [readyToWearOpen, setReadyToWearOpen] = useState(false);
@@ -299,7 +298,27 @@ function Navbar() {
     if (defaultAddress) applyAddress(defaultAddress);
   }, [user]);
 
-  const DELIVERY_CHARGE = cartTotal >= 1899 ? 0 : 99;
+  // Free shipping at/above ₹2,500 of cart subtotal, flat ₹99 below it — must
+  // match FREE_SHIPPING_THRESHOLD/SHIPPING_CHARGE in dezire-backend/routes/
+  // orders.js, which is what actually charges it; this is just the checkout
+  // preview shown before the order posts.
+  const FREE_SHIPPING_THRESHOLD = 2500;
+  const DELIVERY_CHARGE = cartTotal >= FREE_SHIPPING_THRESHOLD ? 0 : 99;
+
+  // GST preview — mirrors gstRateFor()/computeBilling() in the same backend
+  // file: 5% below ₹2,499 per item's own unit price, 18% at/above it,
+  // applied before any coupon discount. The backend recomputes this from
+  // scratch and is the actual source of truth for what gets charged; this
+  // only drives what's shown on screen before the order posts.
+  const GST_RATE_THRESHOLD = 2499;
+  const gstRateFor = (price) => (price >= GST_RATE_THRESHOLD ? 18 : 5);
+  const cartGstBreakdown = cart.reduce((acc, p) => {
+    const rate = gstRateFor(p.price);
+    const amount = Math.round(p.price * p.quantity * rate) / 100;
+    if (rate === 18) acc.gst18 += amount; else acc.gst5 += amount;
+    return acc;
+  }, { gst5: 0, gst18: 0 });
+  const cartGST = cartGstBreakdown.gst5 + cartGstBreakdown.gst18;
 
   const [couponInput, setCouponInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null); // { code, discount }
@@ -307,7 +326,7 @@ function Navbar() {
   const [couponLoading, setCouponLoading] = useState(false);
 
   const discountAmount = appliedCoupon?.discount || 0;
-  const finalTotal = Math.max(0, cartTotal - discountAmount) + DELIVERY_CHARGE;
+  const finalTotal = Math.max(0, cartTotal - discountAmount) + cartGST + DELIVERY_CHARGE;
   const cartSavings = cart.reduce((sum, p) => sum + Math.max(0, (p.originalPrice || p.price) - p.price) * p.quantity, 0);
 
   const handleApplyCoupon = async () => {
@@ -452,18 +471,14 @@ function Navbar() {
     }
   }, [pendingAddress, pendingEmail]);
 
-  // Powers the "Pay via UPI" checkout option — fetched at mount rather than
+  // Powers the "Pay via UPI" QR at checkout — fetched at mount rather than
   // on cart open, since it rarely changes and this way it's already
-  // available the instant checkout renders. The QR shown at checkout is
-  // generated fresh from this UPI ID plus the real order total (see the
-  // upiLink built below), not a static image. The option only shows up once
-  // an admin has set a UPI ID, so an unconfigured site just silently has one
-  // less option — which used to also silently happen for a CONFIGURED site
-  // if this one-shot, un-retried fetch landed while Render's free-tier
-  // backend was still waking from a cold start (30-50s) and it never got a
-  // second chance. Retries with backoff, plus a final attempt right when
-  // checkout actually opens (by then other API calls have almost certainly
-  // already woken the backend up).
+  // available the instant checkout renders. The QR is generated fresh from
+  // this UPI ID plus the real order total (see the upi:// link built in the
+  // payment section below), not a static image. Retries with backoff, plus
+  // a final attempt right when checkout actually opens, so a one-shot fetch
+  // landing while Render's free-tier backend is still waking from a cold
+  // start (30-50s) doesn't silently leave checkout with no way to pay.
   const fetchUpiSettings = () => {
     fetch(`${BASE}/payment-settings`)
       .then(res => res.json())
@@ -480,19 +495,6 @@ function Navbar() {
     if (paymentStep && !upiSettings.upiId) fetchUpiSettings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paymentStep]);
-
-  // Looked up once checkout actually opens (not on every render) so a
-  // logged-in shopper sees the "Save this card" option the moment they pick
-  // Razorpay — silently absent rather than erroring if Razorpay isn't
-  // configured yet or the lookup fails, same spirit as fetchUpiSettings.
-  useEffect(() => {
-    if (!paymentStep || !user) return;
-    fetch(`${BASE}/payment-methods/customer-id`, { headers: authHeaders() })
-      .then(res => res.json())
-      .then(data => setRazorpayCustomerId(data.customerId || null))
-      .catch(() => setRazorpayCustomerId(null));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paymentStep, user]);
 
   const handleResendVerification = async () => {
     if (resendCooldown > 0) return;
@@ -544,17 +546,18 @@ function Navbar() {
       setOrderError('Please enter a valid email address for your order confirmation.');
       return;
     }
-    if (paymentMethod === 'UPI' && !paymentReferenceInput.trim()) {
-      setOrderError('Please enter the UPI transaction reference / UTR number after paying.');
-      return;
-    }
-    if (paymentMethod === 'UPI' && !(Number(amountPaidInput) > 0)) {
-      setOrderError('Please enter the amount you paid.');
+    if (!upiSettings.upiId) {
+      setOrderError('Payment isn\'t available right now — please try again shortly.');
       return;
     }
 
     setIsPlacingOrder(true);
     try {
+      // subtotal/GST/deliveryCharge/total aren't sent — the backend computes
+      // all of that itself from `items` (see computeBilling() in
+      // routes/orders.js), so what's shown here is always just a preview of
+      // what the server is about to independently charge, never the source
+      // of truth for it.
       const res = await fetch(`${BASE}/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
@@ -577,23 +580,19 @@ function Navbar() {
             state: checkoutState.trim(),
             pin: checkoutPin.trim(),
           },
-          subtotal: cartTotal,
-          deliveryCharge: DELIVERY_CHARGE,
-          total: finalTotal,
           couponCode: appliedCoupon?.code,
           paymentMethod,
-          paymentReference: paymentMethod === 'UPI' ? paymentReferenceInput.trim() : undefined,
-          amountPaid: paymentMethod === 'UPI' ? Number(amountPaidInput) : undefined,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not place your order. Please try again.');
 
-      if (paymentMethod === 'Razorpay') {
-        await payWithRazorpay(data.order);
-      } else {
-        finishOrderSuccess(data.order);
-      }
+      // No gateway redirect for the manual-UPI flow — the order is placed
+      // straight away (paymentStatus 'pending') and an admin confirms it
+      // from the Pending Verification tab once the payment actually lands
+      // in the account. (Razorpay's equivalent step, payWithRazorpay below,
+      // is on hold — not called from here right now.)
+      finishOrderSuccess(data.order);
     } catch (err) {
       setOrderError(err.message);
     } finally {
@@ -608,10 +607,13 @@ function Navbar() {
     clearCart();
     setAppliedCoupon(null);
     setCouponInput('');
-    setPaymentReferenceInput('');
-    setAmountPaidInput('');
   };
 
+  // ON HOLD — not called from handlePlaceOrder right now (manual UPI is the
+  // live checkout path instead, see above). Left fully intact, backend
+  // routes and all, so switching back is just swapping finishOrderSuccess()
+  // for a call to this in handlePlaceOrder again.
+  //
   // The order already exists at this point (created just above, status
   // 'pending') — this only opens Razorpay's checkout for it and shows the
   // success screen once the payment signature is verified server-side. If
@@ -640,14 +642,12 @@ function Navbar() {
           email: checkoutEmail.trim(),
           contact: checkoutPhone.trim(),
         },
-        // Tokenizes the card being used right now onto this shopper's
-        // Razorpay customer record — that's the only way a card ever lands
-        // on the Payment Methods account page (see razorpayCustomer.js for
-        // why there's no separate "add a card" flow). Both are omitted
-        // entirely (not just false) when the checkbox is off or the
-        // customer id lookup came back empty, since Razorpay treats a
-        // present-but-falsy customer_id as an error rather than "skip this".
-        ...(saveCard && razorpayCustomerId ? { customer_id: razorpayCustomerId, save: 1 } : {}),
+        // Checkout is UPI-only — restricts the widget itself to the UPI
+        // block so card/netbanking/wallet/pay-later/EMI never appear as
+        // options, rather than relying on there being no other choice
+        // upstream. (Card-saving, previously offered here, doesn't apply to
+        // UPI and was removed along with the card/netbanking methods.)
+        method: { upi: true, card: false, netbanking: false, wallet: false, paylater: false, emi: false },
         theme: { color: '#1e3a2f' },
         handler: async (response) => {
           try {
@@ -1028,16 +1028,24 @@ function Navbar() {
                       {DELIVERY_CHARGE === 0 ? 'FREE' : `₹${DELIVERY_CHARGE}`}
                     </span>
                   </div>
-                  <div className="cm-summary-row">
-                    <span>Tax</span>
-                    <span>Included</span>
-                  </div>
+                  {cartGstBreakdown.gst5 > 0 && (
+                    <div className="cm-summary-row">
+                      <span>GST (5%)</span>
+                      <span>₹{cartGstBreakdown.gst5.toLocaleString('en-IN')}</span>
+                    </div>
+                  )}
+                  {cartGstBreakdown.gst18 > 0 && (
+                    <div className="cm-summary-row">
+                      <span>GST (18%)</span>
+                      <span>₹{cartGstBreakdown.gst18.toLocaleString('en-IN')}</span>
+                    </div>
+                  )}
                   <div className="cm-summary-row cm-delivery-estimate-row">
                     <span>Estimated Delivery</span>
                     <span>{estimatedDeliveryDate}</span>
                   </div>
                   {DELIVERY_CHARGE > 0 && (
-                    <p className="cart-free-msg cm-free-msg">Add ₹{(1899 - cartTotal).toLocaleString('en-IN')} more for free delivery!</p>
+                    <p className="cart-free-msg cm-free-msg">Add ₹{(FREE_SHIPPING_THRESHOLD - cartTotal).toLocaleString('en-IN')} more for free delivery!</p>
                   )}
 
                   <div className="cm-coupon-block">
@@ -1104,7 +1112,7 @@ function Navbar() {
                 </div>
                 <div className="cm-trust-item">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="7.5" cy="18" r="1.5"/><circle cx="17.5" cy="18" r="1.5"/></svg>
-                  <div><b>Free Shipping</b><small>On orders above ₹1899</small></div>
+                  <div><b>Free Shipping</b><small>On orders above ₹{FREE_SHIPPING_THRESHOLD.toLocaleString('en-IN')}</small></div>
                 </div>
               </div>
             )}
@@ -1144,16 +1152,28 @@ function Navbar() {
                     <span>₹{(p.price * p.quantity).toLocaleString('en-IN')}</span>
                   </div>
                 ))}
-                <div className="payment-item">
-                  <span>Delivery</span>
-                  <span className={DELIVERY_CHARGE === 0 ? 'cart-free' : ''}>{DELIVERY_CHARGE === 0 ? 'FREE' : `₹${DELIVERY_CHARGE}`}</span>
-                </div>
+                {cartGstBreakdown.gst5 > 0 && (
+                  <div className="payment-item">
+                    <span>GST (5%)</span>
+                    <span>₹{cartGstBreakdown.gst5.toLocaleString('en-IN')}</span>
+                  </div>
+                )}
+                {cartGstBreakdown.gst18 > 0 && (
+                  <div className="payment-item">
+                    <span>GST (18%)</span>
+                    <span>₹{cartGstBreakdown.gst18.toLocaleString('en-IN')}</span>
+                  </div>
+                )}
                 {discountAmount > 0 && (
                   <div className="payment-item">
                     <span>Coupon ({appliedCoupon.code})</span>
                     <span className="cart-free">−₹{discountAmount.toLocaleString('en-IN')}</span>
                   </div>
                 )}
+                <div className="payment-item">
+                  <span>Delivery</span>
+                  <span className={DELIVERY_CHARGE === 0 ? 'cart-free' : ''}>{DELIVERY_CHARGE === 0 ? 'FREE' : `₹${DELIVERY_CHARGE}`}</span>
+                </div>
                 <div className="payment-item payment-total">
                   <span>Total</span>
                   <span>₹{finalTotal.toLocaleString('en-IN')}</span>
@@ -1171,46 +1191,13 @@ function Navbar() {
               </div>
               <div className="payment-section">
                 <h4 className="payment-section-title">Payment Method</h4>
-                <div className="payment-methods">
-                  {[
-                    { key: 'Razorpay', label: 'Pay Online — Card / UPI / Netbanking', icon: 'card' },
-                    ...(upiSettings.upiId ? [{ key: 'UPI', label: 'Pay via UPI (Scan QR / UPI ID)', icon: 'upi' }] : []),
-                    { key: 'COD', label: 'Cash on Delivery', icon: 'cod' },
-                  ].map(({ key, label, icon }) => (
-                    <label key={key} className={`payment-method-card ${paymentMethod === key ? 'selected' : ''}`}>
-                      <input type="radio" name="payment" value={key} checked={paymentMethod === key} onChange={() => setPaymentMethod(key)} style={{ display: 'none' }} />
-                      <span className="payment-method-icon">
-                        {icon === 'card' && (
-                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-                        )}
-                        {icon === 'upi' && (
-                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="14" y1="14" x2="21" y2="14"/><line x1="14" y1="18" x2="21" y2="18"/><line x1="17" y1="14" x2="17" y2="21"/></svg>
-                        )}
-                        {icon === 'cod' && (
-                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></svg>
-                        )}
-                      </span>
-                      <span>{label}</span>
-                      {paymentMethod === key && <span className="payment-check">✓</span>}
-                    </label>
-                  ))}
-                </div>
-                {paymentMethod === 'Razorpay' && razorpayCustomerId && (
-                  <label className="payment-save-card-row">
-                    <input type="checkbox" checked={saveCard} onChange={e => setSaveCard(e.target.checked)} />
-                    Save this card for faster checkout next time
-                  </label>
-                )}
-
-                {paymentMethod === 'Razorpay' && (
-                  <div className="payment-verify-block">
-                    <p className="payment-verify-hint">
-                      You'll be securely redirected to complete payment. Your order is confirmed automatically the moment payment succeeds — no reference number to enter.
-                    </p>
-                  </div>
-                )}
-
-                {paymentMethod === 'UPI' && (
+                {/* Manual UPI is the only option, so there's no selector —
+                    just the QR to pay with. No UTR/amount-paid fields: that
+                    used to be required here, which meant proving your own
+                    payment right after making it. Now the order just posts,
+                    and an admin confirms it from the Pending Verification
+                    tab once the payment actually lands in the account. */}
+                {upiSettings.upiId ? (
                   <div className="payment-upi-card">
                     <p className="payment-upi-amount">₹{finalTotal.toLocaleString('en-IN')}</p>
                     <div className="payment-upi-qr-box">
@@ -1222,30 +1209,17 @@ function Navbar() {
                     </div>
                     <p className="payment-upi-id">UPI ID: <strong>{upiSettings.upiId}</strong></p>
                     <p className="payment-verify-hint">
-                      Scan with any UPI app — the amount is pre-filled, but please don't change it. After paying, enter the transaction reference / UTR number and amount paid below; we'll confirm your payment manually, which can take a few hours.
+                      Scan with any UPI app — the amount is pre-filled. Once you've paid, tap Place Order below; we'll confirm your payment and notify you once it's verified, usually within a few hours.
                     </p>
-                    <input
-                      type="text"
-                      className="payment-input"
-                      placeholder="UPI transaction reference / UTR number"
-                      value={paymentReferenceInput}
-                      onChange={e => setPaymentReferenceInput(e.target.value)}
-                    />
-                    <input
-                      type="number"
-                      className="payment-input payment-input-spaced"
-                      placeholder="Amount paid"
-                      value={amountPaidInput}
-                      onChange={e => setAmountPaidInput(e.target.value)}
-                      onFocus={() => { if (!amountPaidInput) setAmountPaidInput(finalTotal.toFixed(2)); }}
-                    />
                   </div>
+                ) : (
+                  <p className="payment-error">Payment isn't available right now — please try again shortly.</p>
                 )}
               </div>
               {orderError && <p className="payment-error">{orderError}</p>}
               <button
                 className="cart-checkout-btn"
-                disabled={!paymentMethod || isPlacingOrder}
+                disabled={isPlacingOrder || !upiSettings.upiId}
                 onClick={handlePlaceOrder}
               >
                 {isPlacingOrder ? 'Placing Order…' : `Place Order — ₹${finalTotal.toLocaleString('en-IN')}`}
@@ -1261,9 +1235,6 @@ function Navbar() {
           setOrderPlaced(false);
           setCartOpen(false);
           setPaymentStep(false);
-          setPaymentMethod('');
-          setPaymentReferenceInput('');
-          setAmountPaidInput('');
           setPlacedOrder(null);
         }}>
           <div className="checkout-modal checkout-modal-narrow" onClick={e => e.stopPropagation()}>
@@ -1278,11 +1249,7 @@ function Navbar() {
                 <div className="order-success-row">
                   <span>Payment Status</span>
                   <span className={placedOrder.paymentStatus === 'paid' ? 'order-status-paid' : 'order-status-pending'}>
-                    {placedOrder.paymentStatus === 'paid'
-                      ? 'Paid'
-                      : placedOrder.paymentMethod === 'UPI'
-                        ? 'Pending Verification'
-                        : 'Pending (Pay on Delivery)'}
+                    {placedOrder.paymentStatus === 'paid' ? 'Paid' : 'Pending Verification'}
                   </span>
                 </div>
                 <div className="order-success-row"><span>Amount</span><span>₹{placedOrder.total.toLocaleString('en-IN')}</span></div>
@@ -1321,7 +1288,6 @@ function Navbar() {
                   setOrderPlaced(false);
                   setCartOpen(false);
                   setPaymentStep(false);
-                  setPaymentMethod('');
                   setPlacedOrder(null);
                 }}
               >

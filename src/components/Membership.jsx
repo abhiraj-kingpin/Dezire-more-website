@@ -9,7 +9,7 @@ const MEMBERSHIP_PLANS = [
   {
     tier: 'gold',
     name: 'Gold Membership',
-    price: 5000,
+    price: 20000,
     benefits: [
       'Exclusive member pricing',
       'Early access to new collections',
@@ -23,7 +23,7 @@ const MEMBERSHIP_PLANS = [
   {
     tier: 'platinum',
     name: 'Platinum Membership',
-    price: 10000,
+    price: 30000,
     benefits: [
       'Everything in Gold',
       'Higher discounts on selected collections',

@@ -15,13 +15,6 @@ const STATUS_STEPS = [
 ];
 const CANCELLABLE_STATUSES = ['Order Placed', 'Payment Confirmed', 'Processing'];
 const WHATSAPP_NUMBER = '918171761948';
-const EXCHANGE_WINDOW_DAYS = 3;
-const EXCHANGE_REASONS = [
-  { value: 'wrong-item', label: 'Wrong item delivered' },
-  { value: 'defective', label: 'Defective or damaged product received' },
-  { value: 'size-mismatch', label: 'Size mismatch (stitched items only)' },
-  { value: 'other', label: 'Other' },
-];
 const CANCEL_REASONS = [
   { value: '', label: 'Prefer not to say' },
   { value: 'ordered-by-mistake', label: 'Ordered by mistake' },
@@ -44,73 +37,6 @@ function groupOrdersByMonth(orders) {
     current.orders.push(order);
   }
   return groups;
-}
-
-function ExchangeModal({ order, onClose, onSubmitted }) {
-  const { authHeaders } = useAuth();
-  const { showToast } = useToast();
-  const [reason, setReason] = useState('wrong-item');
-  const [productId, setProductId] = useState(order.items[0]?.productId || '');
-  const [description, setDescription] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleSubmit = async () => {
-    if (!description.trim()) { setError('Please describe the issue.'); return; }
-    setSubmitting(true);
-    setError('');
-    try {
-      const res = await fetch(`${BASE}/exchanges`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify({ orderId: order._id, productId, reason, description: description.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not submit your exchange request');
-      onSubmitted(data.exchange);
-      showToast('Exchange request submitted', 'success');
-      onClose();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="checkout-overlay" onClick={onClose}>
-      <div className="checkout-modal checkout-modal-narrow" onClick={e => e.stopPropagation()}>
-        <h3 className="order-success-title" style={{ marginBottom: '4px' }}>Request an Exchange</h3>
-        <p className="order-success-sub" style={{ marginBottom: '18px' }}>Order {order.orderNumber}</p>
-
-        {order.items.length > 1 && (
-          <select className="payment-input payment-input-spaced" value={productId} onChange={e => setProductId(e.target.value)}>
-            {order.items.map((item, i) => (
-              <option key={i} value={item.productId}>{item.name}{item.size ? ` (${item.size})` : ''}</option>
-            ))}
-          </select>
-        )}
-
-        <select className="payment-input payment-input-spaced" value={reason} onChange={e => setReason(e.target.value)}>
-          {EXCHANGE_REASONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-        </select>
-
-        <textarea
-          className="payment-input payment-input-spaced review-textarea"
-          rows={4}
-          placeholder="Describe the issue in a few words…"
-          value={description}
-          onChange={e => setDescription(e.target.value)}
-        />
-
-        {error && <p className="payment-error">{error}</p>}
-
-        <button className="cart-checkout-btn" onClick={handleSubmit} disabled={submitting} style={{ marginTop: '14px' }}>
-          {submitting ? 'Submitting…' : 'Submit Exchange Request'}
-        </button>
-      </div>
-    </div>
-  );
 }
 
 function CancelModal({ order, onClose, onCancelled }) {
@@ -204,11 +130,10 @@ function DeleteOrderModal({ order, onClose, onDeleted }) {
   );
 }
 
-function OrderCard({ order, onCancelled, onDeleted, exchange, onExchangeSubmitted }) {
+function OrderCard({ order, onCancelled, onDeleted }) {
   const [expanded, setExpanded] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [exchangeModalOpen, setExchangeModalOpen] = useState(false);
   const { addToCart } = useCart();
   const { showToast } = useToast();
   const { language } = useLanguage();
@@ -216,9 +141,6 @@ function OrderCard({ order, onCancelled, onDeleted, exchange, onExchangeSubmitte
   const isCancelled = order.orderStatus === 'Cancelled';
   const stepIndex = STATUS_STEPS.indexOf(order.orderStatus);
   const canCancel = CANCELLABLE_STATUSES.includes(order.orderStatus);
-
-  const daysSinceDelivery = order.deliveredAt ? (Date.now() - new Date(order.deliveredAt).getTime()) / (1000 * 60 * 60 * 24) : null;
-  const canRequestExchange = order.orderStatus === 'Delivered' && daysSinceDelivery !== null && daysSinceDelivery <= EXCHANGE_WINDOW_DAYS;
 
   const handleReorder = (e) => {
     e.stopPropagation();
@@ -350,13 +272,6 @@ function OrderCard({ order, onCancelled, onDeleted, exchange, onExchangeSubmitte
           <div className="order-card-actions">
             <button onClick={(e) => { e.stopPropagation(); downloadInvoice(order); }}>Download Invoice</button>
             <button onClick={handleReorder}>Reorder</button>
-            {exchange ? (
-              <span className={`order-card-status ${exchange.status === 'Rejected' ? 'order-card-status-cancelled' : ''}`}>
-                Exchange: {exchange.status}
-              </span>
-            ) : canRequestExchange ? (
-              <button onClick={(e) => { e.stopPropagation(); setExchangeModalOpen(true); }}>Request Exchange</button>
-            ) : null}
             <button onClick={handleSupport}>Customer Support</button>
             {canCancel && (
               <button className="order-cancel-btn" onClick={(e) => { e.stopPropagation(); setCancelModalOpen(true); }}>
@@ -385,14 +300,6 @@ function OrderCard({ order, onCancelled, onDeleted, exchange, onExchangeSubmitte
           onDeleted={onDeleted}
         />
       )}
-
-      {exchangeModalOpen && (
-        <ExchangeModal
-          order={order}
-          onClose={() => setExchangeModalOpen(false)}
-          onSubmitted={(newExchange) => onExchangeSubmitted(order._id, newExchange)}
-        />
-      )}
     </div>
   );
 }
@@ -400,7 +307,6 @@ function OrderCard({ order, onCancelled, onDeleted, exchange, onExchangeSubmitte
 function MyOrders() {
   const { user, authHeaders } = useAuth();
   const [orders, setOrders]   = useState([]);
-  const [exchanges, setExchanges] = useState({}); // orderId -> exchange
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
 
@@ -411,14 +317,6 @@ function MyOrders() {
       .then(data => setOrders(data.data || []))
       .catch(() => setError('Could not load your orders right now.'))
       .finally(() => setLoading(false));
-    fetch(`${BASE}/exchanges`, { headers: authHeaders() })
-      .then(res => res.json())
-      .then(data => {
-        const map = {};
-        (data.data || []).forEach(ex => { map[ex.orderId] = ex; });
-        setExchanges(map);
-      })
-      .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.email]);
 
@@ -428,10 +326,6 @@ function MyOrders() {
 
   const handleDeleted = (orderId) => {
     setOrders(prev => prev.filter(o => o._id !== orderId));
-  };
-
-  const handleExchangeSubmitted = (orderId, newExchange) => {
-    setExchanges(prev => ({ ...prev, [orderId]: newExchange }));
   };
 
   if (!user) {
@@ -486,8 +380,6 @@ function MyOrders() {
                   order={order}
                   onCancelled={handleCancelled}
                   onDeleted={handleDeleted}
-                  exchange={exchanges[order._id]}
-                  onExchangeSubmitted={handleExchangeSubmitted}
                 />
               ))}
             </div>

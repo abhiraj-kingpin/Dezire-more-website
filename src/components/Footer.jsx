@@ -18,7 +18,6 @@ function Footer() {
             <li><Link to="/faq">{t('footer_faq')}</Link></li>
             <li><Link to="/size-guide">{t('footer_sizeGuide')}</Link></li>
             <li><Link to="/shipping-policy">{t('footer_shippingPolicy')}</Link></li>
-            <li><Link to="/exchange-policy">{t('footer_exchangePolicy')}</Link></li>
             <li><Link to="/contact">{t('footer_contactUs')}</Link></li>
             <li><Link to="/privacy-policy">{t('footer_privacyPolicy')}</Link></li>
             <li><Link to="/terms-conditions">{t('footer_termsConditions')}</Link></li>

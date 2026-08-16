@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 const LINKS = [
   { to: '/faq', icon: '❓', title: 'FAQ', desc: 'Quick answers to common questions' },
   { to: '/orders', icon: '📦', title: 'Track an Order', desc: 'Check your order status and delivery timeline' },
-  { to: '/exchange-policy', icon: '↺', title: 'Return & Exchange', desc: 'How to raise an exchange request' },
   { to: '/shipping-policy', icon: '🚚', title: 'Shipping Info', desc: 'Delivery timelines and charges' },
   { to: '/size-guide', icon: '📏', title: 'Size Guide', desc: 'Find your perfect fit' },
   { to: '/contact', icon: '✉', title: 'Contact Us', desc: 'Reach our team directly' },

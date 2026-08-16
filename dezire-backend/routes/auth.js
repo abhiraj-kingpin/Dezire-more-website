@@ -13,7 +13,7 @@ const { logAdminAction } = require('../utils/auditLog');
 
 const VERIFICATION_TTL_HOURS = 24;
 const RESEND_COOLDOWN_SECONDS = 60;
-const MEMBERSHIP_PLANS = { gold: 5000, platinum: 10000 };
+const MEMBERSHIP_PLANS = { gold: 20000, platinum: 30000 };
 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://www.deziremore.com';
 
 function hashToken(token) {

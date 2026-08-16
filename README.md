@@ -8,7 +8,7 @@ A full-stack e-commerce platform for ethnic wear — sarees, dress materials, re
 - Product browsing with category pages, filters (color/size/fabric/occasion/price/discount), and fuzzy search
 - Cart, wishlist, and a full checkout flow supporting Razorpay, manual UPI/bank transfer, and Cash on Delivery
 - Product ratings & reviews (with photo uploads, helpful votes, verified-purchase badges)
-- Order tracking with live courier status, invoice download, exchange requests, and cancellation
+- Order tracking with live courier status, invoice download, and cancellation
 - Premium membership tiers (Gold/Platinum) with manual UPI payment + admin confirmation
 - Account dashboard: order history, saved addresses, wishlist, profile, notifications
 - AI-assisted chat support widget for order/product questions

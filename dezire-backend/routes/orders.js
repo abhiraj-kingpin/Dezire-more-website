@@ -13,7 +13,56 @@ const User = require('../models/User');
 const { sendOrderConfirmationEmail, sendAdminOrderAlert, sendOrderStatusEmail } = require('../utils/notifications');
 const { logAdminAction } = require('../utils/auditLog');
 const shiprocket = require('../services/shiprocket');
+const delhivery = require('../services/delhivery.service');
 const fcm = require('../services/fcm');
+
+// ── GST + shipping ───────────────────────────────────────────────────────────
+// Per-product GST: 5% below ₹2,499, 18% at/above it, on the item's own unit
+// price (not the line total), before any coupon discount is applied — all
+// per the agreed billing spec. Computed here server-side, never trusted from
+// the client, same principle as `total` already being recomputed below.
+const GST_RATE_THRESHOLD = 2499;
+const GST_RATE_LOW = 5;
+const GST_RATE_HIGH = 18;
+// Free shipping at/above ₹2,500 of (pre-GST, pre-discount) subtotal; a flat
+// ₹99 below it — the flat fee itself predates this change (was already the
+// site's shipping charge, just at a ₹1,899 threshold); only the threshold
+// moved to match the spec.
+const FREE_SHIPPING_THRESHOLD = 2500;
+const SHIPPING_CHARGE = 99;
+
+function gstRateFor(unitPrice) {
+  return unitPrice >= GST_RATE_THRESHOLD ? GST_RATE_HIGH : GST_RATE_LOW;
+}
+
+// Recomputes subtotal, per-item GST, and the GST breakdown straight from the
+// item list — the only inputs trusted are productId/price/quantity, already
+// validated by validateItems() before this runs.
+function computeBilling(items) {
+  let subtotal = 0;
+  let gst5 = 0;
+  let gst18 = 0;
+
+  const itemsWithGST = items.map(item => {
+    const rate = gstRateFor(item.price);
+    const lineBase = item.price * item.quantity;
+    const gstAmount = Math.round(lineBase * rate) / 100;
+    subtotal += lineBase;
+    if (rate === GST_RATE_HIGH) gst18 += gstAmount; else gst5 += gstAmount;
+    return { ...item, gstRate: rate, gstAmount };
+  });
+
+  const totalGST = Math.round((gst5 + gst18) * 100) / 100;
+  const deliveryCharge = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_CHARGE;
+
+  return {
+    itemsWithGST,
+    subtotal,
+    totalGST,
+    gstBreakdown: { gst5: Math.round(gst5 * 100) / 100, gst18: Math.round(gst18 * 100) / 100 },
+    deliveryCharge,
+  };
+}
 
 // Real, automatically-verified payments — replaces the old manual QR/UPI
 // reference-entry flow. Test-mode keys work immediately (no KYC needed);
@@ -71,7 +120,7 @@ router.post('/', requireAuth, async (req, res) => {
   try {
     const {
       customerName, customerPhone,
-      items, address, subtotal, deliveryCharge, total,
+      items, address,
       paymentMethod, paymentReference, amountPaid, isGift, giftMessage, couponCode,
     } = req.body;
     const customerEmail = req.user.email;
@@ -113,15 +162,29 @@ router.post('/', requireAuth, async (req, res) => {
     if (!paymentMethod) {
       return res.status(400).json({ error: 'Payment method is required' });
     }
-    // Razorpay verifies itself (signature check after checkout) — only the
-    // legacy manual QR/UPI methods need a customer-entered reference.
-    const needsManualReference = !['COD', 'Razorpay'].includes(paymentMethod);
-    if (needsManualReference && !paymentReference?.trim()) {
-      return res.status(400).json({ error: 'Please enter the UPI transaction ID / reference number from your payment app.' });
+    // Checkout is UPI-only (the free, no-gateway-fee manual QR flow via
+    // PaymentSettings) — COD is no longer offered. Still enforced here (not
+    // just left to the frontend not offering it), since this is a public
+    // API and a stale client build/direct request could still send it.
+    if (paymentMethod === 'COD') {
+      return res.status(400).json({ error: 'Cash on Delivery is no longer available — please pay via UPI.' });
     }
-    if (needsManualReference && !(Number(amountPaid) > 0)) {
-      return res.status(400).json({ error: 'Please enter the amount you paid.' });
-    }
+    // The UTR/amount-paid entry step was removed from checkout — asking a
+    // customer to prove their own payment right after making it was
+    // needless friction. Payment confirmation now happens entirely on the
+    // admin side (PATCH /admin/:orderId/verify-payment, driven by the
+    // Pending Verification tab), which already tolerates paymentReference/
+    // amountPaid being absent. Both are still accepted and stored if a
+    // client sends them (harmless, occasionally useful context for the
+    // admin), just never required.
+    // Razorpay is on hold — the checkout UI doesn't offer it right now, but
+    // the signature-verified flow below stays intact so it can be switched
+    // back on later without touching this route.
+
+    // Billing (subtotal, per-item GST, shipping) is computed here from the
+    // validated item list — never trusted from the client, same reasoning
+    // as everything else on this route re-deriving money from server state.
+    const { itemsWithGST, subtotal, totalGST, gstBreakdown, deliveryCharge } = computeBilling(items);
 
     // Re-validated here rather than trusting whatever discount the client
     // already showed at checkout — a coupon can expire or hit its usage
@@ -129,17 +192,17 @@ router.post('/', requireAuth, async (req, res) => {
     let discountAmount = 0;
     let appliedCoupon = null;
     if (couponCode) {
-      const result = await resolveCoupon(couponCode, Number(subtotal) || 0);
+      const result = await resolveCoupon(couponCode, subtotal);
       if (result.error) return res.status(400).json({ error: result.error });
       discountAmount = result.discount;
       appliedCoupon = result.coupon;
     }
-    const resolvedTotal = Number(subtotal) - discountAmount + Number(deliveryCharge || 0);
+    const resolvedTotal = subtotal - discountAmount + totalGST + deliveryCharge;
 
-    // No payment gateway is wired in — every order starts "pending"
-    // regardless of method. QR/UPI orders carry a customer-entered
-    // transaction reference the admin checks against their bank/UPI app
-    // before manually confirming payment (see PATCH /:id/status).
+    // Every order starts "pending" — UPI orders (the live path) get flipped
+    // to 'paid' by an admin via the Pending Verification tab, checking their
+    // own bank/UPI app; Razorpay orders (on hold) would flip automatically
+    // via signature verification (below) or its webhook, same as before.
     let orderNumber = generateOrderNumber();
     // Extremely unlikely, but guard against a collision on the unique index.
     for (let i = 0; i < 3 && await Order.exists({ orderNumber }); i++) {
@@ -151,16 +214,18 @@ router.post('/', requireAuth, async (req, res) => {
       customerEmail,
       customerName,
       customerPhone,
-      items,
+      items: itemsWithGST,
       address,
       subtotal,
+      totalGST,
+      gstBreakdown,
       deliveryCharge,
       total: resolvedTotal,
       couponCode: appliedCoupon?.code,
       discountAmount,
       paymentMethod,
-      paymentReference: needsManualReference ? paymentReference.trim() : undefined,
-      amountPaid: needsManualReference ? Number(amountPaid) : undefined,
+      paymentReference: paymentReference?.trim() || undefined,
+      amountPaid: Number(amountPaid) > 0 ? Number(amountPaid) : undefined,
       paymentStatus: 'pending',
       orderStatus: 'Order Placed',
       estimatedDelivery: estimatedDeliveryDate(),
@@ -208,7 +273,7 @@ router.post('/', requireAuth, async (req, res) => {
 router.post('/:id/razorpay/create-payment-order', requireAuth, async (req, res) => {
   try {
     const razorpay = getRazorpay();
-    if (!razorpay) return res.status(503).json({ error: 'Online payment is temporarily unavailable. Please try Cash on Delivery.' });
+    if (!razorpay) return res.status(503).json({ error: 'Online payment is temporarily unavailable. Please try again shortly.' });
 
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ error: 'Order not found' });
@@ -234,6 +299,43 @@ router.post('/:id/razorpay/create-payment-order', requireAuth, async (req, res) 
     res.status(400).json({ error: err.message });
   }
 });
+
+// Auto-creates a Delhivery shipment the instant a Razorpay payment is
+// confirmed — the UPI-only checkout flow has no separate "admin manually
+// clicks Create Shipment" step to fall back on the way COD/manual-reference
+// orders still do, so this replaces that step for Razorpay orders. Always
+// fire-and-forget from the caller (never awaited): shipment creation
+// failing — Delhivery down, pincode not serviceable, pickup location
+// mismatch — must never affect the payment confirmation that already
+// succeeded. On failure the order simply stays without a shipment, exactly
+// like an order that predates this feature; an admin can still create one
+// by hand from the admin panel.
+async function autoCreateDelhiveryShipment(order) {
+  if (!delhivery.isConfigured() || order.shipment?.awbCode) return;
+  try {
+    const result = await delhivery.createShipment(order);
+    if (result.awbAssigned) {
+      order.shipment = {
+        provider: 'delhivery',
+        awbCode: result.awbCode,
+        courierName: result.courierName,
+        trackingUrl: result.trackingUrl,
+      };
+      order.orderStatus = 'Shipped';
+      await order.save();
+      logAdminAction('system', 'order.auto-shipment', order._id, `${order.orderNumber}: AWB ${result.awbCode} (Delhivery, auto-created on payment)`);
+      const customer = await User.findOne({ email: order.customerEmail }).select('notificationsEnabled fcmTokens').lean();
+      if (!customer || customer.notificationsEnabled !== false) {
+        sendOrderStatusEmail(order).catch(err => console.error('[order status email]', err.message));
+        if (customer) fcm.sendOrderStatusPush(customer, order).catch(err => console.error('[order status push]', err.message));
+      }
+    } else {
+      console.error(`[auto-shipment] Delhivery rejected ${order.orderNumber}: ${result.error}`);
+    }
+  } catch (err) {
+    console.error(`[auto-shipment] Failed for ${order.orderNumber}:`, err.message);
+  }
+}
 
 // PATCH /api/orders/:id/razorpay/confirm — verifies the payment signature
 // Razorpay's checkout success handler returns. This signature check is the
@@ -273,6 +375,7 @@ router.patch('/:id/razorpay/confirm', requireAuth, async (req, res) => {
       User.findOne({ email: order.customerEmail }).select('notificationsEnabled fcmTokens').lean()
         .then(customer => { if (customer?.notificationsEnabled !== false) fcm.sendOrderStatusPush(customer, order); })
         .catch(err => console.error('[order status push]', err.message));
+      autoCreateDelhiveryShipment(order).catch(err => console.error('[auto-shipment]', err.message));
     }
 
     res.json({ success: true, order });
@@ -309,6 +412,7 @@ router.post('/razorpay/webhook', async (req, res) => {
         User.findOne({ email: order.customerEmail }).select('notificationsEnabled fcmTokens').lean()
           .then(customer => { if (customer?.notificationsEnabled !== false) fcm.sendOrderStatusPush(customer, order); })
           .catch(err => console.error('[order status push]', err.message));
+        autoCreateDelhiveryShipment(order).catch(err => console.error('[auto-shipment]', err.message));
       }
     }
 
@@ -461,6 +565,89 @@ router.get('/admin/analytics', adminAuth, async (req, res) => {
   }
 });
 
+// GET /api/orders/admin/gst-report?from=YYYY-MM-DD&to=YYYY-MM-DD — GST
+// collected over a date range, for tax filing. Defaults to the current
+// calendar month when no range is given, so the admin panel's default view
+// (no filters touched yet) is still a sensible one. Reports by order date
+// (createdAt) rather than payment-confirmation date — that's the invoice
+// date, which is what GST filing goes by, same as why /admin/analytics
+// already treats createdAt as "when this sale happened". Only paymentStatus
+// 'paid' orders count, matching every other revenue figure in this app —
+// GST isn't owed on an order nobody has actually paid for yet.
+router.get('/admin/gst-report', adminAuth, async (req, res) => {
+  try {
+    const now = new Date();
+    const defaultFrom = new Date(now.getFullYear(), now.getMonth(), 1);
+    const defaultTo = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+    const from = req.query.from ? new Date(req.query.from) : defaultFrom;
+    // 'to' is inclusive of the whole day from the client's point of view —
+    // add a day and use $lt rather than requiring the client to pass an
+    // end-of-day timestamp.
+    const to = req.query.to ? new Date(new Date(req.query.to).getTime() + 24 * 60 * 60 * 1000) : defaultTo;
+
+    if (isNaN(from.getTime()) || isNaN(to.getTime())) {
+      return res.status(400).json({ error: 'Invalid from/to date' });
+    }
+
+    const match = { paymentStatus: 'paid', createdAt: { $gte: from, $lt: to } };
+
+    const [totals, orders] = await Promise.all([
+      Order.aggregate([
+        { $match: match },
+        {
+          $group: {
+            _id: null,
+            orders: { $sum: 1 },
+            subtotal: { $sum: '$subtotal' },
+            gst5: { $sum: '$gstBreakdown.gst5' },
+            gst18: { $sum: '$gstBreakdown.gst18' },
+            totalGST: { $sum: '$totalGST' },
+            deliveryCharge: { $sum: '$deliveryCharge' },
+            discountAmount: { $sum: '$discountAmount' },
+            total: { $sum: '$total' },
+          },
+        },
+      ]),
+      // Per-order detail for the CSV export — kept lean (only the fields
+      // the report actually shows) rather than shipping full order docs.
+      Order.find(match)
+        .select('orderNumber createdAt subtotal gstBreakdown totalGST deliveryCharge discountAmount total')
+        .sort({ createdAt: 1 })
+        .lean(),
+    ]);
+
+    const totalsRow = totals[0] || {
+      orders: 0, subtotal: 0, gst5: 0, gst18: 0, totalGST: 0, deliveryCharge: 0, discountAmount: 0, total: 0,
+    };
+    delete totalsRow._id;
+
+    res.json({
+      from: from.toISOString(),
+      to: new Date(to.getTime() - 1).toISOString(), // reported back as inclusive, matching what was requested
+      ...totalsRow,
+      // CGST/SGST split (each exactly half) — the standard presentation
+      // GST law requires alongside the raw total, same as the per-order
+      // invoice PDF (see src/utils/invoice.js).
+      cgst: totalsRow.totalGST / 2,
+      sgst: totalsRow.totalGST / 2,
+      orderDetails: orders.map(o => ({
+        orderNumber: o.orderNumber,
+        date: o.createdAt,
+        subtotal: o.subtotal,
+        gst5: o.gstBreakdown?.gst5 || 0,
+        gst18: o.gstBreakdown?.gst18 || 0,
+        totalGST: o.totalGST,
+        deliveryCharge: o.deliveryCharge,
+        discountAmount: o.discountAmount,
+        total: o.total,
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // PATCH /api/orders/:id/status — admin updates order lifecycle status
 router.patch('/:id/status', adminAuth, async (req, res) => {
   try {
@@ -517,6 +704,10 @@ router.patch('/admin/:orderId/verify-payment', adminAuth, async (req, res) => {
       sendOrderStatusEmail(order).catch(err => console.error('[order status email]', err.message));
       if (customer) fcm.sendOrderStatusPush(customer, order).catch(err => console.error('[order status push]', err.message));
     }
+    // This is "payment confirmed" for the manual-UPI flow, same as a
+    // Razorpay signature check succeeding — one click here is meant to be
+    // the only manual step in the whole order lifecycle from here on.
+    autoCreateDelhiveryShipment(order).catch(err => console.error('[auto-shipment]', err.message));
 
     res.json({ success: true, order });
   } catch (err) {

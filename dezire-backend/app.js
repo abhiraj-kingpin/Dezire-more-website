@@ -13,7 +13,6 @@ const productRoutes = require('./routes/products');
 const adminRoutes   = require('./routes/admin');
 const orderRoutes   = require('./routes/orders');
 const reviewRoutes  = require('./routes/reviews');
-const exchangeRoutes = require('./routes/exchanges');
 const testimonialRoutes = require('./routes/testimonials');
 const paymentSettingsRoutes = require('./routes/paymentSettings');
 const founderSettingsRoutes = require('./routes/founderSettings');
@@ -89,7 +88,6 @@ app.use((req, res, next) => {
 app.use('/api/products', productRoutes);
 app.use('/api/orders',   orderRoutes);
 app.use('/api/reviews',  reviewRoutes);
-app.use('/api/exchanges', exchangeRoutes);
 app.use('/api/testimonials', testimonialRoutes);
 app.use('/api/payment-settings', paymentSettingsRoutes);
 app.use('/api/founder-settings', founderSettingsRoutes);
@@ -167,7 +165,6 @@ const SITEMAP_ROUTES = [
   { path: '/contact', priority: '0.5' },
   { path: '/size-guide', priority: '0.4' },
   { path: '/shipping-policy', priority: '0.3' },
-  { path: '/exchange-policy', priority: '0.3' },
   { path: '/privacy-policy', priority: '0.2' },
   { path: '/terms-conditions', priority: '0.2' },
 ];

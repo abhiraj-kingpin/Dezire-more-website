@@ -37,6 +37,13 @@ export async function downloadInvoice(order) {
   y += 16;
   doc.text(`Payment: ${order.paymentMethod} (${order.paymentStatus})`, marginX, y);
   doc.text(`Order Status: ${order.orderStatus}`, 545, y, { align: 'right' });
+  // GSTIN is only shown once actually registered — set VITE_GST_NUMBER in
+  // the frontend build env when it is; omitted rather than left blank so an
+  // unregistered store's invoices don't imply a GSTIN that doesn't exist.
+  if (import.meta.env.VITE_GST_NUMBER) {
+    y += 16;
+    doc.text(`GSTIN: ${import.meta.env.VITE_GST_NUMBER}`, marginX, y);
+  }
 
   y += 28;
   doc.setFont('helvetica', 'bold');
@@ -58,8 +65,9 @@ export async function downloadInvoice(order) {
 
   doc.setFont('helvetica', 'bold');
   doc.text('Item', marginX, y);
-  doc.text('Qty', 380, y, { align: 'right' });
-  doc.text('Price', 460, y, { align: 'right' });
+  doc.text('Qty', 300, y, { align: 'right' });
+  doc.text('Price', 372, y, { align: 'right' });
+  doc.text('GST', 430, y, { align: 'right' });
   doc.text('Amount', 545, y, { align: 'right' });
   doc.setFont('helvetica', 'normal');
   y += 10;
@@ -69,10 +77,12 @@ export async function downloadInvoice(order) {
   order.items.forEach(item => {
     const variant = [item.size, item.color].filter(Boolean).join(' / ');
     const label = variant ? `${item.name} (${variant})` : item.name;
-    doc.text(label, marginX, y, { maxWidth: 300 });
-    doc.text(String(item.quantity), 380, y, { align: 'right' });
-    doc.text(money(item.price), 460, y, { align: 'right' });
-    doc.text(money(item.price * item.quantity), 545, y, { align: 'right' });
+    const gstAmount = item.gstAmount || 0;
+    doc.text(label, marginX, y, { maxWidth: 230 });
+    doc.text(String(item.quantity), 300, y, { align: 'right' });
+    doc.text(money(item.price), 372, y, { align: 'right' });
+    doc.text(item.gstRate != null ? `${item.gstRate}%` : '—', 430, y, { align: 'right' });
+    doc.text(money(item.price * item.quantity + gstAmount), 545, y, { align: 'right' });
     y += 20;
   });
 
@@ -80,9 +90,38 @@ export async function downloadInvoice(order) {
   doc.line(marginX, y, 545, y);
   y += 20;
 
-  doc.text('Subtotal', 460, y, { align: 'right' });
+  doc.text('Subtotal (pre-GST)', 460, y, { align: 'right' });
   doc.text(money(order.subtotal), 545, y, { align: 'right' });
   y += 16;
+
+  // GST breakdown by the two applicable rates, then the same total split
+  // into CGST + SGST (each exactly half) for domestic intra-state orders —
+  // the standard Indian tax-invoice presentation of the same figure two
+  // ways: by rate, and by the CGST/SGST split GST law requires it be shown as.
+  const totalGST = order.totalGST || 0;
+  if (order.gstBreakdown?.gst5 > 0) {
+    doc.text('GST (5% items)', 460, y, { align: 'right' });
+    doc.text(money(order.gstBreakdown.gst5), 545, y, { align: 'right' });
+    y += 16;
+  }
+  if (order.gstBreakdown?.gst18 > 0) {
+    doc.text('GST (18% items)', 460, y, { align: 'right' });
+    doc.text(money(order.gstBreakdown.gst18), 545, y, { align: 'right' });
+    y += 16;
+  }
+  if (totalGST > 0) {
+    doc.text('CGST (50% of GST)', 460, y, { align: 'right' });
+    doc.text(money(totalGST / 2), 545, y, { align: 'right' });
+    y += 16;
+    doc.text('SGST (50% of GST)', 460, y, { align: 'right' });
+    doc.text(money(totalGST / 2), 545, y, { align: 'right' });
+    y += 16;
+  }
+  if (order.discountAmount > 0) {
+    doc.text('Coupon Discount', 460, y, { align: 'right' });
+    doc.text(`−${money(order.discountAmount)}`, 545, y, { align: 'right' });
+    y += 16;
+  }
   doc.text('Delivery', 460, y, { align: 'right' });
   doc.text(order.deliveryCharge === 0 ? 'FREE' : money(order.deliveryCharge), 545, y, { align: 'right' });
   y += 18;
