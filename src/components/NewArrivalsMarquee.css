@@ -12,6 +12,21 @@
   --dm-gold-deep:  #A87C28;
   --dm-hairline:   #DDD0B0;
 }
+/* --dm-ivory (section surface) and --dm-green (ink/heading text) are used
+   throughout this file as a light-surface/dark-ink pair — .marquee-cta's
+   hover state even swaps them directly (fill sweeps to --dm-green, text
+   flips to --dm-ivory). Swapping their luminance for dark mode keeps every
+   rule below correct without touching the rules themselves. */
+[data-theme="dark"] {
+  --dm-ivory:      #171b16;
+  --dm-ivory-deep: #10130f;
+  --dm-green:      #e9e4d6;
+  --dm-green-deep: #cfc9b8;
+  --dm-gold:       #d9a94a;
+  --dm-gold-light: #eccb7e;
+  --dm-gold-deep:  #b8842e;
+  --dm-hairline:   #3a3529;
+}
 
 /* ─── Section wrapper ─────────────────────────────────────────────────────── */
 .new-arrivals-marquee {
@@ -234,7 +249,7 @@
   position: relative;
   z-index: 2;
   text-align: center;
-  color: #7A6E5E;
+  color: var(--text-light);
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-size: 16px;
   padding: 24px 0;
@@ -329,7 +344,7 @@
 
 .marquee-card .product-card {
   width: 100%;
-  background: #FFFFFF;
+  background: var(--surface, #FFFFFF);
 }
 
 /* ─── Arrows ──────────────────────────────────────────────────────────────── */

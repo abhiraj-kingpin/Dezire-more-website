@@ -39,6 +39,35 @@ router.post('/validate', async (req, res) => {
   }
 });
 
+// GET /api/coupons/active — public listing for the storefront's "Coupons &
+// Rewards" account page. Deliberately excludes usedCount (internal
+// bookkeeping, not shopper-facing) and coupons that are inactive, expired,
+// or already at their usage cap — same eligibility rules resolveCoupon()
+// enforces at checkout, so nothing shown here can fail to apply for those
+// reasons (minOrderValue can still make it inapplicable to a given cart).
+router.get('/active', async (req, res) => {
+  try {
+    const now = new Date();
+    const coupons = await Coupon.find({
+      isActive: true,
+      $or: [{ expiresAt: null }, { expiresAt: { $exists: false } }, { expiresAt: { $gt: now } }],
+    })
+      .sort({ createdAt: -1 })
+      .select('code type value minOrderValue maxDiscount expiresAt usageLimit usedCount')
+      .lean();
+
+    const available = coupons
+      .filter(c => !c.usageLimit || c.usedCount < c.usageLimit)
+      .map(({ code, type, value, minOrderValue, maxDiscount, expiresAt }) => ({
+        code, type, value, minOrderValue, maxDiscount, expiresAt,
+      }));
+
+    res.json({ data: available });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Admin ────────────────────────────────────────────────────────────────────
 
 router.get('/admin/all', adminAuth, async (req, res) => {

@@ -1,11 +1,36 @@
+:root {
+  --gold: #b8964e; --gold-light: #d4ae6e; --dark-green: #1e3a2f; --green: #2d5a42;
+  --cream: #faf7f2; --warm-white: #f5f1eb; --text-dark: #1a1a1a;
+  --text-mid: #4a4a4a; --text-light: #888; --border: #e8e0d0;
+  --surface: #ffffff; --surface-alt: #f9f4ea;
+  --shadow-soft: rgba(0, 0, 0, 0.08);
+  /* Heading text that was hardcoded to the brand dark-green in the
+     original design (headings on white/surface cards) — needs a lighter
+     value in dark mode since --dark-green itself goes even darker there
+     (it's tuned for use as a background band, not text on a dark card). */
+  --heading-accent: #1a3a2a;
+  --success: #1a6640; --success-bg: #f0f8f4; --success-border: #b8dcc8;
+  --danger: #c0392b; --danger-bg: #fbeceb; --danger-border: #e8c8c8;
+}
+[data-theme="dark"] {
+  --gold: #d4ae6e; --gold-light: #e8c98a; --dark-green: #16261f; --green: #2d5a42;
+  --cream: #14181a; --warm-white: #1b201f; --text-dark: #f2ede3;
+  --text-mid: #cfc9bd; --text-light: #9a9488; --border: #33372f;
+  --surface: #1e2422; --surface-alt: #262b27;
+  --shadow-soft: rgba(0, 0, 0, 0.4);
+  --heading-accent: #e8c98a;
+  --success: #6fd4b2; --success-bg: rgba(111,212,178,0.10); --success-border: rgba(111,212,178,0.32);
+  --danger: #e57373; --danger-bg: rgba(224,115,115,0.10); --danger-border: rgba(224,115,115,0.32);
+}
+
 /* ─── Policy Pages – Shared Layout ─────────────────────────────── */
 .policy-page {
   min-height: 100vh;
-  background: #f9f6f1;
+  background: var(--cream);
 }
 
 .policy-hero {
-  background: #1a3a2a;
+  background: var(--dark-green);
   color: #fff;
   text-align: center;
   padding: 80px 24px 60px;
@@ -27,7 +52,7 @@
   font-weight: 600;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #c4a050;
+  color: var(--gold);
   margin-bottom: 16px;
 }
 
@@ -59,7 +84,7 @@
 .policy-content h2 {
   font-size: 1.3rem;
   font-weight: 700;
-  color: #1a3a2a;
+  color: var(--heading-accent);
   letter-spacing: 0.04em;
   margin: 0 0 28px;
   text-transform: uppercase;
@@ -73,8 +98,8 @@
 }
 
 .measure-item {
-  background: #fff;
-  border: 1px solid #e8dfd0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 4px;
   padding: 24px 20px;
   text-align: center;
@@ -82,14 +107,14 @@
 
 .measure-icon {
   font-size: 1.4rem;
-  color: #c4a050;
+  color: var(--gold);
   margin-bottom: 12px;
 }
 
 .measure-item h3 {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #1a3a2a;
+  color: var(--heading-accent);
   margin: 0 0 8px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -97,7 +122,7 @@
 
 .measure-item p {
   font-size: 0.85rem;
-  color: #666;
+  color: var(--text-mid);
   line-height: 1.6;
   margin: 0;
 }
@@ -105,18 +130,18 @@
 .size-table-wrapper {
   overflow-x: auto;
   border-radius: 4px;
-  border: 1px solid #e8dfd0;
+  border: 1px solid var(--border);
 }
 
 .size-table {
   width: 100%;
   border-collapse: collapse;
-  background: #fff;
+  background: var(--surface);
   font-size: 0.9rem;
 }
 
 .size-table thead tr {
-  background: #1a3a2a;
+  background: var(--dark-green);
   color: #fff;
 }
 
@@ -136,18 +161,18 @@
 .size-table td {
   padding: 13px 18px;
   text-align: center;
-  border-bottom: 1px solid #f0e8dc;
-  color: #333;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-mid);
 }
 
 .size-table .measure-label {
   text-align: left;
   font-weight: 600;
-  color: #1a3a2a;
+  color: var(--heading-accent);
 }
 
 .size-table tbody tr:hover {
-  background: #fdf8f2;
+  background: var(--surface-alt);
 }
 
 .size-table tbody tr:last-child td {
@@ -155,8 +180,8 @@
 }
 
 .size-note {
-  background: #fff;
-  border-left: 3px solid #c4a050;
+  background: var(--surface);
+  border-left: 3px solid var(--gold);
   border-radius: 0 4px 4px 0;
   padding: 20px 24px;
   display: flex;
@@ -165,7 +190,7 @@
 }
 
 .note-icon {
-  color: #c4a050;
+  color: var(--gold);
   font-size: 1.1rem;
   flex-shrink: 0;
   margin-top: 2px;
@@ -173,7 +198,7 @@
 
 .size-note p {
   font-size: 0.88rem;
-  color: #555;
+  color: var(--text-mid);
   line-height: 1.7;
   margin: 0;
 }
@@ -185,13 +210,13 @@
 
 .size-cta p {
   font-size: 0.95rem;
-  color: #555;
+  color: var(--text-mid);
   margin-bottom: 16px;
 }
 
 .whatsapp-btn {
   display: inline-block;
-  background: #1a3a2a;
+  background: var(--dark-green);
   color: #fff;
   padding: 14px 36px;
   font-size: 0.85rem;
@@ -204,7 +229,7 @@
 }
 
 .whatsapp-btn:hover {
-  background: #c4a050;
+  background: var(--gold);
   color: #fff;
 }
 
@@ -231,8 +256,8 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: #1a3a2a;
-  color: #c4a050;
+  background: var(--dark-green);
+  color: var(--gold);
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -245,8 +270,8 @@
 }
 
 .step-body {
-  background: #fff;
-  border: 1px solid #e8dfd0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 4px;
   padding: 20px 24px;
   flex: 1;
@@ -256,7 +281,7 @@
 .step-body h3 {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #1a3a2a;
+  color: var(--heading-accent);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin: 0 0 6px;
@@ -264,7 +289,7 @@
 
 .step-body p {
   font-size: 0.88rem;
-  color: #666;
+  color: var(--text-mid);
   line-height: 1.65;
   margin: 0;
 }
@@ -275,7 +300,7 @@
   top: 48px;
   width: 2px;
   height: calc(100% - 16px);
-  background: #e8dfd0;
+  background: var(--border);
   z-index: 0;
 }
 
@@ -286,8 +311,8 @@
 }
 
 .policy-card {
-  background: #fff;
-  border: 1px solid #e8dfd0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 4px;
   padding: 28px 22px;
   text-align: center;
@@ -295,14 +320,14 @@
 
 .policy-card-icon {
   font-size: 1.5rem;
-  color: #c4a050;
+  color: var(--gold);
   margin-bottom: 12px;
 }
 
 .policy-card h3 {
   font-size: 0.9rem;
   font-weight: 700;
-  color: #1a3a2a;
+  color: var(--heading-accent);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin: 0 0 10px;
@@ -310,14 +335,14 @@
 
 .policy-card p {
   font-size: 0.85rem;
-  color: #666;
+  color: var(--text-mid);
   line-height: 1.65;
   margin: 0;
 }
 
 .policy-note-block {
-  background: #fff;
-  border: 1px solid #e8dfd0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 4px;
   padding: 32px 36px;
 }
@@ -333,7 +358,7 @@
 
 .policy-list li {
   font-size: 0.9rem;
-  color: #555;
+  color: var(--text-mid);
   line-height: 1.65;
   padding-left: 20px;
   position: relative;
@@ -343,7 +368,7 @@
   content: '◆';
   position: absolute;
   left: 0;
-  color: #c4a050;
+  color: var(--gold);
   font-size: 0.5rem;
   top: 6px;
 }
@@ -354,7 +379,7 @@
   align-items: center;
   justify-content: center;
   gap: 40px;
-  background: #1a3a2a;
+  background: var(--dark-green);
   border-radius: 4px;
   padding: 40px 32px;
   flex-wrap: wrap;
@@ -370,7 +395,7 @@
 .highlight-number {
   font-size: 2.2rem;
   font-weight: 700;
-  color: #c4a050;
+  color: var(--gold);
   line-height: 1;
 }
 
@@ -404,13 +429,13 @@
 }
 
 .eligible {
-  background: #f0f8f4;
-  border: 1px solid #b8dcc8;
+  background: var(--success-bg);
+  border: 1px solid var(--success-border);
 }
 
 .not-eligible {
-  background: #fdf6f6;
-  border: 1px solid #e8c8c8;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
 }
 
 .col-icon {
@@ -418,11 +443,11 @@
 }
 
 .eligible h2 {
-  color: #1a6640;
+  color: var(--success);
 }
 
 .not-eligible h2 {
-  color: #8b2020;
+  color: var(--danger);
 }
 
 .exchange-steps {
@@ -435,8 +460,8 @@
   display: flex;
   gap: 20px;
   align-items: flex-start;
-  background: #fff;
-  border: 1px solid #e8dfd0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 4px;
   padding: 22px 24px;
 }
@@ -444,7 +469,7 @@
 .ex-step-num {
   width: 36px;
   height: 36px;
-  background: #c4a050;
+  background: var(--gold);
   color: #fff;
   border-radius: 50%;
   display: flex;
@@ -458,7 +483,7 @@
 .exchange-step h3 {
   font-size: 0.92rem;
   font-weight: 700;
-  color: #1a3a2a;
+  color: var(--heading-accent);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin: 0 0 6px;
@@ -466,7 +491,7 @@
 
 .exchange-step p {
   font-size: 0.86rem;
-  color: #666;
+  color: var(--text-mid);
   line-height: 1.65;
   margin: 0;
 }
@@ -479,8 +504,8 @@
 }
 
 .contact-card {
-  background: #fff;
-  border: 1px solid #e8dfd0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 4px;
   padding: 30px 24px;
   text-decoration: none;
@@ -491,16 +516,18 @@
 }
 
 .contact-card:hover {
-  border-color: #c4a050;
+  border-color: var(--gold);
   transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(26,58,42,0.08);
+  box-shadow: 0 8px 24px var(--shadow-soft);
 }
 
 .contact-card-icon {
   font-size: 1.6rem;
-  color: #1a3a2a;
+  color: var(--heading-accent);
 }
 
+/* Third-party brand colors — always the same regardless of theme, same as
+   any WhatsApp/Instagram/Facebook badge elsewhere on the web. */
 .contact-card--whatsapp .contact-card-icon { color: #25d366; }
 .contact-card--instagram .contact-card-icon { color: #e1306c; }
 .contact-card--facebook .contact-card-icon { color: #1877f2; }
@@ -508,7 +535,7 @@
 .contact-card-body h3 {
   font-size: 0.92rem;
   font-weight: 700;
-  color: #1a3a2a;
+  color: var(--heading-accent);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   margin: 0 0 6px;
@@ -516,7 +543,7 @@
 
 .contact-card-body p {
   font-size: 0.84rem;
-  color: #777;
+  color: var(--text-light);
   line-height: 1.6;
   margin: 0 0 10px;
 }
@@ -524,12 +551,12 @@
 .contact-link {
   font-size: 0.82rem;
   font-weight: 600;
-  color: #c4a050;
+  color: var(--gold);
   letter-spacing: 0.04em;
 }
 
 .contact-hours {
-  background: #1a3a2a;
+  background: var(--dark-green);
   border-radius: 4px;
   padding: 32px 36px;
   color: #fff;
@@ -543,7 +570,7 @@
 
 .hours-icon {
   font-size: 1.8rem;
-  color: #c4a050;
+  color: var(--gold);
   flex-shrink: 0;
   margin-top: 2px;
 }
@@ -553,7 +580,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #c4a050;
+  color: var(--gold);
   margin: 0 0 10px;
 }
 
@@ -572,8 +599,8 @@
 }
 
 .faq-item {
-  background: #fff;
-  border: 1px solid #e8dfd0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 4px;
   padding: 4px 24px;
 }
@@ -584,7 +611,7 @@
   padding: 20px 0;
   font-size: 0.95rem;
   font-weight: 600;
-  color: #1a3a2a;
+  color: var(--heading-accent);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -595,7 +622,7 @@
 
 .faq-chevron {
   flex-shrink: 0;
-  color: #c4a050;
+  color: var(--gold);
   font-size: 1.1rem;
   transition: transform 0.25s ease;
 }
@@ -604,7 +631,7 @@
 
 .faq-answer {
   font-size: 0.88rem;
-  color: #666;
+  color: var(--text-mid);
   line-height: 1.7;
   padding: 0 0 20px;
   margin: 0;
@@ -618,8 +645,8 @@
 }
 
 .help-card {
-  background: #fff;
-  border: 1px solid #e8dfd0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 4px;
   padding: 28px 24px;
   text-align: center;
@@ -632,7 +659,7 @@
 }
 
 .help-card:hover {
-  border-color: #c4a050;
+  border-color: var(--gold);
   transform: translateY(-3px);
 }
 
@@ -641,13 +668,13 @@
 .help-card-title {
   font-size: 0.9rem;
   font-weight: 700;
-  color: #1a3a2a;
+  color: var(--heading-accent);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .help-card-desc {
   font-size: 0.8rem;
-  color: #777;
+  color: var(--text-light);
   line-height: 1.5;
 }

@@ -4,6 +4,7 @@ import { WishlistProvider } from './context/WishlistContext';
 import { SearchProvider } from './context/SearchContext';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { LanguageProvider } from './context/LanguageContext';
 import { ToastProvider } from './context/ToastContext';
 import Layout from './components/Layout';
 import Home from './components/Home';
@@ -17,9 +18,11 @@ import NewArrivals from './components/NewArrivals';
 import OurStory from './components/OurStory';
 import AccountDashboard, {
   ProfileSection, NotificationsSection, RecentlyViewedSection,
-  ComingSoonSection, AccountWishlist,
+  AccountWishlist,
 } from './components/AccountDashboard';
 import AddressBook from './components/AddressBook';
+import CouponsRewards from './components/CouponsRewards';
+import PaymentMethods from './components/PaymentMethods';
 import Membership from './components/Membership';
 import MyOrders from './components/MyOrders';
 import VerifyEmail from './components/VerifyEmail';
@@ -39,6 +42,7 @@ import IntroAnimation from './components/IntroAnimation';
 function App() {
   return (
     <ThemeProvider>
+    <LanguageProvider>
       <IntroAnimation />
       <ToastProvider>
       <AuthProvider>
@@ -71,8 +75,8 @@ function App() {
                       <Route path="membership" element={<Membership />} />
                       <Route path="notifications" element={<NotificationsSection />} />
                       <Route path="recently-viewed" element={<RecentlyViewedSection />} />
-                      <Route path="coupons" element={<ComingSoonSection label="Coupons & Rewards" />} />
-                      <Route path="payment-methods" element={<ComingSoonSection label="Saved payment methods" />} />
+                      <Route path="coupons" element={<CouponsRewards />} />
+                      <Route path="payment-methods" element={<PaymentMethods />} />
                     </Route>
                     <Route path="membership" element={<Membership />} />
                     <Route path="orders" element={<MyOrders />} />
@@ -95,6 +99,7 @@ function App() {
         </CartProvider>
       </AuthProvider>
       </ToastProvider>
+    </LanguageProvider>
     </ThemeProvider>
   );
 }

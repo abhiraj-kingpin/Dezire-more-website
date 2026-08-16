@@ -318,7 +318,7 @@ button.mobile-account-btn.user-logged-in {
 /* ===== HERO ===== */
 .hero {
   position: relative;
-  background: linear-gradient(135deg, #f9f5ee 0%, #f0ebe0 50%, #e8e0d0 100%);
+  background: linear-gradient(135deg, var(--warm-white) 0%, var(--surface-alt) 50%, var(--border) 100%);
   min-height: 580px;
   display: grid;
   grid-template-columns: 1fr 1.1fr 260px;
@@ -442,7 +442,7 @@ button.mobile-account-btn.user-logged-in {
 }
 .chatus-card {
   position: relative;
-  background: #F8F4EC;
+  background: var(--warm-white);
   max-width: 480px;
   width: 100%;
   max-height: 90vh;
@@ -697,7 +697,7 @@ button.mobile-account-btn.user-logged-in {
   left: 0;
   width: 40%;
   height: 100%;
-  background: linear-gradient(to right, #f5f0e8, transparent);
+  background: linear-gradient(to right, var(--warm-white), transparent);
   z-index: 1;
 }
 
@@ -1050,7 +1050,7 @@ button.mobile-account-btn.user-logged-in {
 .testimonials-section {
   position: relative;
   padding: 100px 0;
-  background: linear-gradient(160deg, #fbf8f2 0%, #f5efe2 100%);
+  background: linear-gradient(160deg, var(--warm-white) 0%, var(--surface-alt) 100%);
   overflow: hidden;
   color: var(--text-dark);
 }
@@ -1208,7 +1208,7 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 .slider-btn:hover {
-  background: #f5f5f5;
+  background: var(--surface-alt);
 }
 .products-grid-3col { grid-template-columns: repeat(4, 1fr); }
 
@@ -1704,6 +1704,159 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   font-size: 0.9375rem;
   text-align: center;
 }
+
+/* ── Coupons & Rewards (account page) ─────────────────────────────── */
+.coupon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+.coupon-card {
+  display: flex;
+  border: 1px dashed var(--gold);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.coupon-card-value {
+  flex-shrink: 0;
+  width: 92px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 8px;
+  background: var(--dark-green);
+  color: var(--gold-light);
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.coupon-card-body {
+  flex: 1;
+  min-width: 0;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-left: 1px dashed var(--border);
+}
+.coupon-card-code-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.coupon-card-code {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-dark);
+}
+.coupon-card-copy {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--warm-white);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-mid);
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+  flex-shrink: 0;
+}
+.coupon-card-copy:hover { border-color: var(--gold); color: var(--gold); }
+.coupon-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 0.75rem;
+  color: var(--text-light);
+}
+
+/* ── Payment Methods (account page) ──────────────────────────────── */
+.pm-mode-note {
+  font-size: 0.8125rem;
+  color: var(--text-light);
+  line-height: 1.6;
+  margin: 0 0 18px;
+}
+.pm-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.pm-card-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.pm-card-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--warm-white);
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pm-card-info { flex: 1; min-width: 0; }
+.pm-card-label {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pm-card-default-badge {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  border-radius: 20px;
+  padding: 2px 8px;
+}
+.pm-card-sub { font-size: 0.75rem; color: var(--text-light); margin-top: 2px; }
+.pm-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.pm-icon-btn {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 1px solid var(--border); background: none;
+  color: var(--text-mid); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+.pm-icon-btn:hover { border-color: var(--gold); color: var(--gold); }
+.pm-icon-btn-danger:hover { border-color: var(--danger); color: var(--danger); }
+.pm-add-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: none; border: 1px dashed var(--border); border-radius: 8px;
+  padding: 12px 18px; font-size: 0.8125rem; font-weight: 600; color: var(--text-mid);
+  cursor: pointer; transition: border-color 0.2s ease, color 0.2s ease;
+}
+.pm-add-btn:hover { border-color: var(--gold); color: var(--gold); }
+.pm-add-form {
+  display: flex; flex-direction: column; gap: 10px;
+  border: 1px solid var(--border); border-radius: 8px; padding: 16px;
+  max-width: 360px;
+}
+.pm-add-form-actions { display: flex; gap: 10px; margin-top: 4px; }
+.pm-add-form-actions .settings-auth-btn { flex: 1; }
 
 .recently-viewed-grid {
   display: grid;
@@ -2661,9 +2814,9 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 }
 
 .pd-add-wishlist.active {
-  background: #fbeceb;
-  border-color: #c0392b;
-  color: #c0392b;
+  background: var(--danger-bg);
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .pd-add-wishlist.pop { animation: heartPop 0.4s ease; }
@@ -3511,6 +3664,19 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   color: var(--dark-green);
   font-weight: 700;
   font-size: 0.9375rem;
+}
+
+.payment-save-card-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 0.8125rem;
+  color: var(--text-mid);
+  cursor: pointer;
+}
+.payment-save-card-row input[type="checkbox"] {
+  width: 15px; height: 15px; accent-color: var(--gold); cursor: pointer;
 }
 
 /* ===== ORDER SUCCESS / DISPATCH SCREEN ===== */
@@ -5809,6 +5975,34 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   color: var(--text-light);
 }
 
+.settings-row-lang { position: relative; }
+.settings-lang-btn {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--warm-white); border: 1px solid var(--border);
+  border-radius: 20px; padding: 6px 14px;
+  font-size: 0.8125rem; font-weight: 600; color: var(--text-dark);
+  cursor: pointer; transition: border-color 0.2s ease;
+}
+.settings-lang-btn:hover { border-color: var(--gold); }
+.settings-lang-chevron { font-size: 0.5625rem; color: var(--text-light); }
+.settings-lang-list {
+  display: flex; flex-direction: column; gap: 2px;
+  background: var(--surface-alt); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px; margin: 4px 0 20px;
+}
+.settings-lang-option {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  background: none; border: none; border-radius: 6px;
+  padding: 9px 12px; cursor: pointer; text-align: left;
+  font-size: 0.875rem; color: var(--text-dark);
+  transition: background 0.15s ease;
+}
+.settings-lang-option:hover { background: var(--warm-white); }
+.settings-lang-option.active { background: var(--gold); color: #fff; }
+.settings-lang-option.active .settings-lang-english { color: rgba(255,255,255,0.75); }
+.settings-lang-native { font-weight: 600; }
+.settings-lang-english { font-size: 0.6875rem; color: var(--text-light); }
+
 .settings-account-card {
   display: flex;
   align-items: center;
@@ -5950,10 +6144,31 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 /* Buttons that rely on a plain white background elsewhere in the app */
 [data-theme="dark"] .flying-cart-image { box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
 
+/* The cart/checkout modal keeps its own local --cm-* palette below (rather
+   than driving every value off --surface/--text-dark) so its "premium
+   boutique" look stays intentional rather than diluted — this just gives
+   that local palette a dark-mode variant instead of leaving it fixed-light. */
+[data-theme="dark"] .cart-modal-v2 {
+  --cm-bg: var(--surface);
+  --cm-bg-2: var(--surface-alt);
+  --cm-panel: var(--surface);
+  --cm-panel-2: rgba(212,174,110,0.08);
+  --cm-border: rgba(212,174,110,0.28);
+  --cm-hair: var(--border);
+  --cm-gold: var(--gold);
+  --cm-gold-light: var(--gold-light);
+  --cm-text: var(--text-dark);
+  --cm-text-mid: var(--text-mid);
+  --cm-text-light: var(--text-light);
+  --cm-green: var(--dark-green);
+}
+[data-theme="dark"] .cart-modal-overlay {
+  background: rgba(0, 0, 0, 0.6);
+}
+
 /* ===================================================================
    CART MODAL v2 — centered, light "premium boutique" cart.
-   Independent of the site's light/dark toggle (data-theme) by design:
-   this is a fixed light palette, not driven by --surface/--text-dark.
+   Given a dark-mode variant above instead of being left fixed-light.
    =================================================================== */
 .cart-modal-overlay {
   position: fixed;
@@ -5970,6 +6185,7 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 
 .cart-modal-v2 {
   --cm-bg: #ffffff;
+  --cm-bg-2: #fdfbf7;
   --cm-panel: #ffffff;
   --cm-panel-2: rgba(184,150,78,0.045);
   --cm-border: rgba(184,150,78,0.32);
@@ -5984,7 +6200,7 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
   width: 100%;
   max-width: 1060px;
   max-height: 90vh;
-  background: linear-gradient(180deg, var(--cm-bg), #fdfbf7);
+  background: linear-gradient(180deg, var(--cm-bg), var(--cm-bg-2));
   border: 1px solid var(--cm-border);
   border-radius: 14px;
   box-shadow: 0 30px 80px rgba(30,26,18,0.28), 0 0 0 1px rgba(184,150,78,0.08);

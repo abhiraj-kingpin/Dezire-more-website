@@ -6,6 +6,7 @@ import { useCart } from '../context/CartContext';
 import { useSearch } from '../context/SearchContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useLanguage } from '../context/LanguageContext';
 import UserMenu from './UserMenu';
 import FlowingThreads from './FlowingThreads';
 import SettingsDrawer from './SettingsDrawer';
@@ -106,6 +107,12 @@ function Navbar() {
   const [paymentReferenceInput, setPaymentReferenceInput] = useState('');
   const [amountPaidInput, setAmountPaidInput] = useState('');
   const [upiSettings, setUpiSettings] = useState({ upiId: '' });
+  // "Save this card" at checkout — only offered once Razorpay is actually
+  // configured (razorpayCustomerId comes back null otherwise, same
+  // graceful-degradation as the UPI option above) and the shopper is
+  // logged in, since saved cards live on their account.
+  const [razorpayCustomerId, setRazorpayCustomerId] = useState(null);
+  const [saveCard, setSaveCard] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [lastOrderId, setLastOrderId] = useState('');
   const [readyToWearOpen, setReadyToWearOpen] = useState(false);
@@ -128,6 +135,7 @@ function Navbar() {
     authOpen, setAuthOpen, authPrompt, promptLogin,
   } = useAuth();
   const { showToast } = useToast();
+  const { t } = useLanguage();
   const isPremium = user?.membership?.status === 'active';
 
   const [loginEmail, setLoginEmail] = useState('');
@@ -473,6 +481,19 @@ function Navbar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paymentStep]);
 
+  // Looked up once checkout actually opens (not on every render) so a
+  // logged-in shopper sees the "Save this card" option the moment they pick
+  // Razorpay — silently absent rather than erroring if Razorpay isn't
+  // configured yet or the lookup fails, same spirit as fetchUpiSettings.
+  useEffect(() => {
+    if (!paymentStep || !user) return;
+    fetch(`${BASE}/payment-methods/customer-id`, { headers: authHeaders() })
+      .then(res => res.json())
+      .then(data => setRazorpayCustomerId(data.customerId || null))
+      .catch(() => setRazorpayCustomerId(null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paymentStep, user]);
+
   const handleResendVerification = async () => {
     if (resendCooldown > 0) return;
     setVerifyError('');
@@ -619,6 +640,14 @@ function Navbar() {
           email: checkoutEmail.trim(),
           contact: checkoutPhone.trim(),
         },
+        // Tokenizes the card being used right now onto this shopper's
+        // Razorpay customer record — that's the only way a card ever lands
+        // on the Payment Methods account page (see razorpayCustomer.js for
+        // why there's no separate "add a card" flow). Both are omitted
+        // entirely (not just false) when the checkbox is off or the
+        // customer id lookup came back empty, since Razorpay treats a
+        // present-but-falsy customer_id as an error rather than "skip this".
+        ...(saveCard && razorpayCustomerId ? { customer_id: razorpayCustomerId, save: 1 } : {}),
         theme: { color: '#1e3a2f' },
         handler: async (response) => {
           try {
@@ -657,7 +686,7 @@ function Navbar() {
 
       <button
         className="nav-hamburger"
-        aria-label="Open menu"
+        aria-label={t('nav_openMenu')}
         onClick={() => setMobileMenuOpen(prev => !prev)}
       >
         <MenuIcon size={22} strokeWidth={1.8} />
@@ -691,25 +720,25 @@ function Navbar() {
 
       <div className="nav-search-bar" onClick={() => setSearchOpen(true)}>
         <Search size={18} strokeWidth={1.8} />
-        <span>Search for sarees, dress materials, co-ords...</span>
+        <span>{t('nav_searchPlaceholder')}</span>
       </div>
 
       <div className="nav-icons">
-        <button aria-label="Search" className="mobile-search-btn" onClick={() => setSearchOpen(true)}>
+        <button aria-label={t('nav_search')} className="mobile-search-btn" onClick={() => setSearchOpen(true)}>
           <Search size={20} strokeWidth={1.8} />
         </button>
 
-        <button aria-label="Wishlist" className="icon-wishlist-btn" onClick={() => setWishlistOpen(true)}>
+        <button aria-label={t('nav_wishlist')} className="icon-wishlist-btn" onClick={() => setWishlistOpen(true)}>
           <Heart size={20} strokeWidth={1.8} />
           {wishlist.length > 0 && <span className="badge">{wishlist.length}</span>}
         </button>
 
-        <button aria-label="Cart" id="nav-cart-icon" className="icon-cart-btn" onClick={() => { setCartOpen(true); setPaymentStep(false); }}>
+        <button aria-label={t('nav_cart')} id="nav-cart-icon" className="icon-cart-btn" onClick={() => { setCartOpen(true); setPaymentStep(false); }}>
           <ShoppingCart size={20} strokeWidth={1.8} />
           {cartCount > 0 && <span className="badge">{cartCount}</span>}
         </button>
 
-        <button aria-label="Settings" className="icon-settings-btn" onClick={() => setSettingsOpen(true)}>
+        <button aria-label={t('nav_settings')} className="icon-settings-btn" onClick={() => setSettingsOpen(true)}>
           <Settings size={20} strokeWidth={1.8} />
         </button>
 
@@ -719,7 +748,7 @@ function Navbar() {
           ) : (
             <button className="auth-trigger-btn" onClick={() => { setAuthOpen(true); setActiveTab('login'); setError(''); }}>
               <User size={20} strokeWidth={1.8} />
-              <span className="auth-btn-label">Login</span>
+              <span className="auth-btn-label">{t('nav_login')}</span>
             </button>
           )}
         </div>
@@ -753,21 +782,21 @@ function Navbar() {
             happened to sit at that fixed coordinate once the header grew. */}
         <li className="nav-links-header">
           <span>Dezire More</span>
-          <button className="nav-links-close" onClick={closeMobileMenu} aria-label="Close menu">
+          <button className="nav-links-close" onClick={closeMobileMenu} aria-label={t('nav_closeMenu')}>
             <X size={20} strokeWidth={2} />
           </button>
         </li>
-        <li><Link to="/sarees" onClick={closeMobileMenu}>Sarees</Link></li>
-        <li><Link to="/dress-materials" onClick={closeMobileMenu}>Dress Materials</Link></li>
+        <li><Link to="/sarees" onClick={closeMobileMenu}>{t('nav_sarees')}</Link></li>
+        <li><Link to="/dress-materials" onClick={closeMobileMenu}>{t('nav_dressMaterials')}</Link></li>
         <li className={`dropdown ${readyToWearOpen ? 'open' : ''}`}>
           <a href="/ready-to-wear" onClick={(e) => { e.preventDefault(); setReadyToWearOpen(prev => !prev); }}>
-            Ready to Wear
+            {t('nav_readyToWear')}
             <svg className="dropdown-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="6 9 12 15 18 9" />
             </svg>
           </a>
           <ul className="dropdown-menu dropdown-menu-wide">
-            <li><Link to="/ready-to-wear" onClick={closeMobileMenu}>All Ready to Wear</Link></li>
+            <li><Link to="/ready-to-wear" onClick={closeMobileMenu}>{t('nav_allReadyToWear')}</Link></li>
             {READY_TO_WEAR_SUBCATEGORIES.map(s => (
               <li key={s.value}>
                 <Link to={`/ready-to-wear?subcategory=${s.value}`} onClick={closeMobileMenu}>{s.label}</Link>
@@ -775,11 +804,11 @@ function Navbar() {
             ))}
           </ul>
         </li>
-        <li><Link to="/western-apparels" onClick={closeMobileMenu}>Casual Western</Link></li>
-        <li><Link to="/jewelry-accessories" onClick={closeMobileMenu}>Jewelry & Accessories</Link></li>
-        <li><Link to="/membership" className="nav-link-membership" onClick={closeMobileMenu}>Premium Membership</Link></li>
+        <li><Link to="/western-apparels" onClick={closeMobileMenu}>{t('nav_westernApparels')}</Link></li>
+        <li><Link to="/jewelry-accessories" onClick={closeMobileMenu}>{t('nav_jewelryAccessories')}</Link></li>
+        <li><Link to="/membership" className="nav-link-membership" onClick={closeMobileMenu}>{t('nav_membership')}</Link></li>
         <li className="nav-links-settings">
-          <a href="#" onClick={(e) => { e.preventDefault(); closeMobileMenu(); setSettingsOpen(true); }}>Settings</a>
+          <a href="#" onClick={(e) => { e.preventDefault(); closeMobileMenu(); setSettingsOpen(true); }}>{t('nav_settings')}</a>
         </li>
       </ul>
 
@@ -797,7 +826,7 @@ function Navbar() {
                 <input
                   className="search-input"
                   type="text"
-                  placeholder="Search for sarees, dress materials, co-ords..."
+                  placeholder={t('nav_searchPlaceholder')}
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   onKeyDown={handleSearchEnter}
@@ -1166,6 +1195,12 @@ function Navbar() {
                     </label>
                   ))}
                 </div>
+                {paymentMethod === 'Razorpay' && razorpayCustomerId && (
+                  <label className="payment-save-card-row">
+                    <input type="checkbox" checked={saveCard} onChange={e => setSaveCard(e.target.checked)} />
+                    Save this card for faster checkout next time
+                  </label>
+                )}
 
                 {paymentMethod === 'Razorpay' && (
                   <div className="payment-verify-block">

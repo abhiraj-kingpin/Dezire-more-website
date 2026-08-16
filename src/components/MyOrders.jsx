@@ -4,6 +4,8 @@ import { Package } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
+import { useLanguage } from '../context/LanguageContext';
+import { translateOrderStatus } from '../i18n/translations';
 import { BASE } from '../hooks/useProducts';
 import { downloadInvoice } from '../utils/invoice';
 
@@ -209,6 +211,7 @@ function OrderCard({ order, onCancelled, onDeleted, exchange, onExchangeSubmitte
   const [exchangeModalOpen, setExchangeModalOpen] = useState(false);
   const { addToCart } = useCart();
   const { showToast } = useToast();
+  const { language } = useLanguage();
 
   const isCancelled = order.orderStatus === 'Cancelled';
   const stepIndex = STATUS_STEPS.indexOf(order.orderStatus);
@@ -259,7 +262,7 @@ function OrderCard({ order, onCancelled, onDeleted, exchange, onExchangeSubmitte
             <span className="order-card-total-mini">₹{order.total.toLocaleString('en-IN')}</span>
             <div className="order-card-status-row">
               <span className={`order-card-status ${isCancelled ? 'order-card-status-cancelled' : ''}`}>
-                {order.orderStatus}
+                {translateOrderStatus(language, order.orderStatus)}
               </span>
               <span className="order-card-chevron">{expanded ? '▲' : '▼'}</span>
             </div>
@@ -269,7 +272,7 @@ function OrderCard({ order, onCancelled, onDeleted, exchange, onExchangeSubmitte
         {!isCancelled && (
           <div className="order-mini-stepper">
             {STATUS_STEPS.map((step, i) => (
-              <span key={step} className={`order-mini-dot ${i <= stepIndex ? 'done' : ''}`} title={step} />
+              <span key={step} className={`order-mini-dot ${i <= stepIndex ? 'done' : ''}`} title={translateOrderStatus(language, step)} />
             ))}
           </div>
         )}
@@ -282,7 +285,7 @@ function OrderCard({ order, onCancelled, onDeleted, exchange, onExchangeSubmitte
               {STATUS_STEPS.map((step, i) => (
                 <div key={step} className={`order-progress-step ${i <= stepIndex ? 'done' : ''}`}>
                   <span className="order-progress-dot" />
-                  <span className="order-progress-label">{step}</span>
+                  <span className="order-progress-label">{translateOrderStatus(language, step)}</span>
                 </div>
               ))}
             </div>

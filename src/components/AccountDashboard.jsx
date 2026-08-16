@@ -8,12 +8,14 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useToast } from '../context/ToastContext';
+import { useLanguage } from '../context/LanguageContext';
 import AddressBook from './AddressBook';
 import { getRecentlyViewed, categoryToPath } from '../utils/recentlyViewed';
 
 export function ProfileSection() {
   const { user, updateUser } = useAuth();
   const { showToast } = useToast();
+  const { t } = useLanguage();
   const [firstName, setFirstName] = useState(user.firstName || '');
   const [lastName, setLastName] = useState(user.lastName || '');
   const [phone, setPhone] = useState(user.phone || '');
@@ -44,7 +46,7 @@ export function ProfileSection() {
       <label className="auth-label">Phone</label>
       <input className="auth-input" type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+91 98765 43210" />
       <button className="auth-submit" style={{ marginTop: '14px' }} type="submit" disabled={saving}>
-        {saving ? 'Saving...' : 'Save Changes'}
+        {saving ? 'Saving...' : t('action_saveChanges')}
       </button>
     </form>
   );
@@ -106,6 +108,7 @@ export function AccountWishlist() {
   const { wishlist, toggleWishlist } = useWishlist();
   const { addToCart } = useCart();
   const { showToast } = useToast();
+  const { t } = useLanguage();
 
   if (wishlist.length === 0) {
     return <p className="address-empty">Items you save with the heart icon will show up here.</p>;
@@ -134,7 +137,7 @@ export function AccountWishlist() {
                 showToast('Moved to cart', 'cart');
               }}
             >
-              {outOfStock ? 'Out of Stock' : 'Move to Cart'}
+              {outOfStock ? t('action_outOfStock') : t('action_moveToCart')}
             </button>
             <button className="account-wishlist-remove" onClick={() => toggleWishlist(product)} aria-label="Remove from wishlist">✕</button>
           </div>
@@ -146,34 +149,35 @@ export function AccountWishlist() {
 }
 
 const NAV_ITEMS = [
-  { key: 'profile', label: 'My Profile', icon: User },
-  { key: 'addresses', label: 'Saved Addresses', icon: MapPin },
-  { key: 'orders', label: 'My Orders', icon: Package },
-  { key: 'wishlist', label: 'Wishlist', icon: Heart },
-  { key: 'membership', label: 'Premium Membership', icon: Crown },
-  { key: 'notifications', label: 'Notifications', icon: Bell },
-  { key: 'recently-viewed', label: 'Recently Viewed', icon: Clock },
-  { key: 'coupons', label: 'Coupons & Rewards', icon: Gift },
-  { key: 'payment-methods', label: 'Payment Methods', icon: CreditCard },
+  { key: 'profile', labelKey: 'account_profile', icon: User },
+  { key: 'addresses', labelKey: 'account_addresses', icon: MapPin },
+  { key: 'orders', labelKey: 'account_orders', icon: Package },
+  { key: 'wishlist', labelKey: 'account_wishlist', icon: Heart },
+  { key: 'membership', labelKey: 'account_membership', icon: Crown },
+  { key: 'notifications', labelKey: 'account_notifications', icon: Bell },
+  { key: 'recently-viewed', labelKey: 'account_recentlyViewed', icon: Clock },
+  { key: 'coupons', labelKey: 'account_coupons', icon: Gift },
+  { key: 'payment-methods', labelKey: 'account_paymentMethods', icon: CreditCard },
 ];
 
 function AccountDashboard() {
   const { user, logout } = useAuth();
   const { cart, setCartOpen } = useCart();
   const { wishlist } = useWishlist();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   if (!user) {
     return (
       <div className="policy-page">
         <div className="policy-hero">
-          <span className="policy-eyebrow">My Account</span>
-          <h1>You're Not Signed In</h1>
-          <p>Sign in from the account icon in the navigation bar to view your dashboard.</p>
+          <span className="policy-eyebrow">{t('account_myAccount')}</span>
+          <h1>{t('account_notSignedIn')}</h1>
+          <p>{t('account_signInPrompt')}</p>
         </div>
         <div className="policy-content">
           <div className="size-cta">
-            <Link to="/" className="whatsapp-btn">Back to Home</Link>
+            <Link to="/" className="whatsapp-btn">{t('action_backToHome')}</Link>
           </div>
         </div>
       </div>
@@ -185,9 +189,9 @@ function AccountDashboard() {
   return (
     <div className="policy-page">
       <div className="policy-hero">
-        <span className="policy-eyebrow">My Account</span>
-        <h1>Welcome, {user.firstName}</h1>
-        <p>Manage your profile, orders, addresses, and membership all in one place.</p>
+        <span className="policy-eyebrow">{t('account_myAccount')}</span>
+        <h1>{t('account_welcome')}, {user.firstName}</h1>
+        <p>{t('account_manage')}</p>
       </div>
 
       <div className="account-dashboard">
@@ -208,21 +212,21 @@ function AccountDashboard() {
                 className={({ isActive }) => `account-nav-item ${isActive ? 'active' : ''}`}
               >
                 <item.icon className="account-nav-icon" size={20} strokeWidth={1.8} />
-                {item.label}
+                {t(item.labelKey)}
                 {item.key === 'wishlist' && wishlist.length > 0 ? ` (${wishlist.length})` : ''}
               </NavLink>
             ))}
             <button className="account-nav-item" onClick={() => setCartOpen(true)}>
               <ShoppingBag className="account-nav-icon" size={20} strokeWidth={1.8} />
-              Cart {cart.length > 0 ? `(${cart.length})` : ''}
+              {t('nav_cart')} {cart.length > 0 ? `(${cart.length})` : ''}
             </button>
             <button className="account-nav-item" onClick={() => navigate('/help-support')}>
               <HelpCircle className="account-nav-icon" size={20} strokeWidth={1.8} />
-              Support
+              {t('account_support')}
             </button>
             <button className="account-nav-item account-nav-logout" onClick={logout}>
               <LogOut className="account-nav-icon" size={20} strokeWidth={1.8} />
-              Logout
+              {t('account_logout')}
             </button>
           </nav>
         </aside>

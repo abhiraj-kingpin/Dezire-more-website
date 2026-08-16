@@ -27,6 +27,19 @@ const wishlistItemSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Fallback "for your reference" saved payment method — used only while
+// Razorpay isn't configured (see routes/paymentMethods.js). Nothing here is
+// ever charged automatically; it's just a label the customer can glance at
+// during checkout, same spirit as a manually-entered UPI ID.
+const savedPaymentMethodSchema = new mongoose.Schema(
+  {
+    label:     { type: String, required: true, trim: true },
+    last4:     { type: String, trim: true },
+    isDefault: { type: Boolean, default: false },
+  },
+  { timestamps: true }
+);
+
 const membershipPaymentSchema = new mongoose.Schema(
   {
     tier:   { type: String, enum: ['gold', 'platinum'], required: true },
@@ -53,6 +66,14 @@ const userSchema = new mongoose.Schema(
 
     addresses: [addressSchema],
     wishlist: [wishlistItemSchema],
+
+    // Set the first time this user's Razorpay Customer record is
+    // created/looked up (see services/razorpayCustomer.js) — reused after
+    // that so repeat checkouts/token lookups hit the same Razorpay customer
+    // instead of creating a new one every time.
+    razorpayCustomerId: { type: String, trim: true },
+    // Only populated in the no-Razorpay-configured fallback mode.
+    savedPaymentMethods: [savedPaymentMethodSchema],
 
     notificationsEnabled: { type: Boolean, default: true },
 

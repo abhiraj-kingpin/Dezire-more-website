@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { Crown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
+import { useTheme } from '../context/ThemeContext';
+import { useLanguage, LANGUAGES } from '../context/LanguageContext';
 
 const FONT_KEY = 'dm-font-scale';
 
@@ -27,6 +29,9 @@ function MenuButton({ children, onClick }) {
 function SettingsDrawer({ open, onClose, onOpenAuth, onOpenWishlist, onOpenCart, cartCount }) {
   const { user, logout } = useAuth();
   const { wishlist } = useWishlist();
+  const { theme, toggleTheme } = useTheme();
+  const { language, setLanguage, t } = useLanguage();
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
 
   const [fontScale, setFontScale] = useState(() => localStorage.getItem(FONT_KEY) || 'normal');
   const [reduceMotion, setReduceMotion] = useState(() => localStorage.getItem('dm-reduce-motion') === 'true');
@@ -56,7 +61,7 @@ function SettingsDrawer({ open, onClose, onOpenAuth, onOpenWishlist, onOpenCart,
     <div className="wl-overlay" onClick={onClose}>
       <div className="wl-drawer settings-drawer" onClick={e => e.stopPropagation()}>
         <div className="wl-header">
-          <h3 className="wl-title">Settings</h3>
+          <h3 className="wl-title">{t('settings_title')}</h3>
           <button className="wl-close" onClick={onClose} aria-label="Close settings">✕</button>
         </div>
 
@@ -85,32 +90,32 @@ function SettingsDrawer({ open, onClose, onOpenAuth, onOpenWishlist, onOpenCart,
 
           {user ? (
             <button className="settings-auth-btn settings-auth-logout" onClick={() => { logout(); onClose(); }}>
-              Logout
+              {t('account_logout')}
             </button>
           ) : (
             <button className="settings-auth-btn" onClick={onOpenAuth}>
-              Login / Register
+              {t('settings_loginRegister')}
             </button>
           )}
 
           <div className="settings-section">
-            <p className="settings-section-title">My Account</p>
+            <p className="settings-section-title">{t('settings_myAccount')}</p>
             <div className="settings-menu-list">
-              <MenuLink to="/orders" onClose={onClose}>My Orders</MenuLink>
+              <MenuLink to="/orders" onClose={onClose}>{t('account_orders')}</MenuLink>
               <MenuButton onClick={onOpenCart}>
-                Cart{cartCount > 0 ? ` (${cartCount})` : ''}
+                {t('nav_cart')}{cartCount > 0 ? ` (${cartCount})` : ''}
               </MenuButton>
               <MenuButton onClick={onOpenWishlist}>
-                Wishlist{wishlist?.length > 0 ? ` (${wishlist.length})` : ''}
+                {t('nav_wishlist')}{wishlist?.length > 0 ? ` (${wishlist.length})` : ''}
               </MenuButton>
-              <MenuLink to="/account" onClose={onClose}>Profile</MenuLink>
-              <MenuLink to="/account" onClose={onClose}>Saved Addresses</MenuLink>
-              <MenuLink to="/membership" onClose={onClose}>Premium Membership</MenuLink>
+              <MenuLink to="/account" onClose={onClose}>{t('settings_profile')}</MenuLink>
+              <MenuLink to="/account" onClose={onClose}>{t('account_addresses')}</MenuLink>
+              <MenuLink to="/membership" onClose={onClose}>{t('nav_membership')}</MenuLink>
             </div>
           </div>
 
           <div className="settings-section">
-            <p className="settings-section-title">Text Size</p>
+            <p className="settings-section-title">{t('settings_textSize')}</p>
             <div className="settings-pill-row">
               {[
                 { key: 'small', label: 'A', style: { fontSize: '12px' } },
@@ -132,8 +137,8 @@ function SettingsDrawer({ open, onClose, onOpenAuth, onOpenWishlist, onOpenCart,
           <div className="settings-section">
             <div className="settings-row">
               <div>
-                <p className="settings-row-title">Notifications</p>
-                <p className="settings-row-desc">Order updates, offers, and alerts</p>
+                <p className="settings-row-title">{t('settings_notifications')}</p>
+                <p className="settings-row-desc">{t('settings_notificationsDesc')}</p>
               </div>
               <button
                 className={`settings-toggle ${notifications ? 'on' : ''}`}
@@ -148,8 +153,8 @@ function SettingsDrawer({ open, onClose, onOpenAuth, onOpenWishlist, onOpenCart,
 
             <div className="settings-row">
               <div>
-                <p className="settings-row-title">Reduce Motion</p>
-                <p className="settings-row-desc">Minimize animations across the site</p>
+                <p className="settings-row-title">{t('settings_reduceMotion')}</p>
+                <p className="settings-row-desc">{t('settings_reduceMotionDesc')}</p>
               </div>
               <button
                 className={`settings-toggle ${reduceMotion ? 'on' : ''}`}
@@ -164,35 +169,67 @@ function SettingsDrawer({ open, onClose, onOpenAuth, onOpenWishlist, onOpenCart,
 
             <div className="settings-row">
               <div>
-                <p className="settings-row-title">Dark Mode <span className="settings-soon-badge">Coming Soon</span></p>
-                <p className="settings-row-desc">A dark theme is on its way</p>
+                <p className="settings-row-title">{t('settings_darkMode')}</p>
+                <p className="settings-row-desc">{t('settings_darkModeDesc')}</p>
               </div>
-              <button className="settings-toggle" disabled aria-disabled="true" aria-label="Dark mode (coming soon)">
+              <button
+                className={`settings-toggle ${theme === 'dark' ? 'on' : ''}`}
+                onClick={toggleTheme}
+                aria-label="Toggle dark mode"
+                role="switch"
+                aria-checked={theme === 'dark'}
+              >
                 <span className="settings-toggle-knob" />
               </button>
             </div>
 
-            <div className="settings-row">
+            <div className="settings-row settings-row-lang">
               <div>
-                <p className="settings-row-title">Language <span className="settings-soon-badge">Coming Soon</span></p>
-                <p className="settings-row-desc">More languages on the way</p>
+                <p className="settings-row-title">{t('settings_language')}</p>
+                <p className="settings-row-desc">{t('settings_languageDesc')}</p>
               </div>
-              <span className="settings-lang-value">English</span>
+              <button
+                type="button"
+                className="settings-lang-btn"
+                onClick={() => setLangMenuOpen(v => !v)}
+                aria-haspopup="listbox"
+                aria-expanded={langMenuOpen}
+              >
+                {LANGUAGES[language].nativeName}
+                <span className="settings-lang-chevron">{langMenuOpen ? '▲' : '▼'}</span>
+              </button>
             </div>
+            {langMenuOpen && (
+              <div className="settings-lang-list" role="listbox">
+                {Object.entries(LANGUAGES).map(([code, meta]) => (
+                  <button
+                    key={code}
+                    type="button"
+                    role="option"
+                    aria-selected={language === code}
+                    className={`settings-lang-option ${language === code ? 'active' : ''}`}
+                    onClick={() => { setLanguage(code); setLangMenuOpen(false); }}
+                  >
+                    <span className="settings-lang-native">{meta.nativeName}</span>
+                    <span className="settings-lang-english">{meta.englishName}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="settings-section">
-            <p className="settings-section-title">Help &amp; Information</p>
+            <p className="settings-section-title">{t('settings_helpSupport')}</p>
             <div className="settings-menu-list">
-              <MenuLink to="/our-story" onClose={onClose}>About Us</MenuLink>
-              <MenuLink to="/help-support" onClose={onClose}>Help &amp; Support</MenuLink>
-              <MenuLink to="/faq" onClose={onClose}>FAQ</MenuLink>
-              <MenuLink to="/contact" onClose={onClose}>Contact Us</MenuLink>
-              <MenuLink to="/exchange-policy" onClose={onClose}>Return &amp; Exchange Policy</MenuLink>
-              <MenuLink to="/shipping-policy" onClose={onClose}>Shipping Policy</MenuLink>
-              <MenuLink to="/size-guide" onClose={onClose}>Size Guide</MenuLink>
-              <MenuLink to="/privacy-policy" onClose={onClose}>Privacy Policy</MenuLink>
-              <MenuLink to="/terms-conditions" onClose={onClose}>Terms &amp; Conditions</MenuLink>
+              <MenuLink to="/our-story" onClose={onClose}>{t('settings_aboutUs')}</MenuLink>
+              <MenuLink to="/help-support" onClose={onClose}>{t('settings_helpSupport')}</MenuLink>
+              <MenuLink to="/faq" onClose={onClose}>{t('footer_faq')}</MenuLink>
+              <MenuLink to="/contact" onClose={onClose}>{t('footer_contactUs')}</MenuLink>
+              <MenuLink to="/exchange-policy" onClose={onClose}>{t('settings_exchangePolicy')}</MenuLink>
+              <MenuLink to="/shipping-policy" onClose={onClose}>{t('footer_shippingPolicy')}</MenuLink>
+              <MenuLink to="/size-guide" onClose={onClose}>{t('footer_sizeGuide')}</MenuLink>
+              <MenuLink to="/privacy-policy" onClose={onClose}>{t('footer_privacyPolicy')}</MenuLink>
+              <MenuLink to="/terms-conditions" onClose={onClose}>{t('footer_termsConditions')}</MenuLink>
             </div>
           </div>
 
