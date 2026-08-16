@@ -36,6 +36,7 @@
     .sidebar {
       position: fixed; top: 0; left: 0; bottom: 0; width: 220px;
       background: var(--green); padding: 24px 0; z-index: 10;
+      display: flex; flex-direction: column; overflow-y: auto;
     }
     .sidebar-logo { color: #fff; font-size: 15px; font-weight: 600; padding: 0 20px 24px; border-bottom: 1px solid rgba(255,255,255,.15); }
     .sidebar-logo span { display: block; color: var(--gold); font-size: 10px; font-weight: 400; letter-spacing: .1em; margin-top: 2px; }
@@ -113,6 +114,7 @@
     #toast.show { transform: translateY(0); opacity: 1; }
     #toast.success { background: var(--success); }
     #toast.error   { background: var(--danger); }
+    #toast.info    { background: var(--green); max-width: 420px; }
 
     .products-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .products-table th { text-align: left; padding: 10px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); border-bottom: 1px solid var(--border); }
@@ -241,7 +243,7 @@
     <button class="nav-item" onclick="showPage('bulk')">Bulk Import</button>
     <button class="nav-item" onclick="showPage('activity')">Activity Log</button>
     <button class="nav-item" onclick="showPage('settings')">Account Settings</button>
-    <button class="nav-item" style="margin-top:auto;position:absolute;bottom:20px;left:0;width:100%;color:rgba(255,255,255,.5)" onclick="logout()">Sign Out</button>
+    <button class="nav-item" style="margin-top:auto;flex-shrink:0;color:rgba(255,255,255,.5)" onclick="logout()">Sign Out</button>
   </nav>
 
   <main class="main">
@@ -510,7 +512,10 @@
 
       <div class="card">
         <strong>Product Photos</strong>
-        <p style="font-size:13px;color:var(--muted);margin-top:4px;margin-bottom:16px">Upload up to 10 photos. First photo is the main image.</p>
+        <p style="font-size:13px;color:var(--muted);margin-top:4px;margin-bottom:8px">Upload up to 10 photos. First photo is the main image.</p>
+        <p style="font-size:12px;color:var(--gold);margin-bottom:16px;padding:8px 12px;background:#fdf8ef;border-radius:6px;border:1px solid #f0e0bd">
+          <strong>Best size:</strong> 1200×1600px (3:4 portrait) for full-length/model photos, or 1600×1200px (4:3 landscape) for flat-lay/spread shots. Other sizes still display fine (no cropping) — matching these exactly just keeps every product's frame the same shape across the site.
+        </p>
         <div class="upload-zone" onclick="document.getElementById('file-input').click()"
              ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" id="upload-zone">
           <strong>Click to upload or drag photos here</strong>
@@ -522,7 +527,10 @@
 
       <div class="card">
         <strong>Product Video (optional)</strong>
-        <p style="font-size:13px;color:var(--muted);margin-top:4px;margin-bottom:16px">Show the saree/outfit being worn or draped — e.g. a short try-on or styling clip.</p>
+        <p style="font-size:13px;color:var(--muted);margin-top:4px;margin-bottom:8px">Show the saree/outfit being worn or draped — e.g. a short try-on or styling clip.</p>
+        <p style="font-size:12px;color:var(--danger);margin-bottom:16px;padding:8px 12px;background:#fdf0ef;border-radius:6px;border:1px solid #f5c6c0">
+          <strong>Don't upload a raw screen recording</strong> — if you record your phone screen (e.g. from a gallery/video-call app), it captures the phone's own status bar and navigation buttons into the video itself, which can't be cropped out afterward. Export/share the video directly from the camera app, or trim off the phone UI before uploading.
+        </p>
         <div class="upload-zone" onclick="document.getElementById('video-input').click()" id="video-upload-zone">
           <strong>Click to upload a video</strong>
           <p>MP4, MOV, WEBM · Max 50MB · One video per product</p>
@@ -705,6 +713,11 @@
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
+// Absolute URL, not the '/api' relative path the browser-served version at
+// dezire-backend/admin-panel.html uses — that only works same-origin, and
+// there's no "origin" at all once this runs as a packaged native app (no
+// backend living at a relative path locally). Points straight at the real
+// deployed backend instead. If you ever move off Render, update this.
 const API = 'https://dezire-more-website-1.onrender.com/api';
 let token = localStorage.getItem('dm_admin_token');
 let selectedFiles = [];
@@ -2347,10 +2360,43 @@ async function deleteProduct(id, name) {
 }
 
 
-function handleFiles(files) {
+// Recommended photo dimensions — 3:4 portrait for full-length/model shots,
+// 4:3 landscape for flat-lay/spread shots (matches the product grid's own
+// 3:4 card ratio, so photos shot to this spec look identical there and on
+// the detail page). Not enforced/blocked — the detail page's frame adapts
+// to whatever ratio an uploaded photo actually is (see ProductCard.jsx's
+// clampImageRatio), so an off-spec photo still displays with no cropping.
+// This is just an early heads-up so it doesn't only get noticed once it's
+// live and looks inconsistent next to on-spec product photos.
+const RECOMMENDED_RATIOS = [{ label: '1200×1600px (3:4 portrait)', value: 3 / 4 }, { label: '1600×1200px (4:3 landscape)', value: 4 / 3 }];
+const RATIO_TOLERANCE = 0.15;
+
+function checkImageDimensions(file) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const ratio = img.naturalWidth / img.naturalHeight;
+      const closeEnough = RECOMMENDED_RATIOS.some(r => Math.abs(ratio - r.value) <= RATIO_TOLERANCE);
+      resolve({ file, width: img.naturalWidth, height: img.naturalHeight, closeEnough });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+    img.src = url;
+  });
+}
+
+async function handleFiles(files) {
   const newFiles = Array.from(files).slice(0, 10 - selectedFiles.length);
   selectedFiles = [...selectedFiles, ...newFiles].slice(0, 10);
   renderPreviews();
+
+  const checks = await Promise.all(newFiles.map(checkImageDimensions));
+  const offSpec = checks.filter(c => c && !c.closeEnough);
+  if (offSpec.length) {
+    const names = offSpec.map(c => `${c.file.name} (${c.width}×${c.height})`).join(', ');
+    toast(`${offSpec.length === 1 ? 'This photo isn\'t' : 'These photos aren\'t'} close to the recommended size — ${names}. It'll still display fine (no cropping), just won't match the frame shape of other products. See the size guide above.`, 'info');
+  }
 }
 
 function handleDrop(e) {

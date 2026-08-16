@@ -36,6 +36,7 @@
     .sidebar {
       position: fixed; top: 0; left: 0; bottom: 0; width: 220px;
       background: var(--green); padding: 24px 0; z-index: 10;
+      display: flex; flex-direction: column; overflow-y: auto;
     }
     .sidebar-logo { color: #fff; font-size: 15px; font-weight: 600; padding: 0 20px 24px; border-bottom: 1px solid rgba(255,255,255,.15); }
     .sidebar-logo span { display: block; color: var(--gold); font-size: 10px; font-weight: 400; letter-spacing: .1em; margin-top: 2px; }
@@ -242,7 +243,7 @@
     <button class="nav-item" onclick="showPage('bulk')">Bulk Import</button>
     <button class="nav-item" onclick="showPage('activity')">Activity Log</button>
     <button class="nav-item" onclick="showPage('settings')">Account Settings</button>
-    <button class="nav-item" style="margin-top:auto;position:absolute;bottom:20px;left:0;width:100%;color:rgba(255,255,255,.5)" onclick="logout()">Sign Out</button>
+    <button class="nav-item" style="margin-top:auto;flex-shrink:0;color:rgba(255,255,255,.5)" onclick="logout()">Sign Out</button>
   </nav>
 
   <main class="main">
