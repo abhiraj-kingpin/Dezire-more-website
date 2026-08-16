@@ -1,0 +1,2745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dezire More — Admin</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green:  #1a3c34;
+      --gold:   #b8963e;
+      --bg:     #f7f5f0;
+      --card:   #ffffff;
+      --border: #e0dcd4;
+      --text:   #1a1a1a;
+      --muted:  #6b6b6b;
+      --danger: #c0392b;
+      --success:#0f6e56;
+    }
+
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ── Login ── */
+    #login-screen {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .login-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 40px; width: 360px;
+    }
+    .login-card h1 { font-size: 20px; margin-bottom: 4px; }
+    .login-card p  { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
+
+    /* ── Layout ── */
+    #app { display: none; }
+    .sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0; width: 220px;
+      background: var(--green); padding: 24px 0; z-index: 10;
+    }
+    .sidebar-logo { color: #fff; font-size: 15px; font-weight: 600; padding: 0 20px 24px; border-bottom: 1px solid rgba(255,255,255,.15); }
+    .sidebar-logo span { display: block; color: var(--gold); font-size: 10px; font-weight: 400; letter-spacing: .1em; margin-top: 2px; }
+    .nav-item {
+      display: block; padding: 11px 20px; color: rgba(255,255,255,.7);
+      font-size: 13px; cursor: pointer; transition: all .15s; border: none;
+      background: none; width: 100%; text-align: left;
+    }
+    .nav-item:hover, .nav-item.active { color: #fff; background: rgba(255,255,255,.1); }
+    .nav-item.active { border-left: 3px solid var(--gold); }
+
+    .main { margin-left: 220px; padding: 32px; }
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── Shared UI ── */
+    h2 { font-size: 22px; margin-bottom: 6px; }
+    .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
+
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 24px; margin-bottom: 20px; }
+
+    label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; margin-top: 16px; }
+    label:first-child { margin-top: 0; }
+
+    input, select, textarea {
+      width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+      border-radius: 7px; font-size: 14px; background: var(--bg);
+      transition: border .15s; color: var(--text);
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none; border-color: var(--green); background: #fff;
+    }
+    textarea { resize: vertical; min-height: 80px; }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+    .btn {
+      padding: 10px 20px; border-radius: 7px; font-size: 14px;
+      font-weight: 600; cursor: pointer; border: none; transition: all .15s;
+    }
+    .btn-primary { background: var(--green); color: #fff; }
+    .btn-primary:hover { background: #0f2920; }
+    .btn-gold { background: var(--gold); color: #fff; }
+    .btn-gold:hover { opacity: .9; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Image upload zone ── */
+    .upload-zone {
+      border: 2px dashed var(--border); border-radius: 10px;
+      padding: 32px; text-align: center; cursor: pointer; transition: all .2s;
+      background: var(--bg);
+    }
+    .upload-zone:hover, .upload-zone.drag-over { border-color: var(--green); background: #f0f5f3; }
+    .upload-zone p { color: var(--muted); font-size: 13px; margin-top: 8px; }
+    .upload-zone strong { font-size: 15px; }
+    #file-input, #video-input { display: none; }
+
+    .image-previews { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+    .preview-item { position: relative; width: 90px; height: 110px; }
+    .preview-item img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
+    .preview-item .remove-img {
+      position: absolute; top: -6px; right: -6px; width: 20px; height: 20px;
+      border-radius: 50%; background: var(--danger); color: #fff;
+      border: none; cursor: pointer; font-size: 12px; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 28px; right: 28px; padding: 14px 20px;
+      border-radius: 8px; color: #fff; font-size: 14px; font-weight: 500;
+      transform: translateY(80px); opacity: 0; transition: all .3s; z-index: 999;
+      max-width: 320px;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+    #toast.success { background: var(--success); }
+    #toast.error   { background: var(--danger); }
+
+    /* ── Products table ── */
+    .products-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .products-table th { text-align: left; padding: 10px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); border-bottom: 1px solid var(--border); }
+    .products-table td { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .products-table tr:hover td { background: var(--bg); }
+    .product-thumb { width: 44px; height: 54px; object-fit: cover; border-radius: 4px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .badge-active   { background: #dcf5ec; color: #0a5c3a; }
+    .badge-inactive { background: #fde8e8; color: #8b1a1a; }
+    .badge-tag { background: #f0ecff; color: #4a3ab0; margin-right: 3px; }
+
+    .actions { display: flex; gap: 8px; }
+    .search-bar { display: flex; gap: 10px; margin-bottom: 16px; }
+    .search-bar input { flex: 1; }
+
+    /* ── Stats row ── */
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+    .stat-box { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+    .stat-box .num { font-size: 28px; font-weight: 700; color: var(--green); }
+    .stat-box .lbl { font-size: 12px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .05em; }
+
+    /* ── Tags checkboxes ── */
+    .tags-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag-check { display: flex; align-items: center; gap: 6px; }
+    .tag-check input { width: auto; }
+    .tag-check label { font-size: 13px; text-transform: none; letter-spacing: 0; color: var(--text); margin: 0; font-weight: 400; }
+
+    .form-actions { display: flex; gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+
+    .loading { text-align: center; padding: 40px; color: var(--muted); }
+    .empty { text-align: center; padding: 60px; color: var(--muted); }
+
+    /* ── Mobile sidebar (hamburger drawer) ──
+       Hidden/inert above the breakpoint — .sidebar-toggle stays display:none
+       and .sidebar's transform is only set inside the media query below, so
+       none of this affects the desktop layout at all. */
+    .sidebar-toggle {
+      display: none;
+      position: fixed; top: 14px; left: 14px; z-index: 20;
+      width: 40px; height: 40px; border-radius: 8px;
+      background: var(--green); color: #fff; border: none;
+      align-items: center; justify-content: center; cursor: pointer;
+    }
+    .sidebar-overlay {
+      display: none;
+      position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 9;
+    }
+    .sidebar-overlay.open { display: block; }
+
+    @media (max-width: 860px) {
+      .sidebar-toggle { display: flex; }
+      .sidebar {
+        transform: translateX(-100%);
+        transition: transform .25s ease;
+        width: 250px;
+        z-index: 15;
+        box-shadow: 4px 0 24px rgba(0,0,0,.25);
+      }
+      .sidebar.open { transform: translateX(0); }
+
+      .main { margin-left: 0; padding: 70px 16px 32px; }
+      .login-card { width: 90vw; max-width: 360px; padding: 28px 24px; }
+
+      h2 { font-size: 19px; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .row, .row-3 { grid-template-columns: 1fr; }
+      /* !important needed here specifically: .two-col-grid also carries an
+         inline grid-template-columns (see the Analytics page), and inline
+         styles otherwise always win over an embedded stylesheet rule
+         regardless of class specificity. */
+      .two-col-grid { grid-template-columns: 1fr !important; }
+
+      /* Tables scroll horizontally inside their own box rather than
+         overflowing the viewport or getting clipped by a card's
+         overflow:hidden — this works regardless of what the ancestor
+         .card's own overflow setting is, since the table becomes its own
+         scroll container. */
+      .products-table { display: block; overflow-x: auto; white-space: nowrap; }
+    }
+
+    @media (max-width: 420px) {
+      .stats-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Login Screen ── -->
+<div id="login-screen">
+  <div class="login-card" id="login-form-card">
+    <h1>Dezire More</h1>
+    <p>Admin Panel — sign in to continue</p>
+    <label>Email</label>
+    <input type="email" id="login-email" placeholder="admin@deziremore.com" />
+    <label>Password</label>
+    <input type="password" id="login-password" placeholder="••••••••" />
+    <div id="login-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:20px" onclick="login()">Sign In</button>
+    <button type="button" onclick="showForgotPassword()" style="background:none;border:none;color:var(--muted);font-size:12px;margin-top:14px;cursor:pointer;text-decoration:underline">Forgot password?</button>
+  </div>
+
+  <!-- Shown instead of the form above when "Forgot password?" is clicked -->
+  <div class="login-card" id="forgot-form-card" style="display:none">
+    <h1>Reset Password</h1>
+    <p>Enter your registered admin email — we'll send a reset link if it matches.</p>
+    <label>Email</label>
+    <input type="email" id="forgot-email" placeholder="admin@deziremore.com" />
+    <div id="forgot-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none"></div>
+    <div id="forgot-success" style="color:var(--success,#2e7d32);font-size:13px;margin-top:8px;display:none"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:20px" id="forgot-send-btn" onclick="sendAdminResetLink()">Send Reset Link</button>
+    <button type="button" onclick="showLoginForm()" style="background:none;border:none;color:var(--muted);font-size:12px;margin-top:14px;cursor:pointer;text-decoration:underline">Back to sign in</button>
+  </div>
+
+  <!-- Shown when the page is opened via the emailed reset link (?reset-token=...) -->
+  <div class="login-card" id="reset-form-card" style="display:none">
+    <h1>Set New Password</h1>
+    <p>Choose a new password for the admin account.</p>
+    <label>New Password</label>
+    <input type="password" id="reset-new-password" placeholder="At least 8 characters" />
+    <div id="reset-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:20px" id="reset-submit-btn" onclick="submitAdminReset()">Set Password &amp; Sign In</button>
+  </div>
+</div>
+
+<!-- ── Main App ── -->
+<div id="app">
+  <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Open menu">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">DEZIRE MORE <span>ADMIN PANEL</span></div>
+    <button class="nav-item active" onclick="showPage('dashboard')">Dashboard</button>
+    <button class="nav-item" onclick="showPage('analytics')">Analytics</button>
+    <button class="nav-item" onclick="showPage('gst')">GST Reports</button>
+    <button class="nav-item" onclick="showPage('orders')">Orders</button>
+    <button class="nav-item" onclick="showPage('verify')">Pending Verification</button>
+    <button class="nav-item" onclick="showPage('customers')">Customers</button>
+    <button class="nav-item" onclick="showPage('coupons')">Coupons</button>
+    <button class="nav-item" onclick="showPage('love')">Client Love</button>
+    <button class="nav-item" onclick="showPage('payment')">Payment Settings</button>
+    <button class="nav-item" onclick="showPage('founder')">Owner / Founder</button>
+    <button class="nav-item" onclick="showPage('products')">All Products</button>
+    <button class="nav-item" onclick="showPage('add')">Add Product</button>
+    <button class="nav-item" onclick="showPage('bulk')">Bulk Import</button>
+    <button class="nav-item" onclick="showPage('activity')">Activity Log</button>
+    <button class="nav-item" onclick="showPage('settings')">Account Settings</button>
+    <button class="nav-item" style="margin-top:auto;position:absolute;bottom:20px;left:0;width:100%;color:rgba(255,255,255,.5)" onclick="logout()">Sign Out</button>
+  </nav>
+
+  <main class="main">
+
+    <!-- Dashboard -->
+    <div class="page active" id="page-dashboard">
+      <h2>Dashboard</h2>
+      <p class="subtitle">Live overview of your store</p>
+      <div class="stats-row" id="stats-row">
+        <div class="stat-box"><div class="num" id="stat-total">—</div><div class="lbl">Total Products</div></div>
+        <div class="stat-box"><div class="num" id="stat-instock">—</div><div class="lbl">In Stock</div></div>
+        <div class="stat-box"><div class="num" id="stat-sale">—</div><div class="lbl">On Sale</div></div>
+        <div class="stat-box"><div class="num" id="stat-new">—</div><div class="lbl">New Arrivals</div></div>
+      </div>
+      <div class="card">
+        <strong>Recent Products</strong>
+        <div id="recent-products" style="margin-top:16px"><p class="loading">Loading…</p></div>
+      </div>
+    </div>
+
+    <!-- Analytics -->
+    <div class="page" id="page-analytics">
+      <h2>Analytics</h2>
+      <p class="subtitle">Revenue and sales performance</p>
+      <div class="stats-row" id="analytics-stats-row">
+        <div class="stat-box"><div class="num" id="an-revenue">—</div><div class="lbl">Total Revenue (Paid)</div></div>
+        <div class="stat-box"><div class="num" id="an-orders">—</div><div class="lbl">Paid Orders</div></div>
+        <div class="stat-box"><div class="num" id="an-aov">—</div><div class="lbl">Avg Order Value</div></div>
+        <div class="stat-box"><div class="num" id="an-customers">—</div><div class="lbl">Total Customers</div></div>
+      </div>
+      <div class="card">
+        <strong>Revenue &amp; Orders — Last 30 Days</strong>
+        <div id="revenue-chart-empty" style="margin-top:16px"></div>
+        <div style="height:220px;margin-top:16px"><canvas id="revenue-chart-canvas"></canvas></div>
+      </div>
+      <div class="two-col-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px">
+        <div class="card">
+          <strong>Top 5 Products by Units Sold</strong>
+          <div id="top-products-empty" style="margin-top:16px"></div>
+          <div style="height:220px;margin-top:16px"><canvas id="top-products-canvas"></canvas></div>
+        </div>
+        <div class="card">
+          <strong>Order Status Breakdown</strong>
+          <div id="status-breakdown" style="margin-top:16px"><p class="loading">Loading…</p></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:20px">
+        <strong>New Customer Signups — Last 30 Days</strong>
+        <div id="signups-chart-empty" style="margin-top:16px"></div>
+        <div style="height:220px;margin-top:16px"><canvas id="signups-chart-canvas"></canvas></div>
+      </div>
+    </div>
+
+    <!-- GST Reports -->
+    <div class="page" id="page-gst">
+      <h2>GST Reports</h2>
+      <p class="subtitle">GST collected on paid orders, by date range — for tax filing. Only counts orders that have actually been paid.</p>
+
+      <div class="card" style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end">
+        <div>
+          <label style="font-size:12px;display:block;margin-bottom:4px">Period</label>
+          <select id="gst-period" style="width:160px" onchange="handleGstPeriodChange()">
+            <option value="month">This month</option>
+            <option value="last-month">Last month</option>
+            <option value="quarter">This quarter</option>
+            <option value="custom">Custom range</option>
+          </select>
+        </div>
+        <div id="gst-custom-range" style="display:none;gap:14px;flex-wrap:wrap">
+          <div>
+            <label style="font-size:12px;display:block;margin-bottom:4px">From</label>
+            <input type="date" id="gst-from" style="width:160px" />
+          </div>
+          <div>
+            <label style="font-size:12px;display:block;margin-bottom:4px">To</label>
+            <input type="date" id="gst-to" style="width:160px" />
+          </div>
+        </div>
+        <button class="btn btn-gold" onclick="loadGstReport()">Run Report</button>
+        <button class="btn btn-outline" onclick="exportGstReportCsv()" id="gst-export-btn" disabled>Export CSV</button>
+      </div>
+
+      <div class="stats-row" style="margin-top:20px">
+        <div class="stat-box"><div class="num" id="gst-orders">—</div><div class="lbl">Paid Orders</div></div>
+        <div class="stat-box"><div class="num" id="gst-subtotal">—</div><div class="lbl">Subtotal (pre-GST)</div></div>
+        <div class="stat-box"><div class="num" id="gst-total-gst">—</div><div class="lbl">Total GST Collected</div></div>
+        <div class="stat-box"><div class="num" id="gst-total">—</div><div class="lbl">Total Revenue (incl. GST)</div></div>
+      </div>
+      <div class="stats-row" style="margin-top:12px">
+        <div class="stat-box"><div class="num" id="gst-gst5">—</div><div class="lbl">GST @ 5%</div></div>
+        <div class="stat-box"><div class="num" id="gst-gst18">—</div><div class="lbl">GST @ 18%</div></div>
+        <div class="stat-box"><div class="num" id="gst-cgst">—</div><div class="lbl">CGST (50%)</div></div>
+        <div class="stat-box"><div class="num" id="gst-sgst">—</div><div class="lbl">SGST (50%)</div></div>
+      </div>
+
+      <div class="card" style="margin-top:20px;padding:0;overflow:hidden">
+        <div id="gst-orders-list"><p class="empty">Choose a period and click Run Report</p></div>
+      </div>
+    </div>
+
+    <!-- Orders -->
+    <div class="page" id="page-orders">
+      <h2>Orders</h2>
+      <p class="subtitle">Every order placed on the store, newest first</p>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="orders-list"><p class="loading" style="padding:40px">Loading…</p></div>
+      </div>
+    </div>
+
+    <!-- Pending Verification -->
+    <div class="page" id="page-verify">
+      <h2>Pending Verification</h2>
+      <p class="subtitle">Manual UPI / bank transfer orders awaiting a human check against your real UPI or bank app — COD and Razorpay orders never appear here.</p>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="verify-list"><p class="loading" style="padding:40px">Loading…</p></div>
+      </div>
+    </div>
+
+    <!-- Customers -->
+    <div class="page" id="page-customers">
+      <h2>Customers</h2>
+      <p class="subtitle">Registered accounts and their membership status</p>
+      <div class="search-bar">
+        <input type="text" id="customer-search" placeholder="Search by name or email…" oninput="renderCustomersTable()" />
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="customers-list"><p class="loading" style="padding:40px">Loading…</p></div>
+      </div>
+    </div>
+
+    <!-- Coupons -->
+    <div class="page" id="page-coupons">
+      <h2>Coupons</h2>
+      <p class="subtitle">Discount codes customers can apply at checkout</p>
+      <div class="card" style="margin-bottom:20px">
+        <strong>Create Coupon</strong>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:flex-end">
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Code</label><input type="text" id="cp-code" placeholder="SUMMER25" style="width:140px;text-transform:uppercase" /></div>
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Type</label>
+            <select id="cp-type" style="width:110px">
+              <option value="percent">% Off</option>
+              <option value="flat">Flat ₹ Off</option>
+            </select>
+          </div>
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Value</label><input type="number" id="cp-value" placeholder="10" style="width:90px" /></div>
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Min Order ₹</label><input type="number" id="cp-min" placeholder="0" style="width:100px" /></div>
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Max Discount ₹</label><input type="number" id="cp-max" placeholder="(optional)" style="width:120px" /></div>
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Expires</label><input type="date" id="cp-expires" style="width:150px" /></div>
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Usage Limit</label><input type="number" id="cp-limit" placeholder="(unlimited)" style="width:120px" /></div>
+          <button class="btn btn-gold" onclick="createCoupon()">+ Create</button>
+        </div>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="coupons-list"><p class="loading" style="padding:40px">Loading…</p></div>
+      </div>
+    </div>
+
+    <!-- Client Love (testimonials) -->
+    <div class="page" id="page-love">
+      <h2>Client Love</h2>
+      <p class="subtitle">Testimonials shown on the "Our Story" page — previously hardcoded, now managed here</p>
+      <div class="card" style="margin-bottom:20px">
+        <strong id="love-form-title">Add Testimonial</strong>
+        <input type="hidden" id="love-edit-id" value="" />
+        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:14px">
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Name</label><input type="text" id="love-name" placeholder="Priya Malhotra" style="width:180px" /></div>
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Location</label><input type="text" id="love-location" placeholder="Delhi (optional)" style="width:160px" /></div>
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Rating</label>
+            <select id="love-rating" style="width:90px">
+              <option value="5">5 ★</option>
+              <option value="4">4 ★</option>
+              <option value="3">3 ★</option>
+            </select>
+          </div>
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Display Order</label><input type="number" id="love-order" placeholder="0" style="width:110px" /></div>
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Photo (optional)</label><input type="file" id="love-photo" accept="image/*" /></div>
+        </div>
+        <div style="margin-top:14px">
+          <label style="font-size:12px;display:block;margin-bottom:4px">Testimonial Text</label>
+          <textarea id="love-text" rows="3" style="width:100%" placeholder="What the customer said..."></textarea>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:10px">
+          <button class="btn btn-gold" id="love-save-btn" onclick="saveTestimonial()">+ Add Testimonial</button>
+          <button class="btn btn-outline" id="love-cancel-btn" style="display:none" onclick="resetTestimonialForm()">Cancel Edit</button>
+        </div>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="love-list"><p class="loading" style="padding:40px">Loading…</p></div>
+      </div>
+    </div>
+
+    <!-- Payment Settings -->
+    <div class="page" id="page-payment">
+      <h2>Payment Settings</h2>
+      <p class="subtitle">Powers the "Pay via UPI" checkout option — a direct-to-bank-account alternative to Razorpay with no gateway fee. The QR code is generated automatically from this UPI ID plus each order's actual total, so it's never a stale image and always shows the right amount. This option only appears at checkout once a UPI ID is set here.</p>
+      <div class="card" style="max-width:480px">
+        <div style="margin-bottom:14px">
+          <label style="font-size:12px;display:block;margin-bottom:4px">UPI ID</label>
+          <input type="text" id="payment-upi-id" placeholder="yourbusiness@okhdfcbank" style="width:100%" />
+        </div>
+        <button class="btn btn-gold" id="payment-save-btn" onclick="savePaymentSettings()">Save Payment Settings</button>
+      </div>
+    </div>
+
+    <!-- Account Settings -->
+    <div class="page" id="page-settings">
+      <h2>Account Settings</h2>
+      <p class="subtitle">Change the admin login email and/or password. Requires your current password.</p>
+      <div class="card" style="max-width:480px">
+        <div style="margin-bottom:14px">
+          <label style="font-size:12px;display:block;margin-bottom:4px">Current Password</label>
+          <input type="password" id="settings-current-password" placeholder="Required to make any change" style="width:100%" />
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="font-size:12px;display:block;margin-bottom:4px">New Email (optional)</label>
+          <input type="email" id="settings-new-email" placeholder="Leave blank to keep the current email" style="width:100%" />
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="font-size:12px;display:block;margin-bottom:4px">New Password (optional)</label>
+          <input type="password" id="settings-new-password" placeholder="Leave blank to keep the current password" style="width:100%" />
+        </div>
+        <div id="settings-error" style="color:var(--danger);font-size:13px;margin-bottom:10px;display:none"></div>
+        <button class="btn btn-gold" id="settings-save-btn" onclick="changeAdminCredentials()">Save Changes</button>
+      </div>
+    </div>
+
+    <!-- Owner / Founder -->
+    <div class="page" id="page-founder">
+      <h2>Owner / Founder</h2>
+      <p class="subtitle">Powers the "Founder" section on the Our Story page — photo, name, title, quote, and bio</p>
+      <div class="card" style="max-width:560px">
+        <div id="founder-photo-preview" style="margin-bottom:14px;display:none">
+          <img id="founder-photo-preview-img" src="" alt="Current photo" style="width:120px;height:120px;object-fit:cover;border-radius:8px" />
+        </div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px">
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Name</label><input type="text" id="founder-name" style="width:220px" /></div>
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Title</label><input type="text" id="founder-title" style="width:220px" /></div>
+          <div><label style="font-size:12px;display:block;margin-bottom:4px">Photo</label><input type="file" id="founder-photo" accept="image/*" /></div>
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="font-size:12px;display:block;margin-bottom:4px">Quote</label>
+          <textarea id="founder-quote" rows="2" style="width:100%" placeholder="A short personal quote"></textarea>
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="font-size:12px;display:block;margin-bottom:4px">Bio</label>
+          <textarea id="founder-bio" rows="4" style="width:100%" placeholder="A paragraph about the brand's story"></textarea>
+        </div>
+        <button class="btn btn-gold" id="founder-save-btn" onclick="saveFounderSettings()">Save Owner Details</button>
+      </div>
+    </div>
+
+    <!-- All Products -->
+    <div class="page" id="page-products">
+      <h2>All Products</h2>
+      <p class="subtitle">Click edit to update details or manage images</p>
+      <div class="search-bar">
+        <input type="text" id="search-input" placeholder="Search by name, category…" oninput="searchProducts()" />
+        <select id="cat-filter" onchange="searchProducts()" style="width:180px">
+          <option value="">All categories</option>
+          <option value="sarees">Sarees</option>
+          <option value="dress-materials">Dress Materials</option>
+          <option value="ready-to-wear">Ready to Wear</option>
+          <option value="western">Casual Western</option>
+          <option value="jewelry-accessories">Jewelry &amp; Accessories</option>
+        </select>
+        <button class="btn btn-gold" onclick="showPage('add')">+ Add Product</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="products-list"><p class="loading" style="padding:40px">Loading…</p></div>
+      </div>
+    </div>
+
+    <!-- Add / Edit Product -->
+    <div class="page" id="page-add">
+      <h2 id="form-title">Add New Product</h2>
+      <p class="subtitle">Fill in the details and upload photos — product goes live instantly</p>
+
+      <input type="hidden" id="edit-product-id" />
+
+      <div class="card">
+        <strong>Product Photos</strong>
+        <p style="font-size:13px;color:var(--muted);margin-top:4px;margin-bottom:16px">Upload up to 10 photos. First photo is the main image.</p>
+        <div class="upload-zone" onclick="document.getElementById('file-input').click()"
+             ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" id="upload-zone">
+          <strong>Click to upload or drag photos here</strong>
+          <p>JPG, PNG, WEBP · Max 5MB each · Up to 10 images</p>
+        </div>
+        <input type="file" id="file-input" multiple accept="image/*" onchange="handleFiles(this.files)" />
+        <div class="image-previews" id="image-previews"></div>
+      </div>
+
+      <div class="card">
+        <strong>Product Video (optional)</strong>
+        <p style="font-size:13px;color:var(--muted);margin-top:4px;margin-bottom:16px">Show the saree/outfit being worn or draped — e.g. a short try-on or styling clip.</p>
+        <div class="upload-zone" onclick="document.getElementById('video-input').click()" id="video-upload-zone">
+          <strong>Click to upload a video</strong>
+          <p>MP4, MOV, WEBM · Max 50MB · One video per product</p>
+        </div>
+        <input type="file" id="video-input" accept="video/*" onchange="handleVideoFile(this.files)" />
+        <div id="video-preview" style="margin-top:12px"></div>
+      </div>
+
+      <div class="card">
+        <strong>Basic Details</strong>
+        <label>Product Name *</label>
+        <input type="text" id="f-name" placeholder="e.g. Kanjivaram Silk Saree" />
+
+        <div class="row" style="margin-top:16px">
+          <div>
+            <label>Category *</label>
+            <select id="f-category">
+              <option value="">Select category</option>
+              <option value="sarees">Sarees</option>
+              <option value="dress-materials">Dress Materials</option>
+              <option value="ready-to-wear">Ready to Wear</option>
+              <option value="western">Casual Western</option>
+              <option value="jewelry-accessories">Jewelry &amp; Accessories</option>
+            </select>
+          </div>
+          <div>
+            <label>Subcategory</label>
+            <input type="text" id="f-subcategory" placeholder="See hint below for exact values" />
+            <p style="font-size:11px;color:var(--muted);margin-top:4px">
+              For Sarees use: printed-chiffon, hand-embroidered-chiffon-georgette, hand-embroidered-crepe, mul-cotton, handloom, persian, kashmiri.<br/>
+              For Ready to Wear use: suits, coords, blouses, dresses, ethnic-skirts.<br/>
+              Type it exactly as shown (lowercase, hyphens) so it matches the website's dropdown menus.
+            </p>
+          </div>
+        </div>
+
+        <label>Description</label>
+        <textarea id="f-description" placeholder="Describe the product — fabric, look, occasion…"></textarea>
+      </div>
+
+      <div class="card">
+        <strong>Pricing</strong>
+        <div class="row">
+          <div>
+            <label>Selling Price (₹) *</label>
+            <input type="number" id="f-price" placeholder="4999" min="0" />
+          </div>
+          <div>
+            <label>Original / MRP (₹) — for strikethrough</label>
+            <input type="number" id="f-original-price" placeholder="6999" min="0" />
+          </div>
+        </div>
+        <p id="discount-preview" style="font-size:13px;color:var(--success);margin-top:8px"></p>
+      </div>
+
+      <div class="card">
+        <strong>Details</strong>
+        <div class="row">
+          <div>
+            <label>Fabric</label>
+            <input type="text" id="f-fabric" placeholder="e.g. Pure Silk, Georgette, Cotton" />
+          </div>
+          <div>
+            <label>SKU (optional)</label>
+            <input type="text" id="f-sku" placeholder="e.g. KNJ-001" />
+          </div>
+        </div>
+
+        <label>Colors (comma separated)</label>
+        <input type="text" id="f-colors" placeholder="Red, Gold, Green" />
+
+        <label>Sizes (comma separated)</label>
+        <input type="text" id="f-sizes" placeholder="Free Size   OR   S, M, L, XL, XXL" />
+
+        <label>Occasions (comma separated)</label>
+        <input type="text" id="f-occasion" placeholder="Wedding, Festival, Party" />
+      </div>
+
+      <div class="card">
+        <strong>Tags</strong>
+        <p style="font-size:13px;color:var(--muted);margin:6px 0 14px">These control which sections the product appears in</p>
+        <div class="tags-grid">
+          <div class="tag-check"><input type="checkbox" id="tag-bestseller" value="bestseller"><label for="tag-bestseller">Bestseller</label></div>
+          <div class="tag-check"><input type="checkbox" id="tag-new-arrival" value="new-arrival"><label for="tag-new-arrival">New Arrival</label></div>
+          <div class="tag-check"><input type="checkbox" id="tag-sale" value="sale"><label for="tag-sale">Sale</label></div>
+          <div class="tag-check"><input type="checkbox" id="tag-premium" value="premium"><label for="tag-premium">Premium</label></div>
+          <div class="tag-check"><input type="checkbox" id="tag-everyday" value="everyday"><label for="tag-everyday">Everyday</label></div>
+          <div class="tag-check"><input type="checkbox" id="tag-staff-pick" value="staff-pick"><label for="tag-staff-pick">Staff Pick</label></div>
+        </div>
+
+        <div class="row" style="margin-top:20px">
+          <div>
+            <label>In Stock</label>
+            <select id="f-instock">
+              <option value="true">Yes — available to buy</option>
+              <option value="false">No — out of stock</option>
+            </select>
+          </div>
+          <div>
+            <label>Stock Count</label>
+            <input type="number" id="f-stock-count" value="100" min="0" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="saveProduct()" id="save-btn">Save Product</button>
+        <button class="btn btn-outline" onclick="resetForm()">Clear Form</button>
+      </div>
+    </div>
+
+    <!-- Bulk Import -->
+    <div class="page" id="page-bulk">
+      <h2>Bulk Import</h2>
+      <p class="subtitle">Add many products at once with a spreadsheet + all your photos</p>
+
+      <div class="card">
+        <strong>Step 1 — Get the template</strong>
+        <p style="font-size:13px;color:var(--muted);margin-top:6px">
+          Download the template, fill in one row per product using Excel or Google Sheets, then save/export as CSV.
+        </p>
+        <button class="btn btn-outline" style="margin-top:14px" onclick="downloadBulkTemplate()">Download CSV Template</button>
+        <p style="font-size:12px;color:var(--muted);margin-top:14px;line-height:1.6">
+          <strong>Columns:</strong> name, category, subcategory, price, originalPrice, fabric, sku, colors, sizes, occasion, description, tags, inStock, stockCount, images, video<br/>
+          <strong>category</strong> must be one of: sarees, dress-materials, ready-to-wear, western, jewelry-accessories<br/>
+          <strong>colors / sizes / occasion / tags</strong> — separate multiple values with a semicolon, e.g. <code>Red;Gold</code><br/>
+          <strong>images</strong> — the exact photo filenames for that product, separated by a semicolon, e.g. <code>saree1.jpg;saree2.jpg</code> (must match the files you select in Step 3 exactly)<br/>
+          <strong>video</strong> — optional, one filename for a showcase clip of the outfit, e.g. <code>saree1-video.mp4</code> (also selected in Step 3)
+        </p>
+      </div>
+
+      <div class="card">
+        <strong>Step 2 — Upload your filled-in CSV</strong>
+        <input type="file" id="bulk-csv-input" accept=".csv" style="margin-top:14px" onchange="handleBulkCSV(this.files)" />
+        <p id="bulk-csv-status" style="font-size:13px;color:var(--muted);margin-top:8px"></p>
+      </div>
+
+      <div class="card" id="bulk-preview-card" style="display:none">
+        <strong>Preview — confirm before importing</strong>
+        <p style="font-size:12px;color:var(--muted);margin-top:6px">
+          Rows in red are missing a required field or reference a photo/video filename not yet selected in Step 3 below — fix your CSV or select the matching files before running the import.
+        </p>
+        <div style="max-height:360px;overflow:auto;margin-top:14px">
+          <table class="products-table" id="bulk-preview-table"></table>
+        </div>
+      </div>
+
+      <div class="card">
+        <strong>Step 3 — Select all product photos and videos at once</strong>
+        <p style="font-size:13px;color:var(--muted);margin-top:6px">Select every photo and video for every product in one go — they get matched to products by filename.</p>
+        <input type="file" id="bulk-images-input" accept="image/*,video/*" multiple style="margin-top:14px" onchange="handleBulkImages(this.files)" />
+        <p id="bulk-images-status" style="font-size:13px;color:var(--muted);margin-top:8px"></p>
+      </div>
+
+      <div class="card">
+        <strong>Step 4 — Import</strong>
+        <button class="btn btn-primary" style="margin-top:10px" onclick="runBulkImport()" id="bulk-run-btn">Start Import</button>
+        <div id="bulk-progress" style="margin-top:18px"></div>
+      </div>
+    </div>
+
+    <!-- Activity Log -->
+    <div class="page" id="page-activity">
+      <h2>Activity Log</h2>
+      <p class="subtitle">Recent admin actions — order/payment status, product, coupon, and membership changes</p>
+      <div class="card" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:16px">
+        <label style="font-size:11px;color:var(--muted)">Clear a whole month<br/>
+          <select id="activity-month-select" style="width:auto;padding:7px 10px;font-size:13px"></select>
+        </label>
+        <button class="btn btn-danger" style="padding:8px 14px;font-size:13px" onclick="clearAuditLogMonth()">Clear Log</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="activity-list"><p class="loading" style="padding:40px">Loading…</p></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+// Absolute URL, not the '/api' relative path the browser-served version at
+// dezire-backend/admin-panel.html uses — that only works same-origin, and
+// there's no "origin" at all once this runs as a packaged native app (no
+// backend living at a relative path locally). Points straight at the real
+// deployed backend instead. If you ever move off Render, update this.
+const API = 'https://dezire-more-website-1.onrender.com/api';
+let token = localStorage.getItem('dm_admin_token');
+let selectedFiles = [];
+let selectedVideoFile = null;
+let allProducts = [];
+
+// ── Mobile sidebar ────────────────────────────────────────────────────────────
+// The sidebar is always in the DOM at full height — below the mobile
+// breakpoint it's just translated off-screen by CSS until '.open' is added.
+// These are harmless no-ops above that breakpoint (the class does nothing
+// there), so every call site can call them unconditionally rather than
+// checking window width first.
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+async function login() {
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl    = document.getElementById('login-error');
+  errEl.style.display = 'none';
+
+  try {
+    const res  = await fetch(`${API}/admin/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    token = data.token;
+    localStorage.setItem('dm_admin_token', token);
+    showApp();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+  }
+}
+
+function logout() {
+  localStorage.removeItem('dm_admin_token');
+  token = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+// ── Forgot / reset password (login screen) ─────────────────────────────────
+
+function showForgotPassword() {
+  document.getElementById('login-form-card').style.display = 'none';
+  document.getElementById('forgot-form-card').style.display = 'block';
+}
+
+function showLoginForm() {
+  document.getElementById('forgot-form-card').style.display = 'none';
+  document.getElementById('login-form-card').style.display = 'block';
+}
+
+async function sendAdminResetLink() {
+  const email = document.getElementById('forgot-email').value.trim();
+  const errEl = document.getElementById('forgot-error');
+  const okEl  = document.getElementById('forgot-success');
+  const btn   = document.getElementById('forgot-send-btn');
+  errEl.style.display = 'none';
+  okEl.style.display = 'none';
+  if (!email) { errEl.textContent = 'Enter an email address.'; errEl.style.display = 'block'; return; }
+
+  btn.disabled = true;
+  try {
+    const res  = await fetch(`${API}/admin/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    okEl.textContent = data.message;
+    okEl.style.display = 'block';
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// If the page was opened from the emailed reset link, show the "set new
+// password" card instead of the normal login form.
+const resetTokenParam = new URLSearchParams(window.location.search).get('reset-token');
+if (resetTokenParam) {
+  window.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('login-form-card').style.display = 'none';
+    document.getElementById('reset-form-card').style.display = 'block';
+  });
+}
+
+async function submitAdminReset() {
+  const newPassword = document.getElementById('reset-new-password').value;
+  const errEl = document.getElementById('reset-error');
+  const btn   = document.getElementById('reset-submit-btn');
+  errEl.style.display = 'none';
+  if (!newPassword || newPassword.length < 8) {
+    errEl.textContent = 'Password must be at least 8 characters.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  try {
+    const res  = await fetch(`${API}/admin/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: resetTokenParam, newPassword }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    // Clean the token out of the URL, then drop back to the normal login
+    // form so the admin signs in with the password they just set.
+    window.history.replaceState({}, '', window.location.pathname);
+    document.getElementById('reset-form-card').style.display = 'none';
+    document.getElementById('login-form-card').style.display = 'block';
+    document.getElementById('login-error').textContent = 'Password updated — sign in below.';
+    document.getElementById('login-error').style.color = 'var(--success, #2e7d32)';
+    document.getElementById('login-error').style.display = 'block';
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function changeAdminCredentials() {
+  const currentPassword = document.getElementById('settings-current-password').value;
+  const newEmail        = document.getElementById('settings-new-email').value.trim();
+  const newPassword     = document.getElementById('settings-new-password').value;
+  const errEl           = document.getElementById('settings-error');
+  const btn             = document.getElementById('settings-save-btn');
+  errEl.style.display = 'none';
+
+  if (!currentPassword) {
+    errEl.textContent = 'Enter your current password to make any change.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!newEmail && !newPassword) {
+    errEl.textContent = 'Enter a new email and/or a new password.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API}/admin/credentials`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ currentPassword, newEmail: newEmail || undefined, newPassword: newPassword || undefined }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    token = data.token;
+    localStorage.setItem('dm_admin_token', token);
+    document.getElementById('settings-current-password').value = '';
+    document.getElementById('settings-new-email').value = '';
+    document.getElementById('settings-new-password').value = '';
+    toast('Account settings updated', 'success');
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  loadDashboard();
+  loadProductsList();
+}
+
+// Check token on page load
+window.addEventListener('load', async () => {
+  if (!token) return;
+  try {
+    const res = await fetch(`${API}/admin/verify`, { headers: { Authorization: `Bearer ${token}` } });
+    if (res.ok) showApp();
+    else logout();
+  } catch { logout(); }
+});
+
+document.getElementById('login-password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') login();
+});
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`page-${name}`).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.textContent.toLowerCase().includes(name === 'add' ? 'add' : name)) n.classList.add('active');
+  });
+  closeSidebar(); // no-op on desktop widths — the drawer is only ever "open" below the mobile breakpoint
+
+  if (name === 'products') loadProductsList();
+  if (name === 'dashboard') loadDashboard();
+  if (name === 'analytics') loadAnalytics();
+  if (name === 'gst') loadGstReport();
+  if (name === 'orders') loadOrdersList();
+  if (name === 'verify') loadVerifyList();
+  if (name === 'customers') loadCustomersList();
+  if (name === 'coupons') loadCouponsList();
+  if (name === 'love') loadTestimonialsList();
+  if (name === 'payment') loadPaymentSettings();
+  if (name === 'founder') loadFounderSettings();
+  if (name === 'activity') loadAuditLog();
+  if (name === 'settings') {
+    document.getElementById('settings-current-password').value = '';
+    document.getElementById('settings-new-email').value = '';
+    document.getElementById('settings-new-password').value = '';
+    document.getElementById('settings-error').style.display = 'none';
+  }
+  if (name === 'add' && !document.getElementById('edit-product-id').value) resetForm();
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+
+async function loadDashboard() {
+  try {
+    const res  = await fetch(`${API}/products/home`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    document.getElementById('stat-total').textContent = data.stats?.totalProducts || 0;
+
+    const allRes  = await fetch(`${API}/products?limit=200`, { headers: { Authorization: `Bearer ${token}` } });
+    const allData = await allRes.json();
+    const prods   = allData.data || [];
+
+    document.getElementById('stat-instock').textContent = prods.filter(p => p.inStock).length;
+    document.getElementById('stat-sale').textContent    = prods.filter(p => p.tags?.includes('sale')).length;
+    document.getElementById('stat-new').textContent     = prods.filter(p => p.tags?.includes('new-arrival')).length;
+
+    const recent = prods.slice(0, 5);
+    document.getElementById('recent-products').innerHTML = recent.length
+      ? recent.map(p => `
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+            <img src="${p.images?.[0]?.url || ''}" class="product-thumb" onerror="this.style.display='none'" />
+            <div style="flex:1">
+              <div style="font-weight:600;font-size:14px">${p.name}</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:2px">${p.category} · ₹${p.price.toLocaleString('en-IN')}</div>
+            </div>
+            <span class="badge ${p.inStock ? 'badge-active' : 'badge-inactive'}">${p.inStock ? 'In stock' : 'Out of stock'}</span>
+          </div>`).join('')
+      : '<p class="empty">No products yet — <a href="#" onclick="showPage(\'add\')">add your first one</a></p>';
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// ── Analytics ─────────────────────────────────────────────────────────────────
+
+// Chart.js instances, kept around so a repeat visit to this tab destroys the
+// old chart before drawing a new one on the same <canvas> — Chart.js throws
+// "Canvas is already in use" otherwise.
+let revenueChart = null;
+let topProductsChart = null;
+let signupsChart = null;
+
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+async function loadAnalytics() {
+  try {
+    const res = await fetch(`${API}/orders/admin/analytics`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    document.getElementById('an-revenue').textContent = `₹${data.totalRevenue.toLocaleString('en-IN')}`;
+    document.getElementById('an-orders').textContent = data.totalOrders;
+    document.getElementById('an-aov').textContent = `₹${data.avgOrderValue.toLocaleString('en-IN')}`;
+    document.getElementById('an-customers').textContent = data.totalCustomers;
+
+    const gold = cssVar('--gold') || '#b8963e';
+    const muted = cssVar('--muted') || '#6b6b6b';
+
+    // Revenue + order count over time — line chart, two datasets/axes since
+    // they're different units.
+    document.getElementById('revenue-chart-empty').innerHTML = data.revenueByDay.length
+      ? '' : '<p class="empty">No paid orders in the last 30 days yet</p>';
+    if (revenueChart) revenueChart.destroy();
+    revenueChart = new Chart(document.getElementById('revenue-chart-canvas'), {
+      type: 'line',
+      data: {
+        labels: data.revenueByDay.map(d => d.date),
+        datasets: [
+          { label: 'Revenue (₹)', data: data.revenueByDay.map(d => d.revenue), borderColor: gold, backgroundColor: gold, tension: 0.25, yAxisID: 'y' },
+          { label: 'Orders', data: data.revenueByDay.map(d => d.orders), borderColor: muted, backgroundColor: muted, tension: 0.25, yAxisID: 'y1' },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+          y:  { position: 'left',  beginAtZero: true, title: { display: true, text: 'Revenue (₹)' } },
+          y1: { position: 'right', beginAtZero: true, grid: { drawOnChartArea: false }, title: { display: true, text: 'Orders' } },
+        },
+      },
+    });
+
+    document.getElementById('status-breakdown').innerHTML = data.statusBreakdown.length
+      ? data.statusBreakdown.map(s => `
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+            <span>${s.status}</span><span style="font-weight:600">${s.count}</span>
+          </div>`).join('')
+      : '<p class="empty">No orders yet</p>';
+
+    // Top-selling products — bar chart.
+    document.getElementById('top-products-empty').innerHTML = data.topProducts.length
+      ? '' : '<p class="empty">No paid orders yet</p>';
+    if (topProductsChart) topProductsChart.destroy();
+    topProductsChart = new Chart(document.getElementById('top-products-canvas'), {
+      type: 'bar',
+      data: {
+        labels: data.topProducts.map(p => p.name),
+        datasets: [{ label: 'Units Sold', data: data.topProducts.map(p => p.unitsSold), backgroundColor: gold }],
+      },
+      options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } } },
+    });
+
+    // New customer signups over time — line chart.
+    document.getElementById('signups-chart-empty').innerHTML = (data.signupsByDay || []).length
+      ? '' : '<p class="empty">No new signups in the last 30 days yet</p>';
+    if (signupsChart) signupsChart.destroy();
+    signupsChart = new Chart(document.getElementById('signups-chart-canvas'), {
+      type: 'line',
+      data: {
+        labels: (data.signupsByDay || []).map(s => s.date),
+        datasets: [{ label: 'New Signups', data: (data.signupsByDay || []).map(s => s.count), borderColor: gold, backgroundColor: gold, tension: 0.25 }],
+      },
+      options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } },
+    });
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+// ── GST Reports ───────────────────────────────────────────────────────────────
+
+let lastGstReport = null;
+
+function handleGstPeriodChange() {
+  document.getElementById('gst-custom-range').style.display =
+    document.getElementById('gst-period').value === 'custom' ? 'flex' : 'none';
+}
+
+// Turns the period dropdown into an actual {from, to} range. 'month' and
+// 'quarter' are computed off the real current date rather than hardcoded,
+// so this keeps working correctly across month/quarter boundaries with no
+// maintenance. Dates are formatted as plain YYYY-MM-DD (not full ISO
+// timestamps) since that's what <input type="date"> uses and what the
+// backend's ?from=&to= expects.
+function gstDateRangeForPeriod() {
+  const period = document.getElementById('gst-period').value;
+  const toYMD = (d) => d.toISOString().slice(0, 10);
+  const now = new Date();
+
+  if (period === 'custom') {
+    const from = document.getElementById('gst-from').value;
+    const to = document.getElementById('gst-to').value;
+    if (!from || !to) throw new Error('Pick both a from and to date for a custom range.');
+    return { from, to };
+  }
+  if (period === 'last-month') {
+    const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const to = new Date(now.getFullYear(), now.getMonth(), 0); // last day of previous month
+    return { from: toYMD(from), to: toYMD(to) };
+  }
+  if (period === 'quarter') {
+    const qStartMonth = Math.floor(now.getMonth() / 3) * 3;
+    const from = new Date(now.getFullYear(), qStartMonth, 1);
+    return { from: toYMD(from), to: toYMD(now) };
+  }
+  // 'month' (default)
+  const from = new Date(now.getFullYear(), now.getMonth(), 1);
+  return { from: toYMD(from), to: toYMD(now) };
+}
+
+async function loadGstReport() {
+  const listEl = document.getElementById('gst-orders-list');
+  document.getElementById('gst-export-btn').disabled = true;
+  try {
+    const { from, to } = gstDateRangeForPeriod();
+    listEl.innerHTML = '<p class="loading" style="padding:40px">Loading…</p>';
+
+    const res = await fetch(`${API}/orders/admin/gst-report?from=${from}&to=${to}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    lastGstReport = data;
+
+    const money = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+    document.getElementById('gst-orders').textContent = data.orders;
+    document.getElementById('gst-subtotal').textContent = money(data.subtotal);
+    document.getElementById('gst-total-gst').textContent = money(data.totalGST);
+    document.getElementById('gst-total').textContent = money(data.total);
+    document.getElementById('gst-gst5').textContent = money(data.gst5);
+    document.getElementById('gst-gst18').textContent = money(data.gst18);
+    document.getElementById('gst-cgst').textContent = money(data.cgst);
+    document.getElementById('gst-sgst').textContent = money(data.sgst);
+
+    if (!data.orderDetails.length) {
+      listEl.innerHTML = '<p class="empty">No paid orders in this period</p>';
+      return;
+    }
+    listEl.innerHTML = `
+      <table class="products-table">
+        <thead><tr>
+          <th>Order</th><th>Date</th><th>Subtotal</th><th>GST 5%</th><th>GST 18%</th><th>Total GST</th><th>Total</th>
+        </tr></thead>
+        <tbody>
+          ${data.orderDetails.map(o => `
+            <tr>
+              <td><strong>${o.orderNumber}</strong></td>
+              <td>${new Date(o.date).toLocaleDateString('en-IN')}</td>
+              <td>${money(o.subtotal)}</td>
+              <td>${o.gst5 > 0 ? money(o.gst5) : '—'}</td>
+              <td>${o.gst18 > 0 ? money(o.gst18) : '—'}</td>
+              <td>${money(o.totalGST)}</td>
+              <td>${money(o.total)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+    document.getElementById('gst-export-btn').disabled = false;
+  } catch (err) {
+    listEl.innerHTML = `<p class="empty">${err.message}</p>`;
+    toast(err.message, 'error');
+  }
+}
+
+function exportGstReportCsv() {
+  if (!lastGstReport) return;
+  const rows = lastGstReport.orderDetails.map(o => ({
+    'Order Number': o.orderNumber,
+    'Date': new Date(o.date).toLocaleDateString('en-IN'),
+    'Subtotal': o.subtotal,
+    'GST 5%': o.gst5,
+    'GST 18%': o.gst18,
+    'Total GST': o.totalGST,
+    'Delivery': o.deliveryCharge,
+    'Discount': o.discountAmount,
+    'Total': o.total,
+  }));
+  // Summary row appended after a blank line — same file, so opening it in
+  // Excel/Sheets shows the per-order detail and the period total together.
+  const csv = Papa.unparse(rows) + '\n\n' +
+    Papa.unparse({
+      fields: ['Period', 'Orders', 'Subtotal', 'GST 5%', 'GST 18%', 'Total GST', 'CGST', 'SGST', 'Total'],
+      data: [[
+        `${new Date(lastGstReport.from).toLocaleDateString('en-IN')} to ${new Date(lastGstReport.to).toLocaleDateString('en-IN')}`,
+        lastGstReport.orders, lastGstReport.subtotal, lastGstReport.gst5, lastGstReport.gst18,
+        lastGstReport.totalGST, lastGstReport.cgst, lastGstReport.sgst, lastGstReport.total,
+      ]],
+    });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `dezire-more-gst-report-${lastGstReport.from.slice(0, 10)}-to-${lastGstReport.to.slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Orders ────────────────────────────────────────────────────────────────────
+
+const ORDER_STATUSES = [
+  'Order Placed', 'Payment Confirmed', 'Processing', 'Packed',
+  'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled',
+];
+let allOrders = [];
+let pendingVerifyOrders = [];
+let expandedOrderId = null;
+
+async function loadOrdersList() {
+  try {
+    const res = await fetch(`${API}/orders/admin/all`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    allOrders = data.data || [];
+    renderOrdersTable();
+  } catch (err) {
+    document.getElementById('orders-list').innerHTML = `<p class="empty">Failed to load orders: ${err.message}</p>`;
+  }
+}
+
+// Manual-reference orders (UPI / legacy QR / Online Banking) not yet marked
+// paid — COD has nothing to verify, Razorpay confirms itself automatically.
+async function loadVerifyList() {
+  try {
+    const res = await fetch(`${API}/orders/admin/all`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    pendingVerifyOrders = (data.data || []).filter(o =>
+      o.paymentStatus !== 'paid' && !['COD', 'Razorpay'].includes(o.paymentMethod)
+    );
+    renderVerifyTable();
+  } catch (err) {
+    document.getElementById('verify-list').innerHTML = `<p class="empty">Failed to load: ${err.message}</p>`;
+  }
+}
+
+function renderVerifyTable() {
+  const el = document.getElementById('verify-list');
+  if (!pendingVerifyOrders.length) {
+    el.innerHTML = '<p class="empty">Nothing waiting on verification right now</p>';
+    return;
+  }
+  el.innerHTML = `
+    <table class="products-table">
+      <thead><tr>
+        <th>Order</th><th>Customer</th><th>Expected</th><th>UTR / Reference</th><th>Claimed Paid</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${pendingVerifyOrders.map(o => {
+          const mismatch = o.amountPaid != null && Number(o.amountPaid) !== Number(o.total);
+          return `
+          <tr>
+            <td><strong>${o.orderNumber}</strong><br/><span style="font-size:11px;color:var(--muted)">${new Date(o.createdAt).toLocaleDateString('en-IN')}</span></td>
+            <td>${o.customerName}<br/><span style="font-size:11px;color:var(--muted)">${o.customerPhone}</span></td>
+            <td>₹${o.total.toLocaleString('en-IN')}</td>
+            <td style="font-family:monospace">${o.paymentReference || '—'}</td>
+            <td style="${mismatch ? 'color:#c0392b;font-weight:600' : ''}">
+              ${o.amountPaid != null ? `₹${Number(o.amountPaid).toLocaleString('en-IN')}` : '—'}
+              ${mismatch ? '<br/><span style="font-size:11px">⚠ doesn\'t match expected</span>' : ''}
+            </td>
+            <td style="white-space:nowrap">
+              <button class="btn btn-gold" style="padding:6px 14px;font-size:12px" onclick="confirmOrderPayment('${o._id}')">Verify Payment</button>
+              <button class="btn btn-outline" style="padding:6px 14px;font-size:12px;color:var(--danger);margin-top:6px" onclick="rejectOrderPayment('${o._id}')">Payment Not Done</button>
+            </td>
+          </tr>
+        `; }).join('')}
+      </tbody>
+    </table>`;
+}
+
+function toggleOrderDetail(id) {
+  expandedOrderId = expandedOrderId === id ? null : id;
+  renderOrdersTable();
+}
+
+async function updateOrderStatus(id, orderStatus) {
+  try {
+    const res = await fetch(`${API}/orders/${id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ orderStatus }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const idx = allOrders.findIndex(o => o._id === id);
+    if (idx > -1) allOrders[idx] = data.order;
+    renderOrdersTable();
+    toast('Order status updated', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+// Razorpay orders confirm themselves automatically (signature verification
+// on checkout success, backed by a webhook) — this button (shown both here
+// and on the dedicated Pending Verification tab) is for manual UPI/bank-
+// transfer orders, or a fallback for the rare Razorpay case that fails.
+// Check the UTR + amount in your real UPI/bank app before clicking — this
+// is a human confirmation, nothing here validates it automatically.
+async function confirmOrderPayment(id) {
+  if (!confirm('Have you verified this payment against your UPI/bank app? This will mark the order as Paid.')) return;
+  try {
+    const res = await fetch(`${API}/orders/admin/${id}/verify-payment`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const idx = allOrders.findIndex(o => o._id === id);
+    if (idx > -1) allOrders[idx] = data.order;
+    pendingVerifyOrders = pendingVerifyOrders.filter(o => o._id !== id);
+    renderOrdersTable();
+    renderVerifyTable();
+    toast('Payment verified', 'success');
+    // There's no automatic email/SMS/WhatsApp API wired in, so the customer
+    // isn't notified unless someone tells them. This opens WhatsApp Web/App
+    // with the confirmation pre-typed — you still have to hit Send yourself.
+    window.open(waLinkForOrder(data.order, waPaymentConfirmedMessage(data.order)), '_blank', 'noreferrer');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+// The other half of confirmOrderPayment above — admin checked their real
+// UPI/bank app and the claimed UTR/amount never actually showed up.
+async function rejectOrderPayment(id) {
+  if (!confirm('Mark this payment as not received? This cancels the order and cannot be undone.')) return;
+  try {
+    const res = await fetch(`${API}/orders/admin/${id}/reject-payment`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const idx = allOrders.findIndex(o => o._id === id);
+    if (idx > -1) allOrders[idx] = data.order;
+    pendingVerifyOrders = pendingVerifyOrders.filter(o => o._id !== id);
+    renderOrdersTable();
+    renderVerifyTable();
+    toast('Order cancelled — payment not received', 'success');
+    const msg = `Hi ${data.order.customerName.split(' ')[0]}, we couldn't verify the payment for your Dezire More order ${data.order.orderNumber}, so it's been cancelled. If you did pay, please reply with your transaction reference and we'll look into it right away.`;
+    window.open(waLinkForOrder(data.order, msg), '_blank', 'noreferrer');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+// Same "no API, admin sends it by hand" pattern as confirmOrderPayment —
+// covers the other lifecycle stages (Shipped/Delivered/etc.) that the
+// site's own FAQ/Shipping Policy pages already promise customers a
+// WhatsApp update for.
+const WA_STATUS_MESSAGES = {
+  'Payment Confirmed': (o) => `Hi ${o.customerName.split(' ')[0]}! We've confirmed your payment of Rs.${o.total.toLocaleString('en-IN')} for order ${o.orderNumber}. Your order is now being prepared. Thank you for shopping with Dezire More!`,
+  'Processing':        (o) => `Hi ${o.customerName.split(' ')[0]}, your Dezire More order ${o.orderNumber} is being processed. We'll keep you posted!`,
+  'Packed':            (o) => `Hi ${o.customerName.split(' ')[0]}, your order ${o.orderNumber} has been packed and is ready for dispatch.`,
+  'Shipped':           (o) => `Hi ${o.customerName.split(' ')[0]}, great news - your order ${o.orderNumber} has been shipped and is on its way!`,
+  'Out for Delivery':  (o) => `Hi ${o.customerName.split(' ')[0]}, your order ${o.orderNumber} is out for delivery and should arrive today!`,
+  'Delivered':         (o) => `Hi ${o.customerName.split(' ')[0]}, your order ${o.orderNumber} has been delivered. We hope you love it! Thank you for shopping with Dezire More.`,
+  'Cancelled':         (o) => `Hi ${o.customerName.split(' ')[0]}, your order ${o.orderNumber} has been cancelled as requested.`,
+};
+
+function waPaymentConfirmedMessage(o) {
+  return WA_STATUS_MESSAGES['Payment Confirmed'](o);
+}
+
+function waLinkForOrder(order, overrideMessage) {
+  const message = overrideMessage
+    || (WA_STATUS_MESSAGES[order.orderStatus]
+      ? WA_STATUS_MESSAGES[order.orderStatus](order)
+      : `Hi ${order.customerName.split(' ')[0]}, here's an update on your Dezire More order ${order.orderNumber}: ${order.orderStatus}.`);
+  const phone = '91' + String(order.customerPhone).replace(/\D/g, '').slice(-10);
+  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+}
+
+function sendWhatsAppUpdate(id) {
+  const order = allOrders.find(o => o._id === id);
+  if (!order) return;
+  window.open(waLinkForOrder(order), '_blank', 'noreferrer');
+}
+
+// Weight/dimensions aren't tracked per-product anywhere in this app, so
+// they're entered once here at shipment time — defaults are a reasonable
+// guess for a typical single-saree/kurta package, always editable per order.
+function renderShipmentSection(o) {
+  if (o.shipment?.awbCode) {
+    const isDelhivery = o.shipment.provider === 'delhivery';
+    return `
+      <p style="font-size:13px;margin-top:4px">
+        <strong>${o.shipment.courierName || 'Courier'}</strong> — AWB <span style="font-family:monospace">${o.shipment.awbCode}</span><br/>
+        ${o.shipment.lastTrackingStatus ? `Last update: ${o.shipment.lastTrackingStatus} (${new Date(o.shipment.lastTrackingUpdate).toLocaleString('en-IN')})<br/>` : ''}
+        <a href="${o.shipment.trackingUrl}" target="_blank" rel="noreferrer">Track shipment →</a>
+      </p>
+      ${isDelhivery ? `
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-outline" style="padding:5px 12px;font-size:11px" onclick="trackDelhiveryShipment('${o._id}','${o.shipment.awbCode}')">Refresh Tracking</button>
+        <button class="btn btn-danger" style="padding:5px 12px;font-size:11px" onclick="cancelDelhiveryShipment('${o._id}')">Cancel Shipment</button>
+      </div>` : ''}`;
+  }
+  if (o.shipment?.shiprocketOrderId) {
+    return `<p style="font-size:13px;margin-top:4px;color:var(--muted)">Order created on Shiprocket, but no courier could be auto-assigned yet (check the Shiprocket dashboard — usually a serviceability/pincode issue).</p>`;
+  }
+  return `
+    <div style="margin-top:4px">
+      <p style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px">Enter tracking manually (free — no account needed)</p>
+      <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin-bottom:14px">
+        <label style="font-size:11px;color:var(--muted)">Courier<br/><input type="text" placeholder="e.g. India Post, Delhivery" id="track-courier-${o._id}" style="width:150px;padding:5px"/></label>
+        <label style="font-size:11px;color:var(--muted)">Tracking / AWB number<br/><input type="text" id="track-awb-${o._id}" style="width:160px;padding:5px"/></label>
+        <button class="btn btn-gold" style="padding:6px 14px;font-size:12px" onclick="submitManualTracking('${o._id}')">Save Tracking</button>
+      </div>
+      <p style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px">Or create via Shiprocket (needs a configured account)</p>
+      <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
+        <label style="font-size:11px;color:var(--muted)">Weight (kg)<br/><input type="number" step="0.1" value="0.5" id="ship-weight-${o._id}" style="width:70px;padding:5px"/></label>
+        <label style="font-size:11px;color:var(--muted)">L (cm)<br/><input type="number" value="30" id="ship-l-${o._id}" style="width:60px;padding:5px"/></label>
+        <label style="font-size:11px;color:var(--muted)">B (cm)<br/><input type="number" value="20" id="ship-b-${o._id}" style="width:60px;padding:5px"/></label>
+        <label style="font-size:11px;color:var(--muted)">H (cm)<br/><input type="number" value="5" id="ship-h-${o._id}" style="width:60px;padding:5px"/></label>
+        <button class="btn btn-outline" style="padding:6px 14px;font-size:12px" onclick="createShipment('${o._id}')">Create Shipment</button>
+      </div>
+      <p style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin:14px 0 4px">Or create via Delhivery (needs a configured account)</p>
+      <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
+        <label style="font-size:11px;color:var(--muted)">Weight (kg)<br/><input type="number" step="0.1" value="0.5" id="dl-weight-${o._id}" style="width:70px;padding:5px"/></label>
+        <button class="btn btn-outline" style="padding:6px 14px;font-size:12px" onclick="createDelhiveryShipment('${o._id}')">Create Shipment</button>
+      </div>
+    </div>`;
+}
+
+async function submitManualTracking(id) {
+  const courierName = document.getElementById(`track-courier-${id}`).value.trim();
+  const awbCode = document.getElementById(`track-awb-${id}`).value.trim();
+  if (!courierName || !awbCode) { toast('Enter both courier name and tracking number', 'error'); return; }
+  try {
+    const res = await fetch(`${API}/orders/admin/${id}/manual-tracking`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ courierName, awbCode }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const idx = allOrders.findIndex(o => o._id === id);
+    if (idx > -1) allOrders[idx] = data.order;
+    renderOrdersTable();
+    toast('Tracking saved', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function createShipment(id) {
+  const weight = parseFloat(document.getElementById(`ship-weight-${id}`).value) || 0.5;
+  const length = parseFloat(document.getElementById(`ship-l-${id}`).value) || 30;
+  const breadth = parseFloat(document.getElementById(`ship-b-${id}`).value) || 20;
+  const height = parseFloat(document.getElementById(`ship-h-${id}`).value) || 5;
+  try {
+    const res = await fetch(`${API}/orders/${id}/create-shipment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ weight, length, breadth, height }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const idx = allOrders.findIndex(o => o._id === id);
+    if (idx > -1) allOrders[idx] = data.order;
+    renderOrdersTable();
+    toast(data.awbAssigned ? 'Shipment created — AWB assigned' : `Order created on Shiprocket, but: ${data.error}`, data.awbAssigned ? 'success' : 'error');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function createDelhiveryShipment(id) {
+  const weight = parseFloat(document.getElementById(`dl-weight-${id}`).value) || 0.5;
+  try {
+    const res = await fetch(`${API}/shipping/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ orderId: id, weight }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const idx = allOrders.findIndex(o => o._id === id);
+    if (idx > -1) allOrders[idx] = data.order;
+    renderOrdersTable();
+    toast('Shipment created — AWB assigned', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function trackDelhiveryShipment(id, awb) {
+  try {
+    const res = await fetch(`${API}/shipping/track/${encodeURIComponent(awb)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    await loadOrdersList();
+    toast(`Latest status: ${data.tracking.status || 'no update yet'}`, 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function cancelDelhiveryShipment(id) {
+  if (!confirm('Cancel this Delhivery shipment? This cannot be undone.')) return;
+  try {
+    const res = await fetch(`${API}/shipping/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ orderId: id }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const idx = allOrders.findIndex(o => o._id === id);
+    if (idx > -1) allOrders[idx] = data.order;
+    renderOrdersTable();
+    toast('Shipment cancelled', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+function renderOrdersTable() {
+  const el = document.getElementById('orders-list');
+  if (!allOrders.length) {
+    el.innerHTML = '<p class="empty">No orders yet</p>';
+    return;
+  }
+  el.innerHTML = `
+    <table class="products-table">
+      <thead><tr>
+        <th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${allOrders.map(o => `
+          <tr style="cursor:pointer" onclick="toggleOrderDetail('${o._id}')">
+            <td><strong>${o.orderNumber}</strong><br/><span style="font-size:11px;color:var(--muted)">${new Date(o.createdAt).toLocaleDateString('en-IN')}</span></td>
+            <td>${o.customerName}<br/><span style="font-size:11px;color:var(--muted)">${o.customerPhone}</span></td>
+            <td>${o.items.length} item${o.items.length !== 1 ? 's' : ''}</td>
+            <td>₹${o.total.toLocaleString('en-IN')}</td>
+            <td>${o.paymentMethod}<br/><span class="badge ${o.paymentStatus === 'paid' ? 'badge-active' : 'badge-inactive'}">${o.paymentStatus}</span>
+              ${o.paymentStatus !== 'paid' && o.paymentMethod !== 'COD' ? `<br/><button class="btn btn-gold" style="padding:4px 10px;font-size:11px;margin-top:6px" onclick="event.stopPropagation();confirmOrderPayment('${o._id}')">Confirm Payment</button>` : ''}
+            </td>
+            <td onclick="event.stopPropagation()">
+              <select onchange="updateOrderStatus('${o._id}', this.value)" style="width:auto;padding:6px 8px;font-size:12px">
+                ${ORDER_STATUSES.map(s => `<option value="${s}" ${s === o.orderStatus ? 'selected' : ''}>${s}</option>`).join('')}
+              </select>
+              <button class="btn btn-outline" style="padding:4px 8px;font-size:11px;margin-top:6px" onclick="event.stopPropagation();sendWhatsAppUpdate('${o._id}')" title="Open WhatsApp with an update message pre-filled">📱 WhatsApp</button>
+            </td>
+            <td>${expandedOrderId === o._id ? '▲' : '▼'}</td>
+          </tr>
+          ${expandedOrderId === o._id ? `
+            <tr><td colspan="7" style="background:var(--bg);padding:16px 20px">
+              ${o.paymentReference ? `
+              <strong style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Payment Reference (UTR)</strong>
+              <p style="font-size:13px;margin:4px 0 12px;font-family:monospace">${o.paymentReference}</p>
+              ` : ''}
+              <strong style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Items</strong>
+              ${o.items.map(item => `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px">
+                <span>${item.name}${item.size ? ` (${item.size})` : ''} × ${item.quantity}</span>
+                <span>₹${(item.price * item.quantity).toLocaleString('en-IN')}</span>
+              </div>`).join('')}
+              <strong style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);display:block;margin-top:12px">Delivery Address</strong>
+              <p style="font-size:13px;margin-top:4px">${o.customerEmail}<br/>${o.address.line1}, ${o.address.city}, ${o.address.state} - ${o.address.pin}</p>
+              <strong style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);display:block;margin-top:12px">Shipment Tracking</strong>
+              ${renderShipmentSection(o)}
+            </td></tr>
+          ` : ''}
+        `).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ── Customers ─────────────────────────────────────────────────────────────────
+
+let allCustomers = [];
+let expandedCustomerId = null;
+
+function toggleCustomerDetail(id) {
+  expandedCustomerId = expandedCustomerId === id ? null : id;
+  renderCustomersTable();
+}
+
+async function loadCustomersList() {
+  try {
+    const res = await fetch(`${API}/auth/admin/all`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    allCustomers = data.data || [];
+    renderCustomersTable();
+  } catch (err) {
+    document.getElementById('customers-list').innerHTML = `<p class="empty">Failed to load customers: ${err.message}</p>`;
+  }
+}
+
+async function confirmMembership(userId) {
+  if (!confirm('Confirm this membership payment has been received?')) return;
+  try {
+    const res = await fetch(`${API}/auth/admin/membership/${userId}/confirm`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const idx = allCustomers.findIndex(c => c._id === userId);
+    if (idx > -1) allCustomers[idx].membership = data.membership;
+    renderCustomersTable();
+    toast('Membership activated', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+// Orders keep the customer's email directly (not a foreign key to their
+// account), so deleting the account here doesn't touch their order history.
+async function deleteCustomer(id, email) {
+  if (!confirm(`Delete the account for "${email}"? This cannot be undone. Their past orders are kept for your records either way.`)) return;
+  try {
+    const res = await fetch(`${API}/auth/admin/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    allCustomers = allCustomers.filter(c => c._id !== id);
+    renderCustomersTable();
+    toast('Customer deleted', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+function renderCustomersTable() {
+  const el = document.getElementById('customers-list');
+  if (!allCustomers.length) {
+    el.innerHTML = '<p class="empty">No registered customers yet</p>';
+    return;
+  }
+
+  const query = (document.getElementById('customer-search')?.value || '').trim().toLowerCase();
+  const filtered = query
+    ? allCustomers.filter(c => {
+        const name = `${c.firstName} ${c.lastName || ''}`.toLowerCase();
+        return name.includes(query) || c.email.toLowerCase().includes(query);
+      })
+    : allCustomers;
+
+  if (!filtered.length) {
+    el.innerHTML = `<p class="empty">No customers match "${query}"</p>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <table class="products-table">
+      <thead><tr>
+        <th>Customer</th><th>Contact</th><th>Verified</th><th>Membership</th><th>Joined</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${filtered.map(c => {
+          const m = c.membership || { tier: 'none', status: 'inactive' };
+          const tierLabel = m.tier === 'none' ? '—' : (m.tier === 'gold' ? 'Gold' : 'Platinum');
+          const lastPayment = m.payments?.[m.payments.length - 1];
+          const isExpanded = expandedCustomerId === c._id;
+          return `
+          <tr style="cursor:pointer" onclick="toggleCustomerDetail('${c._id}')">
+            <td><strong>${c.firstName} ${c.lastName || ''}</strong></td>
+            <td>${c.email}<br/><span style="font-size:11px;color:var(--muted)">${c.phone || ''}</span></td>
+            <td><span class="badge ${c.emailVerified ? 'badge-active' : 'badge-inactive'}">${c.emailVerified ? 'Verified' : 'Unverified'}</span></td>
+            <td>${tierLabel}${m.tier !== 'none' ? `<br/><span class="badge ${m.status === 'active' ? 'badge-active' : 'badge-inactive'}">${m.status}</span>` : ''}</td>
+            <td style="font-size:12px;color:var(--muted)">${new Date(c.createdAt).toLocaleDateString('en-IN')}</td>
+            <td onclick="event.stopPropagation()">
+              ${m.status === 'pending' ? `
+                ${lastPayment?.paymentReference ? `<div style="font-size:11px;margin-bottom:6px">Ref: <code>${lastPayment.paymentReference}</code></div>` : `<div style="font-size:11px;color:var(--muted);margin-bottom:6px">(reference not submitted yet)</div>`}
+                <button class="btn btn-gold" style="padding:6px 12px;font-size:12px" onclick="confirmMembership('${c._id}')">Confirm Payment</button>
+              ` : ''}
+              <button class="btn btn-outline" style="padding:6px 10px;font-size:11px;color:var(--danger);margin-top:6px" onclick="deleteCustomer('${c._id}','${c.email}')">Delete</button>
+            </td>
+          </tr>
+          ${isExpanded ? `
+            <tr><td colspan="6" style="background:var(--bg);padding:16px 20px">
+              <strong style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Saved Addresses</strong>
+              ${c.addresses?.length ? c.addresses.map(a => `
+                <div style="font-size:13px;padding:6px 0;border-bottom:1px solid var(--border)">
+                  <strong>${a.label || 'Home'}</strong>${a.isDefault ? ' <span class="badge badge-active">Default</span>' : ''}<br/>
+                  ${a.line1}, ${a.city}, ${a.state} - ${a.pin}
+                </div>`).join('') : '<p style="font-size:13px;color:var(--muted);margin:4px 0 12px">No saved addresses</p>'}
+
+              <strong style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);display:block;margin-top:14px">Membership Payments</strong>
+              ${m.payments?.length ? m.payments.slice().reverse().map(p => `
+                <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border)">
+                  <span>${p.tier === 'gold' ? 'Gold' : 'Platinum'} — ₹${p.amount.toLocaleString('en-IN')}${p.paymentReference ? ` — <code>${p.paymentReference}</code>` : ''}</span>
+                  <span class="badge ${p.status === 'paid' ? 'badge-active' : 'badge-inactive'}">${p.status}</span>
+                </div>`).join('') : '<p style="font-size:13px;color:var(--muted);margin:4px 0">No membership payments</p>'}
+            </td></tr>
+          ` : ''}`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ── Activity Log ──────────────────────────────────────────────────────────────
+
+let allActivityLogs = [];
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+async function loadAuditLog() {
+  try {
+    const res = await fetch(`${API}/admin/audit-log`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    allActivityLogs = data.data || [];
+    populateActivityMonthSelect();
+    renderAuditLog();
+  } catch (err) {
+    document.getElementById('activity-list').innerHTML = `<p class="empty">Failed to load activity log: ${err.message}</p>`;
+  }
+}
+
+// Options are derived from months that actually have entries (not every
+// calendar month ever), so the dropdown only ever offers something there's
+// actually something to clear.
+function populateActivityMonthSelect() {
+  const months = [...new Set(allActivityLogs.map(l => {
+    const d = new Date(l.createdAt);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }))].sort().reverse();
+
+  const sel = document.getElementById('activity-month-select');
+  sel.innerHTML = months.length
+    ? months.map(m => {
+        const [y, mo] = m.split('-');
+        return `<option value="${m}">${MONTH_NAMES[Number(mo) - 1]} ${y}</option>`;
+      }).join('')
+    : '<option value="">No entries yet</option>';
+}
+
+function renderAuditLog() {
+  document.getElementById('activity-list').innerHTML = allActivityLogs.length
+    ? `<table class="products-table">
+        <thead><tr><th>When</th><th>Admin</th><th>Action</th><th>Details</th><th></th></tr></thead>
+        <tbody>
+          ${allActivityLogs.map(l => `
+            <tr>
+              <td style="font-size:12px;color:var(--muted);white-space:nowrap">${new Date(l.createdAt).toLocaleString('en-IN')}</td>
+              <td style="font-size:12px">${l.adminEmail}</td>
+              <td style="font-size:12px"><span class="badge badge-active">${l.action}</span></td>
+              <td style="font-size:12px">${l.details || ''}</td>
+              <td><button class="btn btn-outline" style="padding:4px 10px;font-size:11px;color:var(--danger)" onclick="deleteAuditLogEntry('${l._id}')">Delete</button></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`
+    : '<p class="empty">No admin activity recorded yet</p>';
+}
+
+async function deleteAuditLogEntry(id) {
+  if (!confirm('Delete this log entry? This cannot be undone.')) return;
+  try {
+    const res = await fetch(`${API}/admin/audit-log/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    allActivityLogs = allActivityLogs.filter(l => l._id !== id);
+    populateActivityMonthSelect();
+    renderAuditLog();
+    toast('Log entry deleted', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function clearAuditLogMonth() {
+  const month = document.getElementById('activity-month-select').value;
+  if (!month) return;
+  const [y, mo] = month.split('-');
+  const label = `${MONTH_NAMES[Number(mo) - 1]} ${y}`;
+  if (!confirm(`Delete every activity log entry from ${label}? This cannot be undone.`)) return;
+  try {
+    const res = await fetch(`${API}/admin/audit-log/month/${month}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    allActivityLogs = allActivityLogs.filter(l => {
+      const d = new Date(l.createdAt);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` !== month;
+    });
+    populateActivityMonthSelect();
+    renderAuditLog();
+    toast(`Deleted ${data.deletedCount} entr${data.deletedCount === 1 ? 'y' : 'ies'} from ${label}`, 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+// ── Coupons ───────────────────────────────────────────────────────────────────
+
+let allCoupons = [];
+
+async function loadCouponsList() {
+  try {
+    const res = await fetch(`${API}/coupons/admin/all`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    allCoupons = data.data || [];
+    renderCouponsTable();
+  } catch (err) {
+    document.getElementById('coupons-list').innerHTML = `<p class="empty">Failed to load coupons: ${err.message}</p>`;
+  }
+}
+
+async function createCoupon() {
+  const code = document.getElementById('cp-code').value.trim();
+  const type = document.getElementById('cp-type').value;
+  const value = Number(document.getElementById('cp-value').value);
+  const minOrderValue = Number(document.getElementById('cp-min').value) || 0;
+  const maxDiscount = document.getElementById('cp-max').value ? Number(document.getElementById('cp-max').value) : undefined;
+  const expiresAt = document.getElementById('cp-expires').value || undefined;
+  const usageLimit = document.getElementById('cp-limit').value ? Number(document.getElementById('cp-limit').value) : undefined;
+
+  if (!code || !value) { toast('Code and value are required', 'error'); return; }
+
+  try {
+    const res = await fetch(`${API}/coupons`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ code, type, value, minOrderValue, maxDiscount, expiresAt, usageLimit }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    toast('Coupon created', 'success');
+    ['cp-code','cp-value','cp-min','cp-max','cp-expires','cp-limit'].forEach(id => document.getElementById(id).value = '');
+    loadCouponsList();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function toggleCouponActive(id, isActive) {
+  try {
+    const res = await fetch(`${API}/coupons/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ isActive }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error);
+    loadCouponsList();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function deleteCoupon(id) {
+  if (!confirm('Delete this coupon permanently?')) return;
+  try {
+    const res = await fetch(`${API}/coupons/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new Error((await res.json()).error);
+    toast('Coupon deleted', 'success');
+    loadCouponsList();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+function renderCouponsTable() {
+  const el = document.getElementById('coupons-list');
+  if (!allCoupons.length) {
+    el.innerHTML = '<p class="empty">No coupons yet — create one above</p>';
+    return;
+  }
+  el.innerHTML = `
+    <table class="products-table">
+      <thead><tr>
+        <th>Code</th><th>Discount</th><th>Min Order</th><th>Expires</th><th>Usage</th><th>Status</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${allCoupons.map(c => `
+          <tr>
+            <td><strong>${c.code}</strong></td>
+            <td>${c.type === 'percent' ? c.value + '%' : '₹' + c.value}${c.maxDiscount ? ` (max ₹${c.maxDiscount})` : ''}</td>
+            <td>${c.minOrderValue ? '₹' + c.minOrderValue : '—'}</td>
+            <td>${c.expiresAt ? new Date(c.expiresAt).toLocaleDateString('en-IN') : 'Never'}</td>
+            <td>${c.usedCount}${c.usageLimit ? ' / ' + c.usageLimit : ''}</td>
+            <td><span class="badge ${c.isActive ? 'badge-active' : 'badge-inactive'}">${c.isActive ? 'Active' : 'Disabled'}</span></td>
+            <td style="display:flex;gap:8px">
+              <button class="btn btn-outline" style="padding:6px 10px;font-size:12px" onclick="toggleCouponActive('${c._id}', ${!c.isActive})">${c.isActive ? 'Disable' : 'Enable'}</button>
+              <button class="btn btn-outline" style="padding:6px 10px;font-size:12px;color:var(--danger)" onclick="deleteCoupon('${c._id}')">Delete</button>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ── Client Love (testimonials) ──────────────────────────────────────────────
+
+let allTestimonials = [];
+
+async function loadTestimonialsList() {
+  try {
+    const res = await fetch(`${API}/testimonials/admin/all`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    allTestimonials = data.data || [];
+    renderTestimonialsTable();
+  } catch (err) {
+    document.getElementById('love-list').innerHTML = `<p class="empty">Failed to load testimonials: ${err.message}</p>`;
+  }
+}
+
+function resetTestimonialForm() {
+  document.getElementById('love-edit-id').value = '';
+  document.getElementById('love-name').value = '';
+  document.getElementById('love-location').value = '';
+  document.getElementById('love-rating').value = '5';
+  document.getElementById('love-order').value = '';
+  document.getElementById('love-text').value = '';
+  document.getElementById('love-photo').value = '';
+  document.getElementById('love-form-title').textContent = 'Add Testimonial';
+  document.getElementById('love-save-btn').textContent = '+ Add Testimonial';
+  document.getElementById('love-cancel-btn').style.display = 'none';
+}
+
+function editTestimonial(id) {
+  const t = allTestimonials.find(x => x._id === id);
+  if (!t) return;
+  document.getElementById('love-edit-id').value = t._id;
+  document.getElementById('love-name').value = t.name;
+  document.getElementById('love-location').value = t.location || '';
+  document.getElementById('love-rating').value = String(t.rating);
+  document.getElementById('love-order').value = t.displayOrder ?? '';
+  document.getElementById('love-text').value = t.text;
+  document.getElementById('love-form-title').textContent = 'Edit Testimonial';
+  document.getElementById('love-save-btn').textContent = 'Save Changes';
+  document.getElementById('love-cancel-btn').style.display = 'inline-block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function saveTestimonial() {
+  const editId = document.getElementById('love-edit-id').value;
+  const name = document.getElementById('love-name').value.trim();
+  const text = document.getElementById('love-text').value.trim();
+  if (!name || !text) { toast('Name and testimonial text are required', 'error'); return; }
+
+  const fd = new FormData();
+  fd.append('name', name);
+  fd.append('location', document.getElementById('love-location').value.trim());
+  fd.append('rating', document.getElementById('love-rating').value);
+  fd.append('displayOrder', document.getElementById('love-order').value || '0');
+  fd.append('text', text);
+  const photoFile = document.getElementById('love-photo').files[0];
+  if (photoFile) fd.append('photo', photoFile);
+
+  const btn = document.getElementById('love-save-btn');
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API}/testimonials${editId ? '/' + editId : ''}`, {
+      method: editId ? 'PATCH' : 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    toast(editId ? 'Testimonial updated' : 'Testimonial added', 'success');
+    resetTestimonialForm();
+    loadTestimonialsList();
+  } catch (err) {
+    toast(err.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function toggleTestimonialActive(id, isActive) {
+  try {
+    const fd = new FormData();
+    fd.append('isActive', String(isActive));
+    const res = await fetch(`${API}/testimonials/${id}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const idx = allTestimonials.findIndex(t => t._id === id);
+    if (idx > -1) allTestimonials[idx] = data.testimonial;
+    renderTestimonialsTable();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function deleteTestimonial(id, name) {
+  if (!confirm(`Delete the testimonial from "${name}"?`)) return;
+  try {
+    const res = await fetch(`${API}/testimonials/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    toast('Testimonial deleted', 'success');
+    loadTestimonialsList();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+function renderTestimonialsTable() {
+  const el = document.getElementById('love-list');
+  if (!allTestimonials.length) {
+    el.innerHTML = '<p class="empty">No testimonials yet — add your first one above</p>';
+    return;
+  }
+  el.innerHTML = `
+    <table class="products-table">
+      <thead><tr>
+        <th></th><th>Name</th><th>Rating</th><th>Text</th><th>Status</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${allTestimonials.map(t => `
+          <tr>
+            <td>${t.photo ? `<img src="${t.photo}" class="product-thumb" onerror="this.style.display='none'" />` : '—'}</td>
+            <td><strong>${t.name}</strong>${t.location ? `<br/><span style="font-size:11px;color:var(--muted)">${t.location}</span>` : ''}</td>
+            <td>${'★'.repeat(t.rating)}</td>
+            <td style="max-width:280px;font-size:12px">${t.text.length > 100 ? t.text.slice(0, 100) + '…' : t.text}</td>
+            <td><span class="badge ${t.isActive ? 'badge-active' : 'badge-inactive'}">${t.isActive ? 'Active' : 'Hidden'}</span></td>
+            <td style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="btn btn-outline" style="padding:6px 10px;font-size:12px" onclick="editTestimonial('${t._id}')">Edit</button>
+              <button class="btn btn-outline" style="padding:6px 10px;font-size:12px" onclick="toggleTestimonialActive('${t._id}', ${!t.isActive})">${t.isActive ? 'Hide' : 'Show'}</button>
+              <button class="btn btn-outline" style="padding:6px 10px;font-size:12px;color:var(--danger)" onclick="deleteTestimonial('${t._id}', '${t.name.replace(/'/g, "\\'")}')">Delete</button>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ── Payment Settings ──────────────────────────────────────────────────────────
+
+async function loadPaymentSettings() {
+  try {
+    const res = await fetch(`${API}/payment-settings`);
+    const data = await res.json();
+    document.getElementById('payment-upi-id').value = data.upiId || '';
+  } catch (err) {
+    toast('Failed to load payment settings: ' + err.message, 'error');
+  }
+}
+
+async function savePaymentSettings() {
+  const btn = document.getElementById('payment-save-btn');
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API}/payment-settings`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ upiId: document.getElementById('payment-upi-id').value.trim() }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    toast('Payment settings saved', 'success');
+    loadPaymentSettings();
+  } catch (err) {
+    toast('Failed to save: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── Owner / Founder ───────────────────────────────────────────────────────────
+
+async function loadFounderSettings() {
+  try {
+    const res = await fetch(`${API}/founder-settings`);
+    const data = await res.json();
+    document.getElementById('founder-name').value = data.name || '';
+    document.getElementById('founder-title').value = data.title || '';
+    document.getElementById('founder-quote').value = data.quote || '';
+    document.getElementById('founder-bio').value = data.bio || '';
+    const preview = document.getElementById('founder-photo-preview');
+    if (data.photo) {
+      document.getElementById('founder-photo-preview-img').src = data.photo;
+      preview.style.display = 'block';
+    } else {
+      preview.style.display = 'none';
+    }
+  } catch (err) {
+    toast('Failed to load owner details: ' + err.message, 'error');
+  }
+}
+
+async function saveFounderSettings() {
+  const fd = new FormData();
+  fd.append('name', document.getElementById('founder-name').value.trim());
+  fd.append('title', document.getElementById('founder-title').value.trim());
+  fd.append('quote', document.getElementById('founder-quote').value.trim());
+  fd.append('bio', document.getElementById('founder-bio').value.trim());
+  const photoFile = document.getElementById('founder-photo').files[0];
+  if (photoFile) fd.append('founderPhoto', photoFile);
+
+  const btn = document.getElementById('founder-save-btn');
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API}/founder-settings`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    toast('Owner details saved', 'success');
+    document.getElementById('founder-photo').value = '';
+    loadFounderSettings();
+  } catch (err) {
+    toast('Failed to save: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── Products List ─────────────────────────────────────────────────────────────
+
+async function loadProductsList() {
+  const search = document.getElementById('search-input')?.value || '';
+  const cat    = document.getElementById('cat-filter')?.value   || '';
+  let url = `${API}/products?limit=100`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  if (cat)    url += `&category=${cat}`;
+
+  try {
+    const res  = await fetch(url);
+    const data = await res.json();
+    allProducts = data.data || [];
+    renderProductsTable(allProducts);
+  } catch (err) {
+    document.getElementById('products-list').innerHTML = `<p class="empty">Failed to load: ${err.message}</p>`;
+  }
+}
+
+function searchProducts() {
+  clearTimeout(window._searchTimer);
+  window._searchTimer = setTimeout(loadProductsList, 350);
+}
+
+function renderProductsTable(products) {
+  const el = document.getElementById('products-list');
+  if (!products.length) {
+    el.innerHTML = '<p class="empty">No products found</p>';
+    return;
+  }
+  el.innerHTML = `
+    <table class="products-table">
+      <thead><tr>
+        <th>Photo</th><th>Name</th><th>Category</th>
+        <th>Price</th><th>Tags</th><th>Status</th><th>Stock</th><th>Actions</th>
+      </tr></thead>
+      <tbody>
+        ${products.map(p => `
+          <tr>
+            <td><img src="${p.images?.[0]?.url || ''}" class="product-thumb" onerror="this.style.display='none'" /></td>
+            <td><strong>${p.name}</strong>${p.video?.url ? ' <span title="Has video">🎥</span>' : ''}</td>
+            <td style="text-transform:capitalize">${p.category}</td>
+            <td>
+              ₹${p.price.toLocaleString('en-IN')}
+              ${p.originalPrice ? `<br><span style="text-decoration:line-through;color:var(--muted);font-size:12px">₹${p.originalPrice.toLocaleString('en-IN')}</span>` : ''}
+            </td>
+            <td>${(p.tags||[]).map(t => `<span class="badge badge-tag">${t}</span>`).join('')}</td>
+            <td><span class="badge ${p.isActive !== false ? 'badge-active' : 'badge-inactive'}">${p.isActive !== false ? 'Active' : 'Hidden'}</span></td>
+            <td>
+              <span class="badge ${p.inStock ? 'badge-active' : 'badge-inactive'}">${p.inStock ? 'In stock' : 'Out of stock'}</span><br/>
+              <button class="btn btn-outline" style="padding:4px 10px;font-size:11px;margin-top:6px" onclick="toggleProductStock('${p._id}', ${p.inStock})">
+                ${p.inStock ? 'Mark Out of Stock' : 'Mark In Stock'}
+              </button>
+            </td>
+            <td>
+              <div class="actions">
+                <button class="btn btn-outline" style="padding:6px 12px;font-size:12px" onclick="editProduct('${p._id}')">Edit</button>
+                <button class="btn btn-danger" style="padding:6px 12px;font-size:12px" onclick="deleteProduct('${p._id}','${p.name.replace(/'/g,"\\'")}')">Delete</button>
+              </div>
+            </td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+// Quick in-stock/out-of-stock flip straight from the product list — the full
+// Add/Edit form still has the In Stock dropdown + Stock Count for when more
+// detail is needed, but flagging an outfit as sold out shouldn't require
+// opening the whole edit form and scrolling to find it.
+async function toggleProductStock(id, currentlyInStock) {
+  try {
+    const res = await fetch(`${API}/products/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ inStock: !currentlyInStock }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const idx = allProducts.findIndex(p => p._id === id);
+    if (idx > -1) allProducts[idx] = data.product;
+    renderProductsTable(allProducts);
+    toast(data.product.inStock ? 'Marked in stock' : 'Marked out of stock', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+// ── Add / Edit Product ────────────────────────────────────────────────────────
+
+function resetForm() {
+  document.getElementById('edit-product-id').value = '';
+  document.getElementById('form-title').textContent = 'Add New Product';
+  document.getElementById('save-btn').textContent = 'Save Product';
+  ['f-name','f-category','f-subcategory','f-description','f-price','f-original-price',
+   'f-fabric','f-sku','f-colors','f-sizes','f-occasion'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('f-instock').value = 'true';
+  document.getElementById('f-stock-count').value = '100';
+  ['tag-bestseller','tag-new-arrival','tag-sale','tag-premium','tag-everyday','tag-staff-pick'].forEach(id => {
+    document.getElementById(id).checked = false;
+  });
+  selectedFiles = [];
+  selectedVideoFile = null;
+  document.getElementById('image-previews').innerHTML = '';
+  document.getElementById('video-preview').innerHTML = '';
+  document.getElementById('video-input').value = '';
+  document.getElementById('discount-preview').textContent = '';
+}
+
+function editProduct(id) {
+  const p = allProducts.find(x => x._id === id);
+  if (!p) return;
+
+  document.getElementById('edit-product-id').value = id;
+  document.getElementById('form-title').textContent = 'Edit Product';
+  document.getElementById('save-btn').textContent = 'Save Changes';
+
+  document.getElementById('f-name').value          = p.name || '';
+  document.getElementById('f-category').value      = p.category || '';
+  document.getElementById('f-subcategory').value   = p.subcategory || '';
+  document.getElementById('f-description').value   = p.description || '';
+  document.getElementById('f-price').value         = p.price || '';
+  document.getElementById('f-original-price').value = p.originalPrice || '';
+  document.getElementById('f-fabric').value        = p.fabric || '';
+  document.getElementById('f-sku').value           = p.sku || '';
+  document.getElementById('f-colors').value        = (p.colors||[]).join(', ');
+  document.getElementById('f-sizes').value         = (p.sizes||[]).join(', ');
+  document.getElementById('f-occasion').value      = (p.occasion||[]).join(', ');
+  document.getElementById('f-instock').value       = p.inStock ? 'true' : 'false';
+  document.getElementById('f-stock-count').value   = p.stockCount || 100;
+
+  ['bestseller','new-arrival','sale','premium','everyday','staff-pick'].forEach(tag => {
+    document.getElementById(`tag-${tag}`).checked = (p.tags||[]).includes(tag);
+  });
+
+  // Show existing images — marked data-existing so renderPreviews() (below)
+  // knows to leave these alone and never re-render them itself; they're
+  // server-side images with their own dedicated remove path
+  // (deleteExistingImage), not part of the selectedFiles upload queue.
+  document.getElementById('image-previews').innerHTML = (p.images||[]).map(img => `
+    <div class="preview-item" data-existing="true">
+      <img src="${img.url}" />
+      <button class="remove-img" onclick="deleteExistingImage('${id}','${img.publicId}',this.parentElement)">×</button>
+    </div>`).join('');
+
+  // Show existing video
+  const videoPreviewEl = document.getElementById('video-preview');
+  if (p.video?.url) {
+    videoPreviewEl.innerHTML = `
+      <div style="position:relative;width:200px">
+        <video src="${p.video.url}" controls style="width:100%;border-radius:8px;border:1px solid var(--border)"></video>
+        <button class="btn btn-danger" style="margin-top:8px;padding:6px 12px;font-size:12px" onclick="deleteExistingVideo('${id}')">Remove Video</button>
+      </div>`;
+  } else {
+    videoPreviewEl.innerHTML = '';
+  }
+
+  selectedFiles = [];
+  selectedVideoFile = null;
+  document.getElementById('video-input').value = '';
+  showPage('add');
+  updateDiscountPreview();
+}
+
+async function deleteExistingVideo(productId) {
+  if (!confirm('Remove this product video?')) return;
+  try {
+    await fetch(`${API}/products/${productId}/video`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    document.getElementById('video-preview').innerHTML = '';
+    toast('Video removed', 'success');
+  } catch {
+    toast('Failed to remove video', 'error');
+  }
+}
+
+async function deleteExistingImage(productId, publicId, el) {
+  if (!confirm('Remove this image?')) return;
+  try {
+    await fetch(`${API}/products/${productId}/images/${encodeURIComponent(publicId)}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    el.remove();
+    toast('Image removed', 'success');
+  } catch {
+    toast('Failed to remove image', 'error');
+  }
+}
+
+async function saveProduct() {
+  const editId = document.getElementById('edit-product-id').value;
+  const name   = document.getElementById('f-name').value.trim();
+  const cat    = document.getElementById('f-category').value;
+  const price  = document.getElementById('f-price').value;
+
+  if (!name || !cat || !price) {
+    toast('Name, category and price are required', 'error');
+    return;
+  }
+
+  const tags = ['bestseller','new-arrival','sale','premium','everyday','staff-pick']
+    .filter(t => document.getElementById(`tag-${t}`).checked);
+
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  btn.textContent = editId ? 'Saving…' : 'Uploading & saving…';
+
+  try {
+    let res;
+
+    if (editId) {
+      // PATCH — update details (no image re-upload here)
+      res = await fetch(`${API}/products/${editId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name,
+          category:      cat,
+          subcategory:   document.getElementById('f-subcategory').value,
+          price:         Number(price),
+          originalPrice: Number(document.getElementById('f-original-price').value) || undefined,
+          fabric:        document.getElementById('f-fabric').value,
+          sku:           document.getElementById('f-sku').value,
+          colors:        document.getElementById('f-colors').value.split(',').map(s=>s.trim()).filter(Boolean),
+          sizes:         document.getElementById('f-sizes').value.split(',').map(s=>s.trim()).filter(Boolean),
+          occasion:      document.getElementById('f-occasion').value.split(',').map(s=>s.trim()).filter(Boolean),
+          description:   document.getElementById('f-description').value,
+          inStock:       document.getElementById('f-instock').value === 'true',
+          stockCount:    Number(document.getElementById('f-stock-count').value),
+          tags,
+        }),
+      });
+
+      // Upload new images if any were selected
+      if (selectedFiles.length) {
+        const fd = new FormData();
+        selectedFiles.forEach(f => fd.append('images', f));
+        fd.append('category', cat);
+        await fetch(`${API}/products/${editId}/images`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd,
+        });
+      }
+
+      // Upload a new/replacement video if one was selected
+      if (selectedVideoFile) {
+        const vfd = new FormData();
+        vfd.append('video', selectedVideoFile);
+        await fetch(`${API}/products/${editId}/video`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: vfd,
+        });
+      }
+    } else {
+      // POST — create new product with images
+      const fd = new FormData();
+      fd.append('name', name);
+      fd.append('category', cat);
+      fd.append('subcategory', document.getElementById('f-subcategory').value);
+      fd.append('price', price);
+      fd.append('originalPrice', document.getElementById('f-original-price').value);
+      fd.append('fabric', document.getElementById('f-fabric').value);
+      fd.append('sku', document.getElementById('f-sku').value);
+      fd.append('colors', document.getElementById('f-colors').value);
+      fd.append('sizes', document.getElementById('f-sizes').value);
+      fd.append('occasion', document.getElementById('f-occasion').value);
+      fd.append('description', document.getElementById('f-description').value);
+      fd.append('inStock', document.getElementById('f-instock').value);
+      fd.append('stockCount', document.getElementById('f-stock-count').value);
+      tags.forEach(t => fd.append('tags', t));
+      selectedFiles.forEach(f => fd.append('images', f));
+      if (selectedVideoFile) fd.append('video', selectedVideoFile);
+
+      res = await fetch(`${API}/products`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+    }
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    toast(editId ? 'Product updated!' : 'Product added — live on your store!', 'success');
+    resetForm();
+    showPage('products');
+  } catch (err) {
+    toast(err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = editId ? 'Save Changes' : 'Save Product';
+  }
+}
+
+async function deleteProduct(id, name) {
+  if (!confirm(`Delete "${name}"? It will be hidden from the store.`)) return;
+  try {
+    await fetch(`${API}/products/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    toast('Product removed from store', 'success');
+    loadProductsList();
+  } catch {
+    toast('Failed to delete', 'error');
+  }
+}
+
+// ── Image upload ──────────────────────────────────────────────────────────────
+
+function handleFiles(files) {
+  const newFiles = Array.from(files).slice(0, 10 - selectedFiles.length);
+  selectedFiles = [...selectedFiles, ...newFiles].slice(0, 10);
+  renderPreviews();
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag-over');
+  handleFiles(e.dataTransfer.files);
+}
+function handleDragOver(e)  { e.preventDefault(); document.getElementById('upload-zone').classList.add('drag-over'); }
+function handleDragLeave()  { document.getElementById('upload-zone').classList.remove('drag-over'); }
+
+function renderPreviews() {
+  const el = document.getElementById('image-previews');
+  // Bug was here: this used to re-scan the DOM for ".preview-item:not([data-new])"
+  // and prepend whatever it found — but previous calls' own newly-selected-file
+  // previews matched that same selector (nothing ever marked them "new"), so
+  // every re-render re-added them on top of the fresh copy generated just below,
+  // duplicating every already-selected file each time a photo was added or
+  // removed. Only genuinely pre-existing server images (marked data-existing in
+  // editProduct() above) need to survive a re-render; the selectedFiles portion
+  // is authoritative and always safe to fully rebuild from scratch.
+  const existing = el.querySelectorAll('.preview-item[data-existing]');
+  const newPreviews = selectedFiles.map((file, i) => {
+    const url = URL.createObjectURL(file);
+    return `<div class="preview-item">
+      <img src="${url}" />
+      <button class="remove-img" onclick="removeFile(${i})">×</button>
+    </div>`;
+  }).join('');
+  el.innerHTML = Array.from(existing).map(node => node.outerHTML).join('') + newPreviews;
+}
+
+function removeFile(index) {
+  selectedFiles.splice(index, 1);
+  renderPreviews();
+}
+
+function handleVideoFile(files) {
+  const file = files[0];
+  if (!file) return;
+  selectedVideoFile = file;
+  const url = URL.createObjectURL(file);
+  document.getElementById('video-preview').innerHTML = `
+    <div style="position:relative;width:200px">
+      <video src="${url}" controls style="width:100%;border-radius:8px;border:1px solid var(--border)"></video>
+      <button class="btn btn-outline" style="margin-top:8px;padding:6px 12px;font-size:12px" onclick="selectedVideoFile=null;document.getElementById('video-preview').innerHTML='';document.getElementById('video-input').value=''">Cancel</button>
+    </div>`;
+}
+
+// ── Discount preview ──────────────────────────────────────────────────────────
+
+document.addEventListener('input', e => {
+  if (e.target.id === 'f-price' || e.target.id === 'f-original-price') updateDiscountPreview();
+});
+
+function updateDiscountPreview() {
+  const price    = Number(document.getElementById('f-price')?.value);
+  const original = Number(document.getElementById('f-original-price')?.value);
+  const el = document.getElementById('discount-preview');
+  if (el && price && original && original > price) {
+    const pct = Math.round((original - price) / original * 100);
+    el.textContent = `${pct}% off will show on this product`;
+  } else if (el) {
+    el.textContent = '';
+  }
+}
+
+// ── Bulk Import ───────────────────────────────────────────────────────────────
+
+const BULK_TEMPLATE_HEADERS = [
+  'name','category','subcategory','price','originalPrice','fabric','sku',
+  'colors','sizes','occasion','description','tags','inStock','stockCount','images','video',
+];
+const BULK_TEMPLATE_EXAMPLE = [
+  'Kanjivaram Silk Saree','sarees','handloom','4999','6999','Pure Silk','KNJ-001',
+  'Red;Gold','Free Size','Wedding;Festival','Rich handwoven silk saree with zari border.',
+  'bestseller;new-arrival','true','100','saree1.jpg;saree2.jpg','saree1-video.mp4',
+];
+
+let bulkRows = [];
+let bulkImageMap = {}; // filename -> File
+
+function downloadBulkTemplate() {
+  const csv = Papa.unparse({ fields: BULK_TEMPLATE_HEADERS, data: [BULK_TEMPLATE_EXAMPLE] });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'dezire-more-bulk-import-template.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+const BULK_REQUIRED_HEADERS = ['name', 'category', 'price'];
+
+function handleBulkCSV(files) {
+  const file = files[0];
+  const statusEl = document.getElementById('bulk-csv-status');
+  if (!file) { statusEl.textContent = ''; bulkRows = []; renderBulkPreview(); return; }
+
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    complete: (results) => {
+      bulkRows = results.data.filter(r => (r.name || '').trim());
+      const missingHeaders = BULK_REQUIRED_HEADERS.filter(h => !(results.meta.fields || []).includes(h));
+      if (missingHeaders.length) {
+        statusEl.textContent = `Your CSV is missing required column(s): ${missingHeaders.join(', ')}. Fix the header row and re-upload.`;
+        statusEl.style.color = 'var(--danger)';
+        bulkRows = [];
+      } else {
+        statusEl.textContent = `${bulkRows.length} product${bulkRows.length !== 1 ? 's' : ''} loaded from CSV — check the preview below.`;
+        statusEl.style.color = 'var(--success)';
+      }
+      renderBulkPreview();
+    },
+    error: (err) => {
+      bulkRows = [];
+      statusEl.textContent = `Failed to read CSV: ${err.message}`;
+      statusEl.style.color = 'var(--danger)';
+      renderBulkPreview();
+    },
+  });
+}
+
+function handleBulkImages(files) {
+  bulkImageMap = {};
+  Array.from(files).forEach(f => { bulkImageMap[f.name] = f; });
+  const statusEl = document.getElementById('bulk-images-status');
+  statusEl.textContent = `${files.length} photo${files.length !== 1 ? 's' : ''} ready.`;
+  statusEl.style.color = 'var(--success)';
+  renderBulkPreview();
+}
+
+function splitField(value) {
+  return (value || '').split(';').map(s => s.trim()).filter(Boolean);
+}
+
+// Row is flagged bad the same way runBulkImport() itself would reject it —
+// missing a required field, or an images/video filename not (yet) matched
+// to a selected file — so the admin sees the problem before committing
+// anything, rather than only in the per-row failure log after the fact.
+function bulkRowProblem(row) {
+  if (!row.name || !row.category || !row.price) return 'Missing name, category, or price';
+  const imageNames = splitField(row.images);
+  const missingImages = imageNames.filter(n => !bulkImageMap[n]);
+  if (imageNames.length && missingImages.length) return `Photo not selected: ${missingImages.join(', ')}`;
+  const videoName = (row.video || '').trim();
+  if (videoName && !bulkImageMap[videoName]) return `Video not selected: ${videoName}`;
+  return null;
+}
+
+function renderBulkPreview() {
+  const card = document.getElementById('bulk-preview-card');
+  const table = document.getElementById('bulk-preview-table');
+  if (!bulkRows.length) { card.style.display = 'none'; table.innerHTML = ''; return; }
+
+  card.style.display = '';
+  table.innerHTML = `
+    <thead><tr>
+      <th>Name</th><th>Category</th><th>Subcategory</th><th>Price</th><th>Colors</th><th>Sizes</th><th>Images</th><th></th>
+    </tr></thead>
+    <tbody>
+      ${bulkRows.map(row => {
+        const problem = bulkRowProblem(row);
+        const rowStyle = problem ? 'background:#fde8e8' : '';
+        return `
+        <tr style="${rowStyle}">
+          <td>${row.name || '<em>(missing)</em>'}</td>
+          <td>${row.category || '<em>(missing)</em>'}</td>
+          <td>${row.subcategory || ''}</td>
+          <td>${row.price || '<em>(missing)</em>'}</td>
+          <td>${row.colors || ''}</td>
+          <td>${row.sizes || ''}</td>
+          <td>${row.images || ''}</td>
+          <td>${problem ? `<span class="badge badge-inactive">${problem}</span>` : '<span class="badge badge-active">Ready</span>'}</td>
+        </tr>`;
+      }).join('')}
+    </tbody>`;
+}
+
+async function runBulkImport() {
+  const progressEl = document.getElementById('bulk-progress');
+  const btn = document.getElementById('bulk-run-btn');
+
+  if (!bulkRows.length) {
+    toast('Upload a CSV with at least one product first', 'error');
+    return;
+  }
+
+  btn.disabled = true;
+  progressEl.innerHTML = '';
+  let successCount = 0;
+  let failCount = 0;
+
+  for (let i = 0; i < bulkRows.length; i++) {
+    const row = bulkRows[i];
+    const line = document.createElement('div');
+    line.style.cssText = 'padding:8px 0;border-bottom:1px solid var(--border);font-size:13px';
+    line.textContent = `${i + 1}/${bulkRows.length} — ${row.name} — uploading…`;
+    progressEl.appendChild(line);
+
+    try {
+      const problem = bulkRowProblem(row);
+      if (problem) throw new Error(problem);
+
+      const imageNames = splitField(row.images);
+      const videoName = (row.video || '').trim();
+      const fd = new FormData();
+      fd.append('name', row.name);
+      fd.append('category', row.category);
+      fd.append('subcategory', row.subcategory || '');
+      fd.append('price', row.price);
+      fd.append('originalPrice', row.originalPrice || '');
+      fd.append('fabric', row.fabric || '');
+      fd.append('sku', row.sku || '');
+      fd.append('colors', splitField(row.colors).join(','));
+      fd.append('sizes', splitField(row.sizes).join(','));
+      fd.append('occasion', splitField(row.occasion).join(','));
+      fd.append('description', row.description || '');
+      fd.append('inStock', row.inStock || 'true');
+      fd.append('stockCount', row.stockCount || '100');
+      splitField(row.tags).forEach(t => fd.append('tags', t));
+      imageNames.forEach(n => fd.append('images', bulkImageMap[n]));
+      if (videoName) fd.append('video', bulkImageMap[videoName]);
+
+      const res = await fetch(`${API}/products`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Server error');
+
+      successCount++;
+      line.textContent = `${i + 1}/${bulkRows.length} — ${row.name} — added ✓`;
+      line.style.color = 'var(--success)';
+    } catch (err) {
+      failCount++;
+      line.textContent = `${i + 1}/${bulkRows.length} — ${row.name || '(no name)'} — failed: ${err.message}`;
+      line.style.color = 'var(--danger)';
+    }
+  }
+
+  const summary = document.createElement('div');
+  summary.style.cssText = 'margin-top:12px;font-weight:600';
+  summary.textContent = `Done — ${successCount} added, ${failCount} failed.`;
+  progressEl.appendChild(summary);
+
+  btn.disabled = false;
+  toast(`Bulk import finished: ${successCount} added, ${failCount} failed`, failCount ? 'error' : 'success');
+  loadDashboard();
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `show ${type}`;
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => el.className = '', 3500);
+}
+</script>
+</body>
+</html>
