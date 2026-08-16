@@ -2,12 +2,6 @@ require('dotenv').config();
 const app = require('./app');
 const { connectDB } = require('./db');
 
-// ─── Start ────────────────────────────────────────────────────────────────────
-// Render (and local dev) run this as a persistent process, so the wishlist
-// watcher can just be a plain interval here. Firebase Functions can't rely
-// on that (an instance can be frozen/killed between requests) — see
-// functions-entry.js, which runs the same check as a proper Scheduled
-// Function instead.
 
 connectDB()
   .then(() => {

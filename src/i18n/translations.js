@@ -1,16 +1,3 @@
-// Central translation dictionary. Every language has the same key set, so
-// t(key) can always fall back to English if a key is ever missing from a
-// non-English table (safer than a component crashing on an undefined string).
-//
-// Scope, deliberately: this covers the site's chrome — navigation, footer,
-// homepage, account dashboard, settings, order-status labels, membership —
-// the parts a shopper reads on every visit regardless of what they're
-// browsing. It does NOT cover the checkout/payment/auth form internals
-// (still English-only — see Navbar.jsx), the admin panel (internal tooling,
-// not customer-facing), or long-form legal text on the Privacy Policy /
-// Terms & Conditions pages (machine-translating legal text without review
-// is a real liability, not just a nice-to-have — left in English on
-// purpose, with the surrounding page chrome translated).
 
 export const LANGUAGES = {
   en: { nativeName: 'English', englishName: 'English' },
@@ -23,7 +10,6 @@ export const LANGUAGES = {
 
 export const translations = {
   en: {
-    // Nav
     nav_sarees: 'Sarees',
     nav_dressMaterials: 'Dress Materials',
     nav_readyToWear: 'Ready to Wear',
@@ -40,7 +26,6 @@ export const translations = {
     nav_login: 'Login',
     nav_closeMenu: 'Close menu',
     nav_openMenu: 'Open menu',
-    // Footer
     footer_tagline: 'Ethnic Elegance. Modern You.',
     footer_about: 'Curated ethnic fashion for the modern Indian woman. Timeless silhouettes, contemporary spirit.',
     footer_help: 'Help',
@@ -53,13 +38,11 @@ export const translations = {
     footer_trackWhatsapp: 'Track order on WhatsApp',
     footer_contact: 'Contact',
     footer_rights: 'All rights reserved.',
-    // Home
     home_ourStory: 'Our Story',
     home_storyHeadline: 'Crafted With Purpose, Worn With Pride',
     home_storyBody: 'Every Dezire More piece is designed for the modern Indian woman — timeless silhouettes, contemporary spirit.',
     home_discoverStory: 'Discover Our Story',
     home_staffPicks: 'Staff Picks',
-    // Common actions
     action_addToBag: 'Add to Bag',
     action_buyNow: 'Buy Now',
     action_addToWishlist: 'Add to Wishlist',
@@ -72,7 +55,6 @@ export const translations = {
     action_continue: 'Continue',
     action_backToHome: 'Back to Home',
     action_outOfStock: 'Out of Stock',
-    // Account dashboard
     account_myAccount: 'My Account',
     account_welcome: 'Welcome',
     account_manage: 'Manage your profile, orders, addresses, and membership all in one place.',
@@ -89,7 +71,6 @@ export const translations = {
     account_paymentMethods: 'Payment Methods',
     account_support: 'Support',
     account_logout: 'Logout',
-    // Settings
     settings_title: 'Settings',
     settings_darkMode: 'Dark Mode',
     settings_darkModeDesc: 'Easier on the eyes in low light',
@@ -105,7 +86,6 @@ export const translations = {
     settings_aboutUs: 'About Us',
     settings_helpSupport: 'Help & Support',
     settings_profile: 'Profile',
-    // Order status
     status_orderPlaced: 'Order Placed',
     status_paymentConfirmed: 'Payment Confirmed',
     status_processing: 'Processing',
@@ -114,12 +94,10 @@ export const translations = {
     status_outForDelivery: 'Out for Delivery',
     status_delivered: 'Delivered',
     status_cancelled: 'Cancelled',
-    // Membership
     membership_gold: 'Gold',
     membership_platinum: 'Platinum',
     membership_subscribe: 'Subscribe',
     membership_active: 'Active',
-    // Coupons page
     coupons_title: 'Coupons & Rewards',
     coupons_available: 'Available Coupons',
     coupons_empty: 'No active coupons right now — check back soon.',
@@ -129,7 +107,6 @@ export const translations = {
     coupons_expires: 'Expires',
     coupons_offPercent: 'off',
     coupons_flatOff: 'off',
-    // Payment methods page
     payment_title: 'Payment Methods',
     payment_savedCards: 'Saved Cards',
     payment_addCard: 'Add a Card',
@@ -679,9 +656,6 @@ export function translate(language, key) {
   return translations[language]?.[key] ?? translations.en[key] ?? key;
 }
 
-// Maps the backend's literal Order.orderStatus strings (English, fixed
-// values — see dezire-backend/models/Order.js) to a translation key. Used
-// anywhere a raw order status needs to render in the shopper's language.
 const ORDER_STATUS_KEYS = {
   'Order Placed': 'status_orderPlaced',
   'Payment Confirmed': 'status_paymentConfirmed',

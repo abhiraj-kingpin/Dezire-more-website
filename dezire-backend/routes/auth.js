@@ -39,9 +39,6 @@ function publicUser(user) {
   };
 }
 
-// Issues a fresh verification link for `email`, invalidating any previous
-// one. Throws if a link was already sent inside the resend cooldown, so
-// both signup and explicit resend share one rate-limited code path.
 async function issueVerificationLink(email) {
   const recent = await VerificationToken.findOne({ email, purpose: 'signup' }).sort({ createdAt: -1 });
   if (recent) {
@@ -65,12 +62,6 @@ async function issueVerificationLink(email) {
 
   const verifyUrl = `${FRONTEND_URL}/verify-email?token=${token}`;
 
-  // sendVerificationEmail throws on a hard failure (e.g. provider API
-  // rejects the request) as well as returning {sent:false} on the "not
-  // configured yet" case — both are caught here so the raw provider error
-  // (API keys, status codes, internal reasons) never reaches the client.
-  // The real error is logged server-side; the caller only ever sees a
-  // generic "temporarily unavailable" via result.sent === false.
   let result;
   try {
     result = await sendVerificationEmail(email, verifyUrl);
@@ -82,8 +73,6 @@ async function issueVerificationLink(email) {
   return result;
 }
 
-// Customer session auth — separate from adminAuth (admin tokens carry isAdmin,
-// customer tokens carry userId; neither satisfies the other's middleware).
 async function requireAuth(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Please log in' });
@@ -99,9 +88,6 @@ async function requireAuth(req, res, next) {
   }
 }
 
-// Same JWT check as requireAuth, but for routes usable by both guests and
-// logged-in customers (Priya chat) — a missing or invalid token just means
-// "anonymous", never a 401. Sets req.user when a valid session is present.
 async function optionalAuth(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return next();
@@ -112,13 +98,10 @@ async function optionalAuth(req, res, next) {
       if (user) req.user = user;
     }
   } catch {
-    // invalid/expired token — proceed as anonymous rather than failing the request
   }
   next();
 }
 
-// POST /api/auth/signup — creates/updates an unverified account and emails
-// a verification link. The account can't log in until that link is clicked.
 router.post('/signup', authLimiter, async (req, res) => {
   try {
     const { email, password, firstName, lastName, phone } = req.body;
@@ -157,9 +140,6 @@ router.post('/signup', authLimiter, async (req, res) => {
   }
 });
 
-// POST /api/auth/verify-email — consumes the token from the emailed link.
-// Called by the /verify-email frontend page, not the raw email link itself,
-// so an email client's link-preview/prefetch can't silently burn the token.
 router.post('/verify-email', async (req, res) => {
   try {
     const { token } = req.body;
@@ -187,14 +167,6 @@ router.post('/verify-email', async (req, res) => {
   }
 });
 
-// GET /api/auth/verify-status?email=... — lets the "Check your email" screen
-// poll for completion instead of requiring the user to notice and come back
-// manually. Deliberately returns only a boolean, never a token — actually
-// logging in still goes through the normal password-checked POST /login
-// once this flips true, so a session can't be obtained by knowing someone's
-// email alone (no authLimiter here either, since this does nothing more
-// sensitive or expensive than a single indexed lookup — unlike /login,
-// polling it every few seconds isn't a brute-force/spam concern).
 router.get('/verify-status', async (req, res) => {
   try {
     const email = (req.query.email || '').toLowerCase().trim();
@@ -206,7 +178,6 @@ router.get('/verify-status', async (req, res) => {
   }
 });
 
-// POST /api/auth/resend-verification
 router.post('/resend-verification', authLimiter, async (req, res) => {
   try {
     const { email } = req.body;
@@ -227,7 +198,6 @@ router.post('/resend-verification', authLimiter, async (req, res) => {
   }
 });
 
-// POST /api/auth/login
 router.post('/login', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -254,12 +224,10 @@ router.post('/login', authLimiter, async (req, res) => {
   }
 });
 
-// GET /api/auth/me — restore session on app load
 router.get('/me', requireAuth, async (req, res) => {
   res.json({ user: publicUser(req.user) });
 });
 
-// PATCH /api/auth/me — update profile fields
 router.patch('/me', requireAuth, async (req, res) => {
   try {
     const { firstName, lastName, phone, notificationsEnabled } = req.body;
@@ -274,9 +242,6 @@ router.patch('/me', requireAuth, async (req, res) => {
   }
 });
 
-// POST /api/auth/fcm-token — registers this device for push notifications.
-// $addToSet so calling it repeatedly (every app open) doesn't pile up
-// duplicate entries for the same device.
 router.post('/fcm-token', requireAuth, async (req, res) => {
   try {
     const { token } = req.body;
@@ -288,8 +253,6 @@ router.post('/fcm-token', requireAuth, async (req, res) => {
   }
 });
 
-// DELETE /api/auth/fcm-token — called on logout so a signed-out device
-// stops receiving pushes meant for this account.
 router.delete('/fcm-token', requireAuth, async (req, res) => {
   try {
     const { token } = req.body;
@@ -301,7 +264,6 @@ router.delete('/fcm-token', requireAuth, async (req, res) => {
   }
 });
 
-// ── Saved addresses ─────────────────────────────────────────────────────────
 
 router.post('/addresses', requireAuth, async (req, res) => {
   try {
@@ -353,10 +315,6 @@ router.delete('/addresses/:addressId', requireAuth, async (req, res) => {
   }
 });
 
-// ── Wishlist ─────────────────────────────────────────────────────────────────
-// Previously held only in React state on the frontend — lost on every
-// refresh. Now persisted per-account so it survives across sessions/devices,
-// and so the price-drop / back-in-stock watcher has something to check against.
 
 router.get('/wishlist', requireAuth, async (req, res) => {
   try {
@@ -367,7 +325,7 @@ router.get('/wishlist', requireAuth, async (req, res) => {
     const items = req.user.wishlist
       .map(w => {
         const product = productMap.get(String(w.productId));
-        if (!product) return null; // product deleted since being wishlisted
+        if (!product) return null;
         return { ...product, id: product._id, priceAtAdd: w.priceAtAdd, wishlistedAt: w.createdAt };
       })
       .filter(Boolean);
@@ -407,10 +365,6 @@ router.delete('/wishlist/:productId', requireAuth, async (req, res) => {
   }
 });
 
-// ── Premium Membership ──────────────────────────────────────────────────────
-// No payment gateway is wired in yet — this mirrors the site's existing
-// checkout pattern (customer "subscribes", admin manually confirms payment
-// received, exactly like COD/QR orders today).
 
 router.post('/membership/subscribe', requireAuth, async (req, res) => {
   try {
@@ -427,11 +381,6 @@ router.post('/membership/subscribe', requireAuth, async (req, res) => {
   }
 });
 
-// PATCH /api/auth/membership/reference — customer submits the UTR/reference
-// for their most recent pending membership payment, after paying via the
-// UPI QR shown on the membership page. Purely informational for the admin
-// to check before confirming (mirrors Order.paymentReference) — doesn't
-// change payment status itself.
 router.patch('/membership/reference', requireAuth, async (req, res) => {
   try {
     const { reference } = req.body;
@@ -451,7 +400,6 @@ router.patch('/membership/reference', requireAuth, async (req, res) => {
   }
 });
 
-// ── Admin ────────────────────────────────────────────────────────────────────
 
 router.get('/admin/all', adminAuth, async (req, res) => {
   try {
@@ -462,10 +410,6 @@ router.get('/admin/all', adminAuth, async (req, res) => {
   }
 });
 
-// DELETE /api/auth/admin/:userId — removes a customer account (spam/test
-// signups, or a deletion request). Orders reference customerEmail directly
-// rather than a User foreign key, so their order history stays intact for
-// business records even after the account itself is gone.
 router.delete('/admin/:userId', adminAuth, async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.params.userId);

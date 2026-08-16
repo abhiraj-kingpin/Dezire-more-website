@@ -4,11 +4,6 @@ import { useAuth } from './AuthContext';
 
 const CartContext = createContext();
 
-// A cart line is identified by product id + selected size (so the same
-// product in two different sizes is two separate rows), never by the raw
-// product id alone. `cartKey` is purely a client-side line identifier for
-// React keys / quantity / removal — `id` always stays the real MongoDB
-// product id so it can be sent straight through as `productId` on checkout.
 function makeCartKey(product) {
   return product.selectedSize ? `${product.id}-${product.selectedSize}` : product.id;
 }
@@ -23,16 +18,10 @@ export function CartProvider({ children }) {
     window.addEventListener('dm:logout', onLogout);
     return () => window.removeEventListener('dm:logout', onLogout);
   }, []);
-  // Drawer state lives here (not in Navbar) so any component — e.g. a
-  // product card's "Buy Now" button — can open the cart / jump to checkout.
   const [cartOpen, setCartOpen] = useState(false);
   const [paymentStep, setPaymentStep] = useState(false);
-  // cartKey of the item most recently added, used to briefly highlight it in the drawer.
   const [lastAddedId, setLastAddedId] = useState(null);
 
-  // opts.silent   — skip the drawer/toast (used for background updates)
-  // opts.fromBuy  — internal flag set by buyNow, skips the "added" toast
-  // opts.quantity — initial quantity to add (defaults to 1)
   const addToCart = (product, opts = {}) => {
     if (!user) { promptLogin('Log in to add items to your cart'); return; }
 
@@ -65,8 +54,6 @@ export function CartProvider({ children }) {
     }
   };
 
-  // Buy Now: add the item then jump straight to the payment step, skipping
-  // the cart list entirely.
   const buyNow = (product, quantity = 1) => {
     if (!user) { promptLogin('Log in to continue with your purchase'); return; }
 

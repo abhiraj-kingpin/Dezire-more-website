@@ -1,7 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 
-// Custom luxury replacement for the browser's default <select> — used
-// anywhere products can be sorted (category pages, sarees, tag pages).
 function SortDropdown({ options, value, onChange, label = 'Sort By' }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);

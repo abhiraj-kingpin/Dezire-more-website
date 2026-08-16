@@ -4,9 +4,6 @@ const PaymentSettings = require('../models/PaymentSettings');
 const adminAuth = require('../middleware/auth');
 const { logAdminAction } = require('../utils/auditLog');
 
-// GET /api/payment-settings — public, powers the checkout's "Pay via UPI"
-// option. Returns an empty upiId until an admin has actually set one, so the
-// frontend knows to hide the option until then.
 router.get('/', async (req, res) => {
   try {
     const settings = await PaymentSettings.findById('default').lean();
@@ -16,7 +13,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// PATCH /api/payment-settings — admin only.
 router.patch('/', adminAuth, async (req, res) => {
   try {
     const { upiId } = req.body;

@@ -16,7 +16,6 @@ const heroSlides = [
   },
 ];
 
-// Fallback images used automatically if a slide's own image fails to load
 const FALLBACK_IMAGES = [
   "https://images.unsplash.com/photo-1610030181087-540c8ccc4d3b?auto=format&fit=crop&w=800&q=80",
   "https://images.unsplash.com/photo-1583391733956-6c78276477e2?auto=format&fit=crop&w=800&q=80",
@@ -32,9 +31,6 @@ function Hero() {
   const [chatModalOpen, setChatModalOpen] = useState(false);
   const timerRef = useRef(null);
 
-  // Slide swap is a plain CSS crossfade now (see .deck-card's transition
-  // in index.css) — just flip `current` and let the class change
-  // (top/mid/back) animate itself; no more multi-step exit choreography.
   const CROSSFADE_MS = 1000;
   const goTo = (next) => {
     if (animating || next === current) return;

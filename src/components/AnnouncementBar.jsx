@@ -12,7 +12,6 @@ function AnnouncementBar() {
     { icon: 'tag', text: 'USE CODE DEZIRE10' },
   ];
 
-  // Duplicate so the scroll loops seamlessly
   const ticker = [...items, ...items];
 
   return (

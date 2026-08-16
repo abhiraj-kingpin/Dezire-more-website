@@ -5,7 +5,6 @@ const adminAuth = require('../middleware/auth');
 const { upload, cloudinary } = require('../middleware/cloudinary');
 const { logAdminAction } = require('../utils/auditLog');
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const paginate = (query, page, limit) => ({
   skip: (page - 1) * limit,
@@ -18,9 +17,6 @@ const buildFilter = (query) => {
     const categoryValue = categoryFilterValue(query.category);
     filter.category = Array.isArray(categoryValue) ? { $in: categoryValue } : categoryValue;
   }
-  // color/size/fabric/occasion accept a comma-separated list of exact values
-  // (as offered by /products/facets) — matched via $in so selecting several
-  // is "any of these", the standard e-commerce filter behavior.
   if (query.color)       filter.colors      = { $in: query.color.split(',') };
   if (query.size)        filter.sizes       = { $in: query.size.split(',') };
   if (query.fabric)      filter.fabric      = { $in: query.fabric.split(',') };
@@ -46,22 +42,12 @@ const buildFilter = (query) => {
   return filter;
 };
 
-// The storefront merged Jewelry+Accessories, and folded standalone "Blouses"
-// into Ready to Wear. Products saved under the old category values keep
-// showing up correctly on the merged pages via this alias map, so nothing
-// has to be manually re-categorized in the database.
 const CATEGORY_ALIASES = {
   'jewelry-accessories': ['jewelry-accessories', 'jewelry', 'accessories'],
   'ready-to-wear': ['ready-to-wear', 'blouses'],
 };
 const categoryFilterValue = (category) => CATEGORY_ALIASES[category] || category;
 
-// Subcategory is free text typed by an admin (no enum, unlike category), so
-// "Blouse" vs the storefront's fixed filter slug "blouses" never matched
-// under a plain equality check. Normalize both sides to a trimmed,
-// lowercase, singular base form — with '-' and ' ' treated as the same
-// separator — and match with a case-insensitive regex instead of requiring
-// an exact string.
 const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const normalizeSubcategory = (value) =>
   value.toString().trim().toLowerCase().replace(/[-\s]+/g, ' ').replace(/s$/, '');
@@ -81,9 +67,7 @@ const buildSort = (sort) => {
   return sorts[sort] || { createdAt: -1 };
 };
 
-// ─── PUBLIC ROUTES ────────────────────────────────────────────────────────────
 
-// GET /api/products
 router.get('/', async (req, res) => {
   try {
     const { page = 1, limit = 12, sort, search, ...filters } = req.query;
@@ -105,7 +89,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/products/category/:category
 router.get('/category/:category', async (req, res) => {
   try {
     const { page = 1, limit = 12, sort, ...filters } = req.query;
@@ -130,7 +113,6 @@ router.get('/category/:category', async (req, res) => {
   }
 });
 
-// GET /api/products/tag/:tag
 router.get('/tag/:tag', async (req, res) => {
   try {
     const { page = 1, limit = 12, sort, ...filters } = req.query;
@@ -151,7 +133,6 @@ router.get('/tag/:tag', async (req, res) => {
   }
 });
 
-// GET /api/products/home
 router.get('/home', async (req, res) => {
   try {
     const [newArrivals, bestsellers, sale, totalProducts] = await Promise.all([
@@ -175,9 +156,6 @@ router.get('/home', async (req, res) => {
   }
 });
 
-// GET /api/products/facets?category=sarees — distinct filter values available
-// for a category, so the filter panel only ever offers choices that actually
-// exist (never an empty result after applying them).
 router.get('/facets', async (req, res) => {
   try {
     const match = { isActive: true };
@@ -210,7 +188,6 @@ router.get('/facets', async (req, res) => {
   }
 });
 
-// GET /api/products/search?q=silk
 router.get('/search', async (req, res) => {
   try {
     const { q = '', page = 1, limit = 12 } = req.query;
@@ -242,7 +219,6 @@ router.get('/search', async (req, res) => {
   }
 });
 
-// GET /api/products/:id
 router.get('/:id', async (req, res) => {
   try {
     const product = await Product.findById(req.params.id).lean();
@@ -260,9 +236,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// ─── ADMIN ROUTES (protected) ─────────────────────────────────────────────────
 
-// POST /api/products — create product with images (max 10) + optional video
 router.post('/', adminAuth, upload.fields([
   { name: 'images', maxCount: 10 },
   { name: 'video', maxCount: 1 },
@@ -308,7 +282,6 @@ router.post('/', adminAuth, upload.fields([
   }
 });
 
-// PATCH /api/products/:id — update product details
 router.patch('/:id', adminAuth, async (req, res) => {
   try {
     const allowed = [
@@ -334,7 +307,6 @@ router.patch('/:id', adminAuth, async (req, res) => {
   }
 });
 
-// POST /api/products/:id/images — add more images (max 10)
 router.post('/:id/images', adminAuth, upload.array('images', 10), async (req, res) => {
   try {
     const newImages = (req.files || []).map(file => ({
@@ -355,7 +327,6 @@ router.post('/:id/images', adminAuth, upload.array('images', 10), async (req, re
   }
 });
 
-// DELETE /api/products/:id/images/:publicId — remove one image
 router.delete('/:id/images/:publicId', adminAuth, async (req, res) => {
   try {
     await cloudinary.uploader.destroy(req.params.publicId);
@@ -368,7 +339,6 @@ router.delete('/:id/images/:publicId', adminAuth, async (req, res) => {
   }
 });
 
-// POST /api/products/:id/video — set/replace the showcase video
 router.post('/:id/video', adminAuth, upload.fields([{ name: 'video', maxCount: 1 }]), async (req, res) => {
   try {
     const videoFile = req.files?.video?.[0];
@@ -389,7 +359,6 @@ router.post('/:id/video', adminAuth, upload.fields([{ name: 'video', maxCount: 1
   }
 });
 
-// DELETE /api/products/:id/video — remove the showcase video
 router.delete('/:id/video', adminAuth, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -405,7 +374,6 @@ router.delete('/:id/video', adminAuth, async (req, res) => {
   }
 });
 
-// DELETE /api/products/:id — soft delete
 router.delete('/:id', adminAuth, async (req, res) => {
   try {
     const product = await Product.findByIdAndUpdate(

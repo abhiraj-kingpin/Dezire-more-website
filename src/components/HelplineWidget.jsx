@@ -6,10 +6,6 @@ import { BASE } from '../hooks/useProducts';
 import { matchIntent } from '../utils/intentMatcher';
 import { QUICK_REPLIES, CONTACT } from '../utils/faqData';
 
-// Escape first, format second — every substitution below only ever emits
-// from a fixed template applied to already-escaped text, so raw HTML in
-// model output (or a prompt-injected reply) can never become live markup
-// through the dangerouslySetInnerHTML render below.
 const escapeHtml = (s) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -125,20 +121,13 @@ function makeMsg(from, text, extra = {}) {
 
 export default function HelplineWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  // Shown once ever per browser, not on every page load/visit — same
-  // "seen" pattern as IntroAnimation.jsx's own localStorage flag. The
-  // initializer only reads (must stay pure — React.StrictMode calls it
-  // twice in dev, so writing here made the 2nd call see the 1st call's
-  // own write and always resolve to "already seen"); the write happens
-  // once, as a mount effect, below.
   const [showGreeting, setShowGreeting] = useState(() => {
     try { return localStorage.getItem('dm_greeting_seen') !== 'true'; }
     catch { return true; }
   });
   useEffect(() => {
     if (!showGreeting) return;
-    try { localStorage.setItem('dm_greeting_seen', 'true'); } catch { /* private browsing, etc. */ }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only the initial mount value matters
+    try { localStorage.setItem('dm_greeting_seen', 'true'); } catch { }
   }, []);
   const [messages, setMessages] = useState([
     makeMsg('bot', "Hi! 👋 Welcome to Dezire More. Ask me about your order, sizing, our collections, or styling advice — I'm here to help!"),
@@ -156,29 +145,17 @@ export default function HelplineWidget() {
   const handleProductNav = (url) => { setIsOpen(false); navigate(url); };
   const handleLoginPrompt = () => promptLogin('Log in to check your order');
 
-  // Settings/Cart/Wishlist/Search/Auth are drawers over the Home page, not
-  // route changes, so they don't affect the Home-only mount check in
-  // Layout.jsx — this hides the bubble/panel while one is open instead,
-  // without unmounting (and losing) the conversation underneath.
   useEffect(() => {
     const onOverlayChange = (e) => setHiddenForOverlay(!!e.detail?.open);
     window.addEventListener('dm:overlay-visibility', onOverlayChange);
     return () => window.removeEventListener('dm:overlay-visibility', onOverlayChange);
   }, []);
 
-  // The greeting bubble's own screen position is fixed (bottom-right corner),
-  // but the homepage hero's "Chat With Us" button sits in normal document
-  // flow, so its position varies with hero content/viewport height — a fixed
-  // pixel offset can't reliably avoid colliding with it (verified live: it
-  // does, on common mobile viewport sizes). Checking actual rects at render
-  // time instead of guessing an offset works regardless of hero content.
   useEffect(() => {
     if (!showGreeting) return;
     const heroBtn = document.querySelector('.btn-chat-us');
     if (!heroBtn) return;
     const heroRect = heroBtn.getBoundingClientRect();
-    // Mirrors .dz-greet's own fixed geometry: 30px wrap offset + up to 230px
-    // width, sitting 76px above the 62px toggle button.
     const greetRect = { top: window.innerHeight - 30 - 62 - 76 - 90, bottom: window.innerHeight - 30 - 62 - 76, left: window.innerWidth - 30 - 230, right: window.innerWidth - 30 };
     const overlaps = heroRect.bottom > greetRect.top && heroRect.top < greetRect.bottom && heroRect.right > greetRect.left && heroRect.left < greetRect.right;
     if (overlaps) setShowGreeting(false);
@@ -274,7 +251,7 @@ export default function HelplineWidget() {
     const intent = matchIntent(trimmed);
     try {
       if (intent.type === 'faq') {
-        await new Promise(r => setTimeout(r, 350)); // brief pause reads more natural than an instant reply
+        await new Promise(r => setTimeout(r, 350));
         handleFaqTier(intent.entry);
       } else if (intent.type === 'human') {
         await new Promise(r => setTimeout(r, 350));
@@ -415,7 +392,6 @@ export default function HelplineWidget() {
           to   { opacity: 1; transform: translateY(0) scale(1); }
         }
 
-        /* Mobile: full-height bottom sheet instead of a floating panel */
         @media (max-width: 480px) {
           .dz-wrap { bottom: 16px; right: 16px; }
           .dz-window {
@@ -532,10 +508,6 @@ export default function HelplineWidget() {
           border: 1px solid #ede4cc;
           box-shadow: 0 2px 12px rgba(0,0,0,0.06);
         }
-        /* AI-fallback replies (genuinely open-ended styling/conversation,
-           not a FAQ/order/product lookup) get a royal-purple accent so
-           they're visually distinguishable from deterministic answers at a
-           glance, per the redesign spec. */
         .dz-msg.bot .dz-bubble.ai-tier {
           border-left: 3px solid #6b4c8a;
           background: linear-gradient(135deg, #fdfaff 0%, #fff 60%);
@@ -728,11 +700,6 @@ export default function HelplineWidget() {
           </div>
         )}
 
-        {/* Closing is handled solely by the header's .dz-hclose once open —
-            this used to also render as an X here, but .dz-wrap's fixed
-            bottom-right position sits right over the panel's own input/send
-            bar (especially the full-height mobile sheet), blocking it. One
-            close button, always in the header, never duplicated here. */}
         {!isOpen && (
           <button className="dz-toggle" onClick={() => { setIsOpen(true); setShowGreeting(false); }} aria-label="Open help">
             <MessageCircle size={26} strokeWidth={1.8} />

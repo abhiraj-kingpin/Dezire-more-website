@@ -23,8 +23,6 @@ const CANCEL_REASONS = [
   { value: 'other', label: 'Other' },
 ];
 
-// Orders arrive newest-first from the API — grouping just needs to notice
-// month boundaries as it walks the list, not re-sort anything.
 function groupOrdersByMonth(orders) {
   const groups = [];
   let current = null;
@@ -317,7 +315,6 @@ function MyOrders() {
       .then(data => setOrders(data.data || []))
       .catch(() => setError('Could not load your orders right now.'))
       .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.email]);
 
   const handleCancelled = (updatedOrder) => {

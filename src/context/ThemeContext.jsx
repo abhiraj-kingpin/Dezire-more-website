@@ -17,9 +17,6 @@ export function ThemeProvider({ children }) {
     localStorage.setItem(STORAGE_KEY, theme);
   }, [theme]);
 
-  // If the visitor never explicitly chose a theme in Settings, keep
-  // following the OS-level preference live (e.g. their system flips to
-  // dark mode at sunset) — stop the moment they do choose one explicitly.
   useEffect(() => {
     const media = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = (e) => {

@@ -9,7 +9,7 @@ function VerifyEmail() {
   const navigate = useNavigate();
   const ran = useRef(false);
 
-  const [status, setStatus] = useState('verifying'); // verifying | success | expired | invalid | error
+  const [status, setStatus] = useState('verifying');
   const [message, setMessage] = useState('');
   const [expiredEmail, setExpiredEmail] = useState('');
   const [resent, setResent] = useState(false);
@@ -26,8 +26,6 @@ function VerifyEmail() {
 
     verifyEmailToken(token).then(result => {
       if (result.success) {
-        // If a delivery address was collected at signup, it can only be
-        // saved now that verification has actually produced a session.
         try {
           const pendingKey = Object.keys(localStorage).find(k => k.startsWith('dm-pending-address:'));
           if (pendingKey) {
@@ -35,7 +33,7 @@ function VerifyEmail() {
             if (address?.line1) addAddress({ label: 'Home', ...address, isDefault: true });
             localStorage.removeItem(pendingKey);
           }
-        } catch { /* best-effort only */ }
+        } catch { }
 
         setStatus('success');
         setTimeout(() => navigate('/'), 2200);
@@ -51,7 +49,6 @@ function VerifyEmail() {
       }
       setMessage(result.error || 'Something went wrong verifying your email.');
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const handleResend = async () => {

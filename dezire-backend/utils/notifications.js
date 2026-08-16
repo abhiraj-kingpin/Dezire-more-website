@@ -1,12 +1,3 @@
-// Email is fully optional — if Resend isn't configured, notifications are
-// silently skipped (logged once) rather than crashing order creation.
-// Required env vars: RESEND_API_KEY, RESEND_FROM_EMAIL
-//
-// Sends over Resend's HTTPS API rather than raw SMTP. Render (and most
-// PaaS hosts) block outbound SMTP ports (25/465/587) on free web services
-// as an anti-spam measure — that's a platform-level firewall rule, not
-// something fixable in app code. HTTPS (443) is never blocked, so an API-
-// based provider works regardless of hosting plan.
 let warned = false;
 
 async function sendViaResend({ to, subject, html }) {
@@ -40,9 +31,6 @@ function formatCurrency(n) {
   return `₹${Number(n).toLocaleString('en-IN')}`;
 }
 
-// Shared branded shell — dark green header, serif body (Georgia, since
-// email clients don't reliably load custom web fonts), gold accents,
-// matching the site's luxury look. `bodyHtml` is the email-specific content.
 function emailShell(bodyHtml) {
   return `
   <div style="background:#f4f1ea;padding:32px 16px;font-family:Georgia,'Times New Roman',serif;">
@@ -139,8 +127,6 @@ const STATUS_MESSAGES = {
   'Cancelled':           'Your order has been cancelled.',
 };
 
-// Sent whenever the admin panel moves an order to a customer-meaningful
-// status — not every internal state, just the ones worth an email.
 async function sendOrderStatusEmail(order) {
   const message = STATUS_MESSAGES[order.orderStatus];
   if (!message) return { sent: false, reason: 'status-not-notifiable' };
@@ -164,9 +150,6 @@ async function sendOrderStatusEmail(order) {
   });
 }
 
-// Link-based email verification (signup). The button is the primary path;
-// the raw URL is included as a fallback for email clients that strip links
-// out of buttons or block images/styling.
 async function sendVerificationEmail(email, verifyUrl) {
   const html = emailShell(`
       <h2 style="color:#1e3a2f;margin:0 0 12px;font-size:20px;">Verify Your Email</h2>
@@ -184,9 +167,6 @@ async function sendVerificationEmail(email, verifyUrl) {
   });
 }
 
-// Batches every price-drop / back-in-stock alert for one user into a single
-// email (run periodically by utils/wishlistWatcher.js) rather than one email
-// per product, so a wishlist with several changes doesn't spam the inbox.
 async function sendWishlistAlertEmail(user, alerts) {
   const rows = alerts
     .map(a => `
@@ -216,9 +196,6 @@ async function sendWishlistAlertEmail(user, alerts) {
   });
 }
 
-// Admin password-reset link — same link-based pattern as signup verification
-// (VerificationToken with purpose 'admin-reset'), just addressed to whoever
-// currently holds the admin account rather than a customer.
 async function sendAdminResetEmail(email, resetUrl) {
   const html = emailShell(`
       <h2 style="color:#1e3a2f;margin:0 0 12px;font-size:20px;">Reset Admin Password</h2>

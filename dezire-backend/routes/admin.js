@@ -17,12 +17,6 @@ function hashToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
-// The admin account now lives in MongoDB (see models/Admin.js) so it can
-// actually be changed — but the very first login on a given deployment
-// needs *something* to check against, and requiring a separate migration
-// step before anyone can log in at all would be a bad first-run experience.
-// So: if the Admin collection is still empty, seed it once from the legacy
-// ADMIN_EMAIL/ADMIN_PASSWORD env vars. Every login after that reads the DB.
 async function getOrSeedAdmin() {
   let admin = await Admin.findOne();
   if (admin) return admin;
@@ -36,8 +30,6 @@ async function getOrSeedAdmin() {
   return admin;
 }
 
-// POST /api/admin/login
-// Body: { email, password }
 router.post('/login', adminLoginLimiter, async (req, res) => {
   const { email, password } = req.body;
 
@@ -56,7 +48,6 @@ router.post('/login', adminLoginLimiter, async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Issue a JWT valid for 7 days
     const token = jwt.sign(
       { email: normalizedEmail, isAdmin: true },
       process.env.JWT_SECRET,
@@ -73,10 +64,6 @@ router.post('/login', adminLoginLimiter, async (req, res) => {
   }
 });
 
-// PATCH /api/admin/credentials — change the admin email and/or password.
-// Requires the current password, same as any account-settings "change
-// password" form, so a stolen still-valid JWT alone isn't enough to lock
-// the real admin out.
 router.patch('/credentials', adminAuth, async (req, res) => {
   try {
     const { currentPassword, newEmail, newPassword } = req.body;
@@ -98,8 +85,6 @@ router.patch('/credentials', adminAuth, async (req, res) => {
 
     logAdminAction(req.admin.email, 'admin.credentials-change', null, newEmail ? `email changed to ${admin.email}` : 'password changed');
 
-    // Re-issue a token under the (possibly new) email so the current
-    // session doesn't get logged out by its own change.
     const token = jwt.sign({ email: admin.email, isAdmin: true }, process.env.JWT_SECRET, { expiresIn: '7d' });
     res.json({ success: true, token, admin: { email: admin.email } });
   } catch (err) {
@@ -108,9 +93,6 @@ router.patch('/credentials', adminAuth, async (req, res) => {
   }
 });
 
-// POST /api/admin/forgot-password — emails a reset link to the registered
-// admin email. Always responds the same way whether or not that email
-// matches, so this can't be used to probe for the admin's address.
 router.post('/forgot-password', authLimiter, async (req, res) => {
   try {
     const { email } = req.body;
@@ -127,12 +109,6 @@ router.post('/forgot-password', authLimiter, async (req, res) => {
         purpose: 'admin-reset',
         expiresAt: new Date(Date.now() + RESET_TTL_HOURS * 60 * 60 * 1000),
       });
-      // admin-panel.html is served directly off this same Express app (see
-      // app.use(express.static(__dirname)) in app.js) — NOT off FRONTEND_URL,
-      // which is the separate Vercel-hosted storefront. Building the link
-      // from the actual incoming request (trust-proxy is already on, so this
-      // reflects the real public host behind Render) keeps this correct in
-      // local dev and production without a hardcoded/extra env var.
       const resetUrl = `${req.protocol}://${req.get('host')}/admin-panel.html?reset-token=${token}`;
       sendAdminResetEmail(normalizedEmail, resetUrl).catch(err =>
         console.error('[admin] Failed to send reset email:', err.message)
@@ -145,10 +121,6 @@ router.post('/forgot-password', authLimiter, async (req, res) => {
   }
 });
 
-// POST /api/admin/reset-password — completes the flow above: exchanges a
-// valid, unexpired reset token for a new password. No current-password
-// check here, unlike /credentials — the emailed link IS the proof of
-// access to the registered inbox.
 router.post('/reset-password', authLimiter, async (req, res) => {
   try {
     const { token, newPassword } = req.body;
@@ -174,7 +146,6 @@ router.post('/reset-password', authLimiter, async (req, res) => {
   }
 });
 
-// GET /api/admin/verify — check if token is still valid
 router.get('/verify', (req, res) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ valid: false });
@@ -187,8 +158,6 @@ router.get('/verify', (req, res) => {
   }
 });
 
-// GET /api/admin/audit-log — recent admin actions (order/product/coupon/
-// membership changes), newest first.
 router.get('/audit-log', adminAuth, async (req, res) => {
   try {
     const logs = await AuditLog.find().sort({ createdAt: -1 }).limit(200).lean();
@@ -198,10 +167,6 @@ router.get('/audit-log', adminAuth, async (req, res) => {
   }
 });
 
-// DELETE /api/admin/audit-log/month/:month — bulk-clear a whole month's
-// worth of entries at once (month as 'YYYY-MM', e.g. '2026-08') so the log
-// doesn't grow forever. A specific /month/ path rather than a query string
-// so it can't accidentally collide with the single-entry DELETE below.
 router.delete('/audit-log/month/:month', adminAuth, async (req, res) => {
   try {
     const match = /^(\d{4})-(\d{2})$/.exec(req.params.month);
@@ -217,7 +182,6 @@ router.delete('/audit-log/month/:month', adminAuth, async (req, res) => {
   }
 });
 
-// DELETE /api/admin/audit-log/:id — remove a single entry.
 router.delete('/audit-log/:id', adminAuth, async (req, res) => {
   try {
     const result = await AuditLog.findByIdAndDelete(req.params.id);

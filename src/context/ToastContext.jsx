@@ -15,10 +15,6 @@ export function ToastProvider({ children }) {
     delete timers.current[id];
   }, []);
 
-  // type: 'cart' | 'wishlist' | 'checkout' | 'success' | 'info'
-  // data (optional): { image, name, size, price } — shown as a small product
-  // preview under the message, e.g. so "Product added to your Cart" actually
-  // shows *which* product/size/price, not just a generic line.
   const showToast = useCallback((message, type = 'info', duration = 3200, data = null) => {
     const id = ++idSeq;
     setToasts(prev => [...prev, { id, message, type, data }]);

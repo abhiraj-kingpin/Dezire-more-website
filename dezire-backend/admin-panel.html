@@ -21,7 +21,6 @@
 
     body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-    /* ── Login ── */
     #login-screen {
       min-height: 100vh;
       display: flex; align-items: center; justify-content: center;
@@ -33,7 +32,6 @@
     .login-card h1 { font-size: 20px; margin-bottom: 4px; }
     .login-card p  { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
 
-    /* ── Layout ── */
     #app { display: none; }
     .sidebar {
       position: fixed; top: 0; left: 0; bottom: 0; width: 220px;
@@ -53,7 +51,6 @@
     .page { display: none; }
     .page.active { display: block; }
 
-    /* ── Shared UI ── */
     h2 { font-size: 22px; margin-bottom: 6px; }
     .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
 
@@ -87,7 +84,6 @@
     .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
     .btn:disabled { opacity: .5; cursor: not-allowed; }
 
-    /* ── Image upload zone ── */
     .upload-zone {
       border: 2px dashed var(--border); border-radius: 10px;
       padding: 32px; text-align: center; cursor: pointer; transition: all .2s;
@@ -108,7 +104,6 @@
       display: flex; align-items: center; justify-content: center;
     }
 
-    /* ── Toast ── */
     #toast {
       position: fixed; bottom: 28px; right: 28px; padding: 14px 20px;
       border-radius: 8px; color: #fff; font-size: 14px; font-weight: 500;
@@ -119,7 +114,6 @@
     #toast.success { background: var(--success); }
     #toast.error   { background: var(--danger); }
 
-    /* ── Products table ── */
     .products-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .products-table th { text-align: left; padding: 10px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); border-bottom: 1px solid var(--border); }
     .products-table td { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
@@ -134,13 +128,11 @@
     .search-bar { display: flex; gap: 10px; margin-bottom: 16px; }
     .search-bar input { flex: 1; }
 
-    /* ── Stats row ── */
     .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
     .stat-box { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
     .stat-box .num { font-size: 28px; font-weight: 700; color: var(--green); }
     .stat-box .lbl { font-size: 12px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .05em; }
 
-    /* ── Tags checkboxes ── */
     .tags-grid { display: flex; flex-wrap: wrap; gap: 8px; }
     .tag-check { display: flex; align-items: center; gap: 6px; }
     .tag-check input { width: auto; }
@@ -151,10 +143,6 @@
     .loading { text-align: center; padding: 40px; color: var(--muted); }
     .empty { text-align: center; padding: 60px; color: var(--muted); }
 
-    /* ── Mobile sidebar (hamburger drawer) ──
-       Hidden/inert above the breakpoint — .sidebar-toggle stays display:none
-       and .sidebar's transform is only set inside the media query below, so
-       none of this affects the desktop layout at all. */
     .sidebar-toggle {
       display: none;
       position: fixed; top: 14px; left: 14px; z-index: 20;
@@ -185,17 +173,8 @@
       h2 { font-size: 19px; }
       .stats-row { grid-template-columns: repeat(2, 1fr); gap: 12px; }
       .row, .row-3 { grid-template-columns: 1fr; }
-      /* !important needed here specifically: .two-col-grid also carries an
-         inline grid-template-columns (see the Analytics page), and inline
-         styles otherwise always win over an embedded stylesheet rule
-         regardless of class specificity. */
       .two-col-grid { grid-template-columns: 1fr !important; }
 
-      /* Tables scroll horizontally inside their own box rather than
-         overflowing the viewport or getting clipped by a card's
-         overflow:hidden — this works regardless of what the ancestor
-         .card's own overflow setting is, since the table becomes its own
-         scroll container. */
       .products-table { display: block; overflow-x: auto; white-space: nowrap; }
     }
 
@@ -206,7 +185,6 @@
 </head>
 <body>
 
-<!-- ── Login Screen ── -->
 <div id="login-screen">
   <div class="login-card" id="login-form-card">
     <h1>Dezire More</h1>
@@ -220,7 +198,6 @@
     <button type="button" onclick="showForgotPassword()" style="background:none;border:none;color:var(--muted);font-size:12px;margin-top:14px;cursor:pointer;text-decoration:underline">Forgot password?</button>
   </div>
 
-  <!-- Shown instead of the form above when "Forgot password?" is clicked -->
   <div class="login-card" id="forgot-form-card" style="display:none">
     <h1>Reset Password</h1>
     <p>Enter your registered admin email — we'll send a reset link if it matches.</p>
@@ -232,7 +209,6 @@
     <button type="button" onclick="showLoginForm()" style="background:none;border:none;color:var(--muted);font-size:12px;margin-top:14px;cursor:pointer;text-decoration:underline">Back to sign in</button>
   </div>
 
-  <!-- Shown when the page is opened via the emailed reset link (?reset-token=...) -->
   <div class="login-card" id="reset-form-card" style="display:none">
     <h1>Set New Password</h1>
     <p>Choose a new password for the admin account.</p>
@@ -243,7 +219,6 @@
   </div>
 </div>
 
-<!-- ── Main App ── -->
 <div id="app">
   <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Open menu">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -271,7 +246,6 @@
 
   <main class="main">
 
-    <!-- Dashboard -->
     <div class="page active" id="page-dashboard">
       <h2>Dashboard</h2>
       <p class="subtitle">Live overview of your store</p>
@@ -287,7 +261,6 @@
       </div>
     </div>
 
-    <!-- Analytics -->
     <div class="page" id="page-analytics">
       <h2>Analytics</h2>
       <p class="subtitle">Revenue and sales performance</p>
@@ -320,7 +293,6 @@
       </div>
     </div>
 
-    <!-- GST Reports -->
     <div class="page" id="page-gst">
       <h2>GST Reports</h2>
       <p class="subtitle">GST collected on paid orders, by date range — for tax filing. Only counts orders that have actually been paid.</p>
@@ -367,7 +339,6 @@
       </div>
     </div>
 
-    <!-- Orders -->
     <div class="page" id="page-orders">
       <h2>Orders</h2>
       <p class="subtitle">Every order placed on the store, newest first</p>
@@ -376,7 +347,6 @@
       </div>
     </div>
 
-    <!-- Pending Verification -->
     <div class="page" id="page-verify">
       <h2>Pending Verification</h2>
       <p class="subtitle">Manual UPI / bank transfer orders awaiting a human check against your real UPI or bank app — COD and Razorpay orders never appear here.</p>
@@ -385,7 +355,6 @@
       </div>
     </div>
 
-    <!-- Customers -->
     <div class="page" id="page-customers">
       <h2>Customers</h2>
       <p class="subtitle">Registered accounts and their membership status</p>
@@ -397,7 +366,6 @@
       </div>
     </div>
 
-    <!-- Coupons -->
     <div class="page" id="page-coupons">
       <h2>Coupons</h2>
       <p class="subtitle">Discount codes customers can apply at checkout</p>
@@ -424,7 +392,6 @@
       </div>
     </div>
 
-    <!-- Client Love (testimonials) -->
     <div class="page" id="page-love">
       <h2>Client Love</h2>
       <p class="subtitle">Testimonials shown on the "Our Story" page — previously hardcoded, now managed here</p>
@@ -458,7 +425,6 @@
       </div>
     </div>
 
-    <!-- Payment Settings -->
     <div class="page" id="page-payment">
       <h2>Payment Settings</h2>
       <p class="subtitle">Powers the "Pay via UPI" checkout option — a direct-to-bank-account alternative to Razorpay with no gateway fee. The QR code is generated automatically from this UPI ID plus each order's actual total, so it's never a stale image and always shows the right amount. This option only appears at checkout once a UPI ID is set here.</p>
@@ -471,7 +437,6 @@
       </div>
     </div>
 
-    <!-- Account Settings -->
     <div class="page" id="page-settings">
       <h2>Account Settings</h2>
       <p class="subtitle">Change the admin login email and/or password. Requires your current password.</p>
@@ -493,7 +458,6 @@
       </div>
     </div>
 
-    <!-- Owner / Founder -->
     <div class="page" id="page-founder">
       <h2>Owner / Founder</h2>
       <p class="subtitle">Powers the "Founder" section on the Our Story page — photo, name, title, quote, and bio</p>
@@ -518,7 +482,6 @@
       </div>
     </div>
 
-    <!-- All Products -->
     <div class="page" id="page-products">
       <h2>All Products</h2>
       <p class="subtitle">Click edit to update details or manage images</p>
@@ -539,7 +502,6 @@
       </div>
     </div>
 
-    <!-- Add / Edit Product -->
     <div class="page" id="page-add">
       <h2 id="form-title">Add New Product</h2>
       <p class="subtitle">Fill in the details and upload photos — product goes live instantly</p>
@@ -672,7 +634,6 @@
       </div>
     </div>
 
-    <!-- Bulk Import -->
     <div class="page" id="page-bulk">
       <h2>Bulk Import</h2>
       <p class="subtitle">Add many products at once with a spreadsheet + all your photos</p>
@@ -722,7 +683,6 @@
       </div>
     </div>
 
-    <!-- Activity Log -->
     <div class="page" id="page-activity">
       <h2>Activity Log</h2>
       <p class="subtitle">Recent admin actions — order/payment status, product, coupon, and membership changes</p>
@@ -740,7 +700,6 @@
   </main>
 </div>
 
-<!-- Toast -->
 <div id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
@@ -752,12 +711,6 @@ let selectedFiles = [];
 let selectedVideoFile = null;
 let allProducts = [];
 
-// ── Mobile sidebar ────────────────────────────────────────────────────────────
-// The sidebar is always in the DOM at full height — below the mobile
-// breakpoint it's just translated off-screen by CSS until '.open' is added.
-// These are harmless no-ops above that breakpoint (the class does nothing
-// there), so every call site can call them unconditionally rather than
-// checking window width first.
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('sidebar-overlay').classList.toggle('open');
@@ -767,7 +720,6 @@ function closeSidebar() {
   document.getElementById('sidebar-overlay').classList.remove('open');
 }
 
-// ── Auth ──────────────────────────────────────────────────────────────────────
 
 async function login() {
   const email    = document.getElementById('login-email').value.trim();
@@ -800,7 +752,6 @@ function logout() {
   document.getElementById('login-screen').style.display = 'flex';
 }
 
-// ── Forgot / reset password (login screen) ─────────────────────────────────
 
 function showForgotPassword() {
   document.getElementById('login-form-card').style.display = 'none';
@@ -840,8 +791,6 @@ async function sendAdminResetLink() {
   }
 }
 
-// If the page was opened from the emailed reset link, show the "set new
-// password" card instead of the normal login form.
 const resetTokenParam = new URLSearchParams(window.location.search).get('reset-token');
 if (resetTokenParam) {
   window.addEventListener('DOMContentLoaded', () => {
@@ -871,8 +820,6 @@ async function submitAdminReset() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
 
-    // Clean the token out of the URL, then drop back to the normal login
-    // form so the admin signs in with the password they just set.
     window.history.replaceState({}, '', window.location.pathname);
     document.getElementById('reset-form-card').style.display = 'none';
     document.getElementById('login-form-card').style.display = 'block';
@@ -937,7 +884,6 @@ async function showApp() {
   loadProductsList();
 }
 
-// Check token on page load
 window.addEventListener('load', async () => {
   if (!token) return;
   try {
@@ -951,7 +897,6 @@ document.getElementById('login-password').addEventListener('keydown', e => {
   if (e.key === 'Enter') login();
 });
 
-// ── Navigation ────────────────────────────────────────────────────────────────
 
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -960,7 +905,7 @@ function showPage(name) {
   document.querySelectorAll('.nav-item').forEach(n => {
     if (n.textContent.toLowerCase().includes(name === 'add' ? 'add' : name)) n.classList.add('active');
   });
-  closeSidebar(); // no-op on desktop widths — the drawer is only ever "open" below the mobile breakpoint
+  closeSidebar();
 
   if (name === 'products') loadProductsList();
   if (name === 'dashboard') loadDashboard();
@@ -983,7 +928,6 @@ function showPage(name) {
   if (name === 'add' && !document.getElementById('edit-product-id').value) resetForm();
 }
 
-// ── Dashboard ─────────────────────────────────────────────────────────────────
 
 async function loadDashboard() {
   try {
@@ -1016,11 +960,7 @@ async function loadDashboard() {
   }
 }
 
-// ── Analytics ─────────────────────────────────────────────────────────────────
 
-// Chart.js instances, kept around so a repeat visit to this tab destroys the
-// old chart before drawing a new one on the same <canvas> — Chart.js throws
-// "Canvas is already in use" otherwise.
 let revenueChart = null;
 let topProductsChart = null;
 let signupsChart = null;
@@ -1043,8 +983,6 @@ async function loadAnalytics() {
     const gold = cssVar('--gold') || '#b8963e';
     const muted = cssVar('--muted') || '#6b6b6b';
 
-    // Revenue + order count over time — line chart, two datasets/axes since
-    // they're different units.
     document.getElementById('revenue-chart-empty').innerHTML = data.revenueByDay.length
       ? '' : '<p class="empty">No paid orders in the last 30 days yet</p>';
     if (revenueChart) revenueChart.destroy();
@@ -1073,7 +1011,6 @@ async function loadAnalytics() {
           </div>`).join('')
       : '<p class="empty">No orders yet</p>';
 
-    // Top-selling products — bar chart.
     document.getElementById('top-products-empty').innerHTML = data.topProducts.length
       ? '' : '<p class="empty">No paid orders yet</p>';
     if (topProductsChart) topProductsChart.destroy();
@@ -1086,7 +1023,6 @@ async function loadAnalytics() {
       options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } } },
     });
 
-    // New customer signups over time — line chart.
     document.getElementById('signups-chart-empty').innerHTML = (data.signupsByDay || []).length
       ? '' : '<p class="empty">No new signups in the last 30 days yet</p>';
     if (signupsChart) signupsChart.destroy();
@@ -1103,7 +1039,6 @@ async function loadAnalytics() {
   }
 }
 
-// ── GST Reports ───────────────────────────────────────────────────────────────
 
 let lastGstReport = null;
 
@@ -1112,12 +1047,6 @@ function handleGstPeriodChange() {
     document.getElementById('gst-period').value === 'custom' ? 'flex' : 'none';
 }
 
-// Turns the period dropdown into an actual {from, to} range. 'month' and
-// 'quarter' are computed off the real current date rather than hardcoded,
-// so this keeps working correctly across month/quarter boundaries with no
-// maintenance. Dates are formatted as plain YYYY-MM-DD (not full ISO
-// timestamps) since that's what <input type="date"> uses and what the
-// backend's ?from=&to= expects.
 function gstDateRangeForPeriod() {
   const period = document.getElementById('gst-period').value;
   const toYMD = (d) => d.toISOString().slice(0, 10);
@@ -1131,7 +1060,7 @@ function gstDateRangeForPeriod() {
   }
   if (period === 'last-month') {
     const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const to = new Date(now.getFullYear(), now.getMonth(), 0); // last day of previous month
+    const to = new Date(now.getFullYear(), now.getMonth(), 0);
     return { from: toYMD(from), to: toYMD(to) };
   }
   if (period === 'quarter') {
@@ -1139,7 +1068,6 @@ function gstDateRangeForPeriod() {
     const from = new Date(now.getFullYear(), qStartMonth, 1);
     return { from: toYMD(from), to: toYMD(now) };
   }
-  // 'month' (default)
   const from = new Date(now.getFullYear(), now.getMonth(), 1);
   return { from: toYMD(from), to: toYMD(now) };
 }
@@ -1211,8 +1139,6 @@ function exportGstReportCsv() {
     'Discount': o.discountAmount,
     'Total': o.total,
   }));
-  // Summary row appended after a blank line — same file, so opening it in
-  // Excel/Sheets shows the per-order detail and the period total together.
   const csv = Papa.unparse(rows) + '\n\n' +
     Papa.unparse({
       fields: ['Period', 'Orders', 'Subtotal', 'GST 5%', 'GST 18%', 'Total GST', 'CGST', 'SGST', 'Total'],
@@ -1231,7 +1157,6 @@ function exportGstReportCsv() {
   URL.revokeObjectURL(url);
 }
 
-// ── Orders ────────────────────────────────────────────────────────────────────
 
 const ORDER_STATUSES = [
   'Order Placed', 'Payment Confirmed', 'Processing', 'Packed',
@@ -1252,8 +1177,6 @@ async function loadOrdersList() {
   }
 }
 
-// Manual-reference orders (UPI / legacy QR / Online Banking) not yet marked
-// paid — COD has nothing to verify, Razorpay confirms itself automatically.
 async function loadVerifyList() {
   try {
     const res = await fetch(`${API}/orders/admin/all`, { headers: { Authorization: `Bearer ${token}` } });
@@ -1324,12 +1247,6 @@ async function updateOrderStatus(id, orderStatus) {
   }
 }
 
-// Razorpay orders confirm themselves automatically (signature verification
-// on checkout success, backed by a webhook) — this button (shown both here
-// and on the dedicated Pending Verification tab) is for manual UPI/bank-
-// transfer orders, or a fallback for the rare Razorpay case that fails.
-// Check the UTR + amount in your real UPI/bank app before clicking — this
-// is a human confirmation, nothing here validates it automatically.
 async function confirmOrderPayment(id) {
   if (!confirm('Have you verified this payment against your UPI/bank app? This will mark the order as Paid.')) return;
   try {
@@ -1345,17 +1262,12 @@ async function confirmOrderPayment(id) {
     renderOrdersTable();
     renderVerifyTable();
     toast('Payment verified', 'success');
-    // There's no automatic email/SMS/WhatsApp API wired in, so the customer
-    // isn't notified unless someone tells them. This opens WhatsApp Web/App
-    // with the confirmation pre-typed — you still have to hit Send yourself.
     window.open(waLinkForOrder(data.order, waPaymentConfirmedMessage(data.order)), '_blank', 'noreferrer');
   } catch (err) {
     toast(err.message, 'error');
   }
 }
 
-// The other half of confirmOrderPayment above — admin checked their real
-// UPI/bank app and the claimed UTR/amount never actually showed up.
 async function rejectOrderPayment(id) {
   if (!confirm('Mark this payment as not received? This cancels the order and cannot be undone.')) return;
   try {
@@ -1378,10 +1290,6 @@ async function rejectOrderPayment(id) {
   }
 }
 
-// Same "no API, admin sends it by hand" pattern as confirmOrderPayment —
-// covers the other lifecycle stages (Shipped/Delivered/etc.) that the
-// site's own FAQ/Shipping Policy pages already promise customers a
-// WhatsApp update for.
 const WA_STATUS_MESSAGES = {
   'Payment Confirmed': (o) => `Hi ${o.customerName.split(' ')[0]}! We've confirmed your payment of Rs.${o.total.toLocaleString('en-IN')} for order ${o.orderNumber}. Your order is now being prepared. Thank you for shopping with Dezire More!`,
   'Processing':        (o) => `Hi ${o.customerName.split(' ')[0]}, your Dezire More order ${o.orderNumber} is being processed. We'll keep you posted!`,
@@ -1411,9 +1319,6 @@ function sendWhatsAppUpdate(id) {
   window.open(waLinkForOrder(order), '_blank', 'noreferrer');
 }
 
-// Weight/dimensions aren't tracked per-product anywhere in this app, so
-// they're entered once here at shipment time — defaults are a reasonable
-// guess for a typical single-saree/kurta package, always editable per order.
 function renderShipmentSection(o) {
   if (o.shipment?.awbCode) {
     const isDelhivery = o.shipment.provider === 'delhivery';
@@ -1602,7 +1507,6 @@ function renderOrdersTable() {
     </table>`;
 }
 
-// ── Customers ─────────────────────────────────────────────────────────────────
 
 let allCustomers = [];
 let expandedCustomerId = null;
@@ -1641,8 +1545,6 @@ async function confirmMembership(userId) {
   }
 }
 
-// Orders keep the customer's email directly (not a foreign key to their
-// account), so deleting the account here doesn't touch their order history.
 async function deleteCustomer(id, email) {
   if (!confirm(`Delete the account for "${email}"? This cannot be undone. Their past orders are kept for your records either way.`)) return;
   try {
@@ -1728,7 +1630,6 @@ function renderCustomersTable() {
     </table>`;
 }
 
-// ── Activity Log ──────────────────────────────────────────────────────────────
 
 let allActivityLogs = [];
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -1745,9 +1646,6 @@ async function loadAuditLog() {
   }
 }
 
-// Options are derived from months that actually have entries (not every
-// calendar month ever), so the dropdown only ever offers something there's
-// actually something to clear.
 function populateActivityMonthSelect() {
   const months = [...new Set(allActivityLogs.map(l => {
     const d = new Date(l.createdAt);
@@ -1825,7 +1723,6 @@ async function clearAuditLogMonth() {
   }
 }
 
-// ── Coupons ───────────────────────────────────────────────────────────────────
 
 let allCoupons = [];
 
@@ -1923,7 +1820,6 @@ function renderCouponsTable() {
     </table>`;
 }
 
-// ── Client Love (testimonials) ──────────────────────────────────────────────
 
 let allTestimonials = [];
 
@@ -2066,7 +1962,6 @@ function renderTestimonialsTable() {
     </table>`;
 }
 
-// ── Payment Settings ──────────────────────────────────────────────────────────
 
 async function loadPaymentSettings() {
   try {
@@ -2098,7 +1993,6 @@ async function savePaymentSettings() {
   }
 }
 
-// ── Owner / Founder ───────────────────────────────────────────────────────────
 
 async function loadFounderSettings() {
   try {
@@ -2149,7 +2043,6 @@ async function saveFounderSettings() {
   }
 }
 
-// ── Products List ─────────────────────────────────────────────────────────────
 
 async function loadProductsList() {
   const search = document.getElementById('search-input')?.value || '';
@@ -2214,10 +2107,6 @@ function renderProductsTable(products) {
     </table>`;
 }
 
-// Quick in-stock/out-of-stock flip straight from the product list — the full
-// Add/Edit form still has the In Stock dropdown + Stock Count for when more
-// detail is needed, but flagging an outfit as sold out shouldn't require
-// opening the whole edit form and scrolling to find it.
 async function toggleProductStock(id, currentlyInStock) {
   try {
     const res = await fetch(`${API}/products/${id}`, {
@@ -2236,7 +2125,6 @@ async function toggleProductStock(id, currentlyInStock) {
   }
 }
 
-// ── Add / Edit Product ────────────────────────────────────────────────────────
 
 function resetForm() {
   document.getElementById('edit-product-id').value = '';
@@ -2286,17 +2174,12 @@ function editProduct(id) {
     document.getElementById(`tag-${tag}`).checked = (p.tags||[]).includes(tag);
   });
 
-  // Show existing images — marked data-existing so renderPreviews() (below)
-  // knows to leave these alone and never re-render them itself; they're
-  // server-side images with their own dedicated remove path
-  // (deleteExistingImage), not part of the selectedFiles upload queue.
   document.getElementById('image-previews').innerHTML = (p.images||[]).map(img => `
     <div class="preview-item" data-existing="true">
       <img src="${img.url}" />
       <button class="remove-img" onclick="deleteExistingImage('${id}','${img.publicId}',this.parentElement)">×</button>
     </div>`).join('');
 
-  // Show existing video
   const videoPreviewEl = document.getElementById('video-preview');
   if (p.video?.url) {
     videoPreviewEl.innerHTML = `
@@ -2365,7 +2248,6 @@ async function saveProduct() {
     let res;
 
     if (editId) {
-      // PATCH — update details (no image re-upload here)
       res = await fetch(`${API}/products/${editId}`, {
         method: 'PATCH',
         headers: {
@@ -2390,7 +2272,6 @@ async function saveProduct() {
         }),
       });
 
-      // Upload new images if any were selected
       if (selectedFiles.length) {
         const fd = new FormData();
         selectedFiles.forEach(f => fd.append('images', f));
@@ -2402,7 +2283,6 @@ async function saveProduct() {
         });
       }
 
-      // Upload a new/replacement video if one was selected
       if (selectedVideoFile) {
         const vfd = new FormData();
         vfd.append('video', selectedVideoFile);
@@ -2413,7 +2293,6 @@ async function saveProduct() {
         });
       }
     } else {
-      // POST — create new product with images
       const fd = new FormData();
       fd.append('name', name);
       fd.append('category', cat);
@@ -2467,7 +2346,6 @@ async function deleteProduct(id, name) {
   }
 }
 
-// ── Image upload ──────────────────────────────────────────────────────────────
 
 function handleFiles(files) {
   const newFiles = Array.from(files).slice(0, 10 - selectedFiles.length);
@@ -2485,14 +2363,6 @@ function handleDragLeave()  { document.getElementById('upload-zone').classList.r
 
 function renderPreviews() {
   const el = document.getElementById('image-previews');
-  // Bug was here: this used to re-scan the DOM for ".preview-item:not([data-new])"
-  // and prepend whatever it found — but previous calls' own newly-selected-file
-  // previews matched that same selector (nothing ever marked them "new"), so
-  // every re-render re-added them on top of the fresh copy generated just below,
-  // duplicating every already-selected file each time a photo was added or
-  // removed. Only genuinely pre-existing server images (marked data-existing in
-  // editProduct() above) need to survive a re-render; the selectedFiles portion
-  // is authoritative and always safe to fully rebuild from scratch.
   const existing = el.querySelectorAll('.preview-item[data-existing]');
   const newPreviews = selectedFiles.map((file, i) => {
     const url = URL.createObjectURL(file);
@@ -2521,7 +2391,6 @@ function handleVideoFile(files) {
     </div>`;
 }
 
-// ── Discount preview ──────────────────────────────────────────────────────────
 
 document.addEventListener('input', e => {
   if (e.target.id === 'f-price' || e.target.id === 'f-original-price') updateDiscountPreview();
@@ -2539,7 +2408,6 @@ function updateDiscountPreview() {
   }
 }
 
-// ── Bulk Import ───────────────────────────────────────────────────────────────
 
 const BULK_TEMPLATE_HEADERS = [
   'name','category','subcategory','price','originalPrice','fabric','sku',
@@ -2552,7 +2420,7 @@ const BULK_TEMPLATE_EXAMPLE = [
 ];
 
 let bulkRows = [];
-let bulkImageMap = {}; // filename -> File
+let bulkImageMap = {};
 
 function downloadBulkTemplate() {
   const csv = Papa.unparse({ fields: BULK_TEMPLATE_HEADERS, data: [BULK_TEMPLATE_EXAMPLE] });
@@ -2610,10 +2478,6 @@ function splitField(value) {
   return (value || '').split(';').map(s => s.trim()).filter(Boolean);
 }
 
-// Row is flagged bad the same way runBulkImport() itself would reject it —
-// missing a required field, or an images/video filename not (yet) matched
-// to a selected file — so the admin sees the problem before committing
-// anything, rather than only in the per-row failure log after the fact.
 function bulkRowProblem(row) {
   if (!row.name || !row.category || !row.price) return 'Missing name, category, or price';
   const imageNames = splitField(row.images);
@@ -2726,7 +2590,6 @@ async function runBulkImport() {
   loadDashboard();
 }
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
 
 function toast(msg, type = 'success') {
   const el = document.getElementById('toast');

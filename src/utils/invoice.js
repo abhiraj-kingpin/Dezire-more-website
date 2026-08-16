@@ -2,12 +2,6 @@ function money(n) {
   return `Rs ${Number(n).toLocaleString('en-IN')}`;
 }
 
-// Generates a clean, simple invoice PDF for an order and triggers a download.
-// No external template/library beyond jsPDF's own text/line drawing — kept
-// deliberately plain rather than trying to fake a fancy branded layout.
-// jsPDF is dynamically imported so its (fairly heavy) bundle is only ever
-// fetched when someone actually clicks "Download Invoice", not on every
-// page load.
 export async function downloadInvoice(order) {
   const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
@@ -37,9 +31,6 @@ export async function downloadInvoice(order) {
   y += 16;
   doc.text(`Payment: ${order.paymentMethod} (${order.paymentStatus})`, marginX, y);
   doc.text(`Order Status: ${order.orderStatus}`, 545, y, { align: 'right' });
-  // GSTIN is only shown once actually registered — set VITE_GST_NUMBER in
-  // the frontend build env when it is; omitted rather than left blank so an
-  // unregistered store's invoices don't imply a GSTIN that doesn't exist.
   if (import.meta.env.VITE_GST_NUMBER) {
     y += 16;
     doc.text(`GSTIN: ${import.meta.env.VITE_GST_NUMBER}`, marginX, y);
@@ -94,10 +85,6 @@ export async function downloadInvoice(order) {
   doc.text(money(order.subtotal), 545, y, { align: 'right' });
   y += 16;
 
-  // GST breakdown by the two applicable rates, then the same total split
-  // into CGST + SGST (each exactly half) for domestic intra-state orders —
-  // the standard Indian tax-invoice presentation of the same figure two
-  // ways: by rate, and by the CGST/SGST split GST law requires it be shown as.
   const totalGST = order.totalGST || 0;
   if (order.gstBreakdown?.gst5 > 0) {
     doc.text('GST (5% items)', 460, y, { align: 'right' });

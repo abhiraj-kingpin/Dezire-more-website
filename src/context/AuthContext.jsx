@@ -14,9 +14,6 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Global "please log in" prompt — cart/wishlist/checkout can all trigger
-  // this instead of performing a guest action, without needing to know
-  // anything about how the auth modal itself is implemented.
   const [authOpen, setAuthOpen] = useState(false);
   const [authPrompt, setAuthPrompt] = useState('');
 
@@ -36,25 +33,18 @@ export function AuthProvider({ children }) {
     initPushNotifications(authHeaders);
   };
 
-  // Restore session on app load by validating the stored token against the
-  // server. Only an explicit 401 (token actually rejected) clears it — a
-  // network error, timeout, or the backend cold-starting (this project's
-  // Render free-tier API can take 30-50s to wake up) must NOT log the user
-  // out, since the token itself is still perfectly valid; it just couldn't
-  // be checked this time. Those cases keep the stored token and simply
-  // retry validation on the next load.
   useEffect(() => {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) { setLoading(false); return; }
     fetch(`${BASE}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
       .then(async res => {
         if (res.status === 401) { localStorage.removeItem(TOKEN_KEY); return; }
-        if (!res.ok) return; // transient server error — keep the token, don't touch user
+        if (!res.ok) return;
         const data = await parseJson(res);
         setUser(data.user);
         initPushNotifications(authHeaders);
       })
-      .catch(() => {}) // network error — keep the token, don't touch user
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
@@ -75,8 +65,6 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Consumes the token from the emailed verification link (called by the
-  // /verify-email page after it reads ?token= from the URL).
   const verifyEmailToken = async (token) => {
     setError('');
     try {
@@ -94,10 +82,6 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Lightweight poll used by the "Check your email" screen — a plain
-  // boolean, not a session; see the backend route for why actually logging
-  // in still goes through the normal password-checked login() below once
-  // this returns true.
   const checkVerifyStatus = async (email) => {
     try {
       const res = await fetch(`${BASE}/auth/verify-status?email=${encodeURIComponent(email)}`);
@@ -150,14 +134,9 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
-    // Needs the still-valid token to authenticate the removal call, so this
-    // has to happen before the token itself is cleared below.
     removePushToken(authHeaders);
     localStorage.removeItem(TOKEN_KEY);
     setUser(null);
-    // Cart/wishlist are in-memory only (not saved per-account server-side),
-    // so clear them on logout — otherwise they'd leak into the next
-    // account signed in on the same device.
     window.dispatchEvent(new CustomEvent('dm:logout'));
   };
 
@@ -204,11 +183,6 @@ export function AuthProvider({ children }) {
     return { success: res.ok, ...data };
   };
 
-  // Re-fetches the current user from the server — for anything an admin
-  // might change asynchronously elsewhere (membership confirmation, order
-  // status) that this tab has no other way of learning about without a
-  // full page reload. Silent on failure — a transient network hiccup here
-  // shouldn't disturb whatever the user is already looking at.
   const refreshUser = async () => {
     try {
       const res = await fetch(`${BASE}/auth/me`, { headers: authHeaders() });

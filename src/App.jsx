@@ -59,7 +59,6 @@ function App() {
                     <Route path="ready-to-wear" element={<ReadyToWear />} />
                     <Route path="western-apparels" element={<WesternApparels />} />
                     <Route path="jewelry-accessories" element={<JewelryAccessories />} />
-                    {/* Old separate category URLs now redirect to the merged page */}
                     <Route path="jewelry" element={<Navigate to="/jewelry-accessories" replace />} />
                     <Route path="accessories" element={<Navigate to="/jewelry-accessories" replace />} />
                     <Route path="bestsellers" element={<Bestsellers />} />
@@ -80,7 +79,6 @@ function App() {
                     <Route path="membership" element={<Membership />} />
                     <Route path="orders" element={<MyOrders />} />
                     <Route path="verify-email" element={<VerifyEmail />} />
-                    {/* Help Pages */}
                     <Route path="size-guide" element={<SizeGuide />} />
                     <Route path="shipping-policy" element={<ShippingPolicy />} />
                     <Route path="contact" element={<ContactUs />} />

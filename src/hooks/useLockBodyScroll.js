@@ -1,9 +1,5 @@
 import { useEffect } from 'react';
 
-// Locks background scroll while `active` is true. Multiple callers can use
-// this simultaneously (e.g. a drawer and a modal both open) — a simple
-// reference count on the body element keeps track so the scroll is only
-// restored once every lock has been released.
 export default function useLockBodyScroll(active) {
   useEffect(() => {
     if (!active) return;

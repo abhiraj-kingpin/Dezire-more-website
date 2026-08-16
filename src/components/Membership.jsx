@@ -56,16 +56,10 @@ function Membership() {
       .catch(() => {});
   }, []);
 
-  // The admin confirms membership payments from a totally separate admin
-  // panel session — this tab has no other way of finding out it happened.
-  // Without this, "Payment Pending" can sit there indefinitely even after
-  // the admin has already confirmed it, until the customer happens to
-  // refresh the page or log out/in again.
   useEffect(() => {
     if (!awaitingConfirmation) return;
     const interval = setInterval(() => { refreshUser(); }, 15000);
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [awaitingConfirmation]);
 
   const handleSubscribe = async (tier) => {

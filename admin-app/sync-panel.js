@@ -1,8 +1,3 @@
-// Re-copies dezire-backend/admin-panel.html into www/index.html and
-// re-applies the one edit the packaged app needs that the browser-served
-// original doesn't: an absolute API URL instead of the relative '/api'
-// path (see the comment this inserts, in context, below). Run this after
-// any change to admin-panel.html, before `npx cap sync`.
 const fs = require('fs');
 const path = require('path');
 

@@ -1,7 +1,5 @@
-/* ─── Google Fonts – load two royal typefaces ─────────────────────────────── */
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Cinzel:wght@400;500;600&display=swap');
 
-/* ─── Palette (kept consistent with the rest of the site) ────────────────── */
 :root {
   --dm-ivory:      #F9F2E8;
   --dm-ivory-deep: #F3E8D4;
@@ -12,11 +10,6 @@
   --dm-gold-deep:  #A87C28;
   --dm-hairline:   #DDD0B0;
 }
-/* --dm-ivory (section surface) and --dm-green (ink/heading text) are used
-   throughout this file as a light-surface/dark-ink pair — .marquee-cta's
-   hover state even swaps them directly (fill sweeps to --dm-green, text
-   flips to --dm-ivory). Swapping their luminance for dark mode keeps every
-   rule below correct without touching the rules themselves. */
 [data-theme="dark"] {
   --dm-ivory:      #171b16;
   --dm-ivory-deep: #10130f;
@@ -28,7 +21,6 @@
   --dm-hairline:   #3a3529;
 }
 
-/* ─── Section wrapper ─────────────────────────────────────────────────────── */
 .new-arrivals-marquee {
   position: relative;
   background:
@@ -62,7 +54,6 @@
   border: 1px solid rgba(201,151,58,0.25);
 }
 
-/* ─── Animated SVG background ─────────────────────────────────────────────── */
 .marquee-bg {
   position: absolute;
   inset: 0;
@@ -75,7 +66,6 @@
   object-fit: cover;
 }
 
-/* NEW — drifting ambient glow, like slow-moving light over silk */
 .marquee-bg::before {
   content: '';
   position: absolute;
@@ -91,7 +81,6 @@
   100% { transform: translate(-4%, 8%) scale(1.05); }
 }
 
-/* NEW — soft diagonal shimmer sweeping across the whole section */
 .marquee-bg::after {
   content: '';
   position: absolute;
@@ -111,7 +100,6 @@
   100% { left: 130%; }
 }
 
-/* Existing arcs — now with more visible movement and layered speeds */
 .bg-arcs path {
   animation: arcDrift 12s ease-in-out infinite alternate;
 }
@@ -125,7 +113,6 @@
   to   { transform: translateX(46px) translateY(16px); }
 }
 
-/* NEW — twinkling gold dots, staggered like distant stars catching light */
 .bg-dots circle {
   animation: dotTwinkle 3.2s ease-in-out infinite;
   transform-origin: center;
@@ -152,7 +139,6 @@
   50%      { opacity: 0.4; }
 }
 
-/* ─── Header ──────────────────────────────────────────────────────────────── */
 .marquee-header {
   position: relative;
   z-index: 2;
@@ -244,7 +230,6 @@
   text-shadow: 0 1px 0 rgba(255,255,255,0.5);
 }
 
-/* ─── Status text ─────────────────────────────────────────────────────────── */
 .marquee-status {
   position: relative;
   z-index: 2;
@@ -255,7 +240,6 @@
   padding: 24px 0;
 }
 
-/* ─── Row + track ─────────────────────────────────────────────────────────── */
 .marquee-row {
   position: relative;
   z-index: 2;
@@ -289,20 +273,11 @@
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   scroll-behavior: auto;
-  /* No touch-action override -- every other horizontal-scroll row on the
-     site (.home-product-row-track, .cm-recommendations-row) relies on the
-     browser's default (auto), which correctly routes a touch to this row's
-     horizontal scroll or lets it pass through to page scroll depending on
-     the gesture's actual direction. An earlier touch-action: pan-x here
-     hard-disabled that routing for any touch starting on this row -- fine
-     in some desktop-browser touch emulation, but broke finger-scroll
-     entirely in the real Android app's WebView. */
   overscroll-behavior-x: contain;
   will-change: scroll-position;
 }
 .marquee-track::-webkit-scrollbar { display: none; }
 
-/* ─── Individual card frame ───────────────────────────────────────────────── */
 .marquee-card {
   flex: 0 0 230px;
   position: relative;
@@ -347,7 +322,6 @@
   background: var(--surface, #FFFFFF);
 }
 
-/* ─── Arrows ──────────────────────────────────────────────────────────────── */
 .marquee-arrows {
   display: flex;
   justify-content: center;
@@ -388,7 +362,6 @@
   background: linear-gradient(180deg, var(--dm-gold), var(--dm-gold-deep));
 }
 
-/* ─── CTA ─────────────────────────────────────────────────────────────────── */
 .marquee-cta-wrap {
   position: relative;
   z-index: 2;
@@ -443,15 +416,12 @@
   transform: translateX(4px);
 }
 
-/* ─── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .marquee-card { flex: 0 0 180px; }
   .marquee-title-new     { font-size: 38px; }
   .marquee-title-arrivals { font-size: 28px; }
   .marquee-row::before,
   .marquee-row::after    { width: 32px; }
-  /* One row of new arrivals on phones — two rows felt cramped and made
-     the page harder to scroll through. */
   .marquee-row-secondary { display: none; }
 }
 

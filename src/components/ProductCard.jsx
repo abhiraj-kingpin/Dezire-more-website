@@ -26,17 +26,10 @@ const SIZE_CHART = [
 
 const STANDARD_SIZES = SIZE_CHART.map(row => row.size);
 
-// Keeps the modal's main image box close to the photo's own aspect ratio
-// (measured on load) so `object-fit: contain` never has to letterbox large
-// empty margins — bounded so an extreme panorama/strip photo can't distort
-// the modal's layout.
 function clampImageRatio(ratio) {
   return Math.min(1.6, Math.max(0.55, ratio));
 }
 
-// Sarees, jewelry/accessories, and dress materials are unstitched/one-size —
-// no size selector or size chart needed. 'jewelry' and 'accessories' are kept
-// here too since older products are still saved under those pre-merge values.
 const NO_SIZE_CATEGORIES = ['sarees', 'jewelry-accessories', 'jewelry', 'accessories', 'dress-materials'];
 
 function StarRating({ rating }) {
@@ -53,9 +46,7 @@ function StarRating({ rating }) {
   );
 }
 
-// ─── Normalise a product from MongoDB into the shape the UI expects ───────────
 function normalise(p) {
-  // Images: MongoDB stores [{ url, publicId }], old data had a plain string
   const imageUrls =
     p.images && p.images.length > 0
       ? p.images.map(img => (typeof img === 'string' ? img : img.url))
@@ -65,26 +56,17 @@ function normalise(p) {
 
   return {
     ...p,
-    // Stable id regardless of source
     id:           p._id  || p.id,
-    // Always a plain-string URL for the primary image
     image:        imageUrls[0] || '',
-    // Always an array of plain-string URLs
     images:       imageUrls,
-    // Booleans from tags (MongoDB) or legacy booleans (local data)
     isNew:        p.tags?.includes('new-arrival') ?? p.isNew        ?? false,
     isBestseller: p.tags?.includes('bestseller')  ?? p.isBestseller ?? false,
-    // Fabric field maps to material display
     material:     p.fabric || p.material || '',
-    // MongoDB stores colors as array; old data had a single 'colour' string
     colour:       p.colors?.[0] || p.colour || '',
-    // Reviews count
     reviews:      p.reviewCount ?? p.reviews ?? 0,
   };
 }
 
-// Dispatches the "fly to cart" signal the Navbar listens for, so the product
-// image animates into the cart icon and the icon gives a little bounce.
 export function flyToCart(imgEl) {
   if (!imgEl) {
     window.dispatchEvent(new CustomEvent('dm:fly-to-cart', { detail: {} }));
@@ -96,7 +78,6 @@ export function flyToCart(imgEl) {
   }));
 }
 
-// Briefly ripples a button to give "processing" feedback before a transition.
 export function ripple(btnEl) {
   if (!btnEl) return;
   btnEl.classList.remove('rippling');
@@ -105,7 +86,6 @@ export function ripple(btnEl) {
   setTimeout(() => btnEl.classList.remove('rippling'), 500);
 }
 
-// Spawns a tiny burst of floating hearts from the wishlist button.
 function spawnHeartBurst(btnEl) {
   if (!btnEl) return;
   const particles = ['♥', '♥', '♥', '♥', '♥'];
@@ -171,8 +151,6 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
   };
   const closeModal = () => { setModalOpen(false); setLightboxOpen(false); };
 
-  // Drop the previous image's measured ratio the moment we switch images so
-  // the box doesn't briefly keep the old shape before the new one loads.
   useEffect(() => { setMainImgRatio(null); }, [activeImg]);
 
   const handleMainImgLoad = (e) => {
@@ -180,20 +158,16 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
     if (naturalWidth && naturalHeight) setMainImgRatio(clampImageRatio(naturalWidth / naturalHeight));
   };
 
-  // "Similar Products" — fetched once per modal open, not kept in sync with
-  // every re-render, since it's a lightweight browsing aid, not live data.
   useEffect(() => {
     if (!modalOpen) return;
     fetch(`${BASE}/products/${product.id}`)
       .then(res => res.json())
       .then(data => setRelated((data.related || []).filter(p => p._id !== product.id)))
       .catch(() => setRelated([]));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modalOpen, product.id]);
 
   useLockBodyScroll(modalOpen || sizeChartOpen);
 
-  // Esc closes the topmost open surface (lightbox first, then modal/size chart)
   useEffect(() => {
     if (!modalOpen && !sizeChartOpen) return;
     const onKeyDown = (e) => {
@@ -216,10 +190,6 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
     setActiveImg(i => (i + 1) % mediaCount);
   }, [mediaCount]);
 
-  // The lightbox only ever shows images (video plays inline in the main
-  // gallery instead), so it navigates within image bounds only. Zoom/pan
-  // reset happens automatically — the TransformWrapper below is keyed by
-  // activeImg, so changing image remounts it fresh.
   const showPrevImage = useCallback((e) => {
     e?.stopPropagation();
     if (galleryImages.length < 2) return;
@@ -232,9 +202,6 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
     setActiveImg(i => (i + 1) % galleryImages.length);
   }, [galleryImages.length]);
 
-  // Swipe-to-navigate on the main gallery image (mobile). A genuine swipe
-  // preventDefaults the trailing synthetic click so it doesn't also open
-  // the lightbox — a plain tap (no meaningful movement) still opens it.
   const handleGalleryTouchStart = (e) => {
     const t = e.touches[0];
     gallerySwipeRef.current = { x: t.clientX, y: t.clientY };
@@ -252,7 +219,6 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
     }
   };
 
-  // Arrow keys navigate the gallery while the modal or lightbox is open
   useEffect(() => {
     if (!modalOpen) return;
     const onKeyDown = (e) => {
@@ -309,10 +275,6 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
     onAfterAddToCart?.();
   };
 
-  // NOTE: `id` must always stay the real MongoDB product id — it's sent
-  // straight through as `productId` on checkout. CartContext derives its own
-  // cart-line key from id + selectedSize, so distinct sizes of the same
-  // product still get separate cart rows without corrupting the real id.
   const cartProduct = () => (
     selectedSize ? { ...product, selectedSize } : product
   );
@@ -324,7 +286,6 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
     ripple(btn);
     flyToCart(modalImgRef.current || cardImgRef.current);
     addToCart(cartProduct(), { quantity });
-    // Let the ripple be visible for a beat before the modal unmounts.
     setTimeout(closeModal, 200);
   };
 
@@ -334,9 +295,6 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
     const btn = e.currentTarget;
     ripple(btn);
     btn.disabled = true;
-    // Show the ripple/loading feedback first, then transition into the
-    // centered checkout modal — matching the requested "ripple, then
-    // transition" flow instead of an instant jump.
     setTimeout(() => {
       buyNow(cartProduct(), quantity);
       closeModal();
@@ -408,16 +366,6 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
         </div>
       </div>
 
-      {/* Real per-product title/description/OG tags while the modal is open —
-          there's no per-product route (every product only ever opens in a
-          modal over its category page), so this is the one place that
-          actually knows which product is being viewed. react-helmet-async
-          lets a nested Helmet override specific tags from Layout.jsx's
-          category-level one; closing the modal unmounts this and Layout's
-          tags apply again automatically. Note: since this is a
-          client-rendered SPA with no SSR, a raw WhatsApp/social link paste
-          still can't see these — only real browsers and JS-rendering
-          crawlers like Googlebot do. */}
       {modalOpen && (
         <Helmet>
           <title>{product.name} | Dezire More</title>
@@ -431,21 +379,11 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
         </Helmet>
       )}
 
-      {/* ── Product Detail Modal ── */}
-      {/* Portalled to document.body: this card can sit inside a marquee/
-          carousel wrapper whose :hover transform (which can get "stuck" on
-          touch) would otherwise become the containing block for this
-          position:fixed overlay, crushing it down to the card's own width. */}
       {modalOpen && createPortal(
         <div className="pd-overlay" onClick={closeModal}>
           <div className="pd-modal" onClick={e => e.stopPropagation()}>
-            {/* Hidden (not just covered) while the lightbox is open — its own
-                backdrop-filter can leave this button visible/clickable
-                through the lightbox's overlay on some browsers despite a
-                lower z-index, producing two visible close buttons at once. */}
             {!lightboxOpen && <button className="pd-close" onClick={closeModal} aria-label="Close">✕</button>}
 
-            {/* Left — Images: vertical thumbnail rail + large main image */}
             <div className="pd-left">
               <div className="pd-gallery">
                 {mediaCount > 1 && (
@@ -538,7 +476,6 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
               )}
             </div>
 
-            {/* Right — Info */}
             <div className="pd-right">
               {product.isNew        && <div className="pd-badge">New Arrival</div>}
               {product.isBestseller && <div className="pd-badge pd-badge-gold">Bestseller</div>}
@@ -604,7 +541,6 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
                     <span className="pd-detail-value">{product.colour}</span>
                   </div>
                 )}
-                {/* MongoDB: colors array — show all */}
                 {!product.colour && product.colors?.length > 0 && (
                   <div className="pd-detail-row">
                     <span className="pd-detail-label">Colours</span>
@@ -692,10 +628,6 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
         document.body
       )}
 
-      {/* ── Full-screen Lightbox: real pinch/double-tap/wheel zoom + pan via
-          react-zoom-pan-pinch, +/- and Reset kept as an explicit fallback.
-          Keyed by activeImg so switching images remounts with a clean
-          reset scale/position rather than carrying over the last zoom. ── */}
       {modalOpen && lightboxOpen && createPortal(
         <div className="lightbox-overlay" onClick={() => setLightboxOpen(false)}>
           <button className="lightbox-close" onClick={() => setLightboxOpen(false)} aria-label="Close zoom view">✕</button>
@@ -714,14 +646,6 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
             maxScale={4}
             centerOnInit
             doubleClick={{ mode: 'toggle', step: 1.4 }}
-            // onTransform fires on every single frame of a gesture, so it was
-            // re-rendering this whole component (parent of the render-prop
-            // below) continuously for the entire duration of a pinch — on
-            // slower Android WebViews that render storm could fall behind the
-            // touch events, leaving the gesture looking "stuck" and unable to
-            // restart cleanly. Only committing to state once a gesture
-            // actually finishes keeps the live pinch itself untouched by React
-            // entirely; the toolbar's % label just updates a beat later.
             onZoomStop={(ref) => setZoomPct(Math.round(ref.state.scale * 100))}
             onPinchStop={(ref) => setZoomPct(Math.round(ref.state.scale * 100))}
             onPanningStop={(ref) => setZoomPct(Math.round(ref.state.scale * 100))}
@@ -754,7 +678,6 @@ function ProductCard({ product: rawProduct, highlightQuery, onAfterAddToCart }) 
         document.body
       )}
 
-      {/* ── Size Chart Modal ── */}
       {sizeChartOpen && createPortal(
         <div className="size-chart-overlay" onClick={() => setSizeChartOpen(false)}>
           <div className="size-chart-modal" onClick={e => e.stopPropagation()}>

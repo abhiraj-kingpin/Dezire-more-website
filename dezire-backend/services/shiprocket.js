@@ -1,26 +1,6 @@
-// Shiprocket integration — real courier shipment creation, AWB (tracking
-// number) assignment, and inbound webhook status updates. Built against
-// Shiprocket's long-documented v1 external API (stable for years — same
-// endpoints referenced across their own docs, Postman collection, and
-// third-party SDKs), but NOT yet exercised against a real Shiprocket
-// account: no such account exists on this project yet (that's the client's
-// own signup, same as Razorpay). Smoke-test end-to-end the moment
-// SHIPROCKET_EMAIL/PASSWORD are actually set.
-//
-// Required env vars: SHIPROCKET_EMAIL, SHIPROCKET_PASSWORD (the login used
-// on shiprocket.in, not a separate API key — Shiprocket's v1 API exchanges
-// these for a Bearer token), SHIPROCKET_PICKUP_LOCATION (the "Nickname" of
-// the pickup address configured in Shiprocket's dashboard under
-// Settings > Company > Pickup Addresses), and optionally
-// SHIPROCKET_WEBHOOK_SECRET (a shared secret you also paste into
-// Shiprocket's Settings > API > Webhook config — it's sent back on every
-// webhook call so this endpoint can reject anything that isn't really
-// from Shiprocket).
 
 const BASE_URL = 'https://apiv2.shiprocket.in/v1/external';
 
-// Tokens are valid for ~10 days per Shiprocket's docs — cached in memory
-// and re-fetched a little early rather than tracking the exact expiry.
 const TOKEN_TTL_MS = 9 * 24 * 60 * 60 * 1000;
 let cachedToken = null;
 let cachedTokenAt = 0;
@@ -66,18 +46,11 @@ async function shiprocketFetch(path, options = {}) {
   return data;
 }
 
-// Splits "Jane Doe" into billing_customer_name/billing_last_name the way
-// Shiprocket's order payload expects two separate fields.
 function splitName(fullName) {
   const parts = (fullName || '').trim().split(/\s+/);
   return { first: parts[0] || 'Customer', last: parts.slice(1).join(' ') || '.' };
 }
 
-// Creates the order on Shiprocket, then immediately assigns a courier/AWB
-// so a single "Create Shipment" click in the admin panel produces a
-// trackable order — Shiprocket's own flow otherwise splits these into two
-// separate calls (create order, then assign AWB against the returned
-// shipment_id).
 async function createShipment(order, { weight, length, breadth, height }) {
   if (!isConfigured()) return { configured: false };
 
@@ -124,9 +97,6 @@ async function createShipment(order, { weight, length, breadth, height }) {
   const awbCode = awbRes.response?.data?.awb_code;
   const courierName = awbRes.response?.data?.courier_name;
   if (!awbCode) {
-    // Order exists on Shiprocket even if AWB assignment failed (e.g. no
-    // courier serviceable for this pincode yet) — surface both pieces of
-    // state rather than throwing away the order_id/shipment_id already won.
     return {
       configured: true, awbAssigned: false,
       shiprocketOrderId, shiprocketShipmentId,
@@ -141,10 +111,6 @@ async function createShipment(order, { weight, length, breadth, height }) {
   };
 }
 
-// Shiprocket's own status strings (as sent in their webhook payload) mapped
-// to this app's existing Order.orderStatus enum — anything not listed here
-// is recorded as shipment.lastTrackingStatus but doesn't move orderStatus,
-// since this app's enum is deliberately small and customer-facing.
 const TRACKING_STATUS_MAP = {
   'SHIPPED': 'Shipped',
   'IN TRANSIT': 'Shipped',

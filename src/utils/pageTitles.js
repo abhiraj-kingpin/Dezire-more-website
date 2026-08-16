@@ -25,10 +25,6 @@ const TITLES = {
   '/verify-email': 'Verify Your Email',
 };
 
-// Only for routes worth having Google/social-share show something distinct
-// from the homepage description — account/orders/verify-email are
-// private/utility pages excluded from robots.txt anyway, so they fall back
-// to the default rather than getting their own entry here.
 const DESCRIPTIONS = {
   '/': DEFAULT_DESCRIPTION,
   '/sarees': 'Shop premium sarees at Dezire More — Banarasi silk, chiffon, organza, and embroidered styles for every occasion.',
@@ -49,11 +45,6 @@ const DESCRIPTIONS = {
   '/terms-conditions': 'Dezire More terms & conditions of use.',
 };
 
-// Private/account-gated routes intentionally excluded from robots.txt —
-// no reason to spend effort giving them unique social-share copy.
-// /account/* is a prefix match since it's a nested route (/account/profile,
-// /account/addresses, etc.) — an exact match on '/account' alone stopped
-// covering any of them the moment those became real sub-routes.
 const NOINDEX_PATHS = new Set(['/orders', '/verify-email']);
 const NOINDEX_PREFIXES = ['/account'];
 

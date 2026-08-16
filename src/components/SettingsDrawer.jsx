@@ -67,7 +67,6 @@ function SettingsDrawer({ open, onClose, onOpenAuth, onOpenWishlist, onOpenCart,
 
         <div className="settings-body">
 
-          {/* Account */}
           <div className="settings-account-card">
             {user ? (
               <>

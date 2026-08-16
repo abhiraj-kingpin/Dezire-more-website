@@ -1,7 +1,3 @@
-// Persona + store facts migrated from the old client-side SYSTEM_PROMPT in
-// src/components/Chatbot.jsx — now owned entirely by the server. The client
-// used to send this as ordinary message content, which meant anyone could
-// override or inject their own system prompt; it never reaches the client now.
 function buildSystemPrompt(user) {
   const loginLine = user
     ? `The customer is currently logged in as ${user.firstName}. You may use check_order_status to look up their orders.`
@@ -42,8 +38,6 @@ YOUR PERSONALITY:
 - Never make up prices — always get them from search_products, never state a price from memory`;
 }
 
-// Gemini functionDeclarations shape (generativelanguage.googleapis.com) —
-// lowercase JSON Schema types, not the uppercase enum style some Google SDKs use.
 const TOOLS = [
   {
     name: 'search_products',

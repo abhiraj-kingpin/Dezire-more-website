@@ -6,9 +6,9 @@ const couponSchema = new mongoose.Schema(
     type:          { type: String, enum: ['percent', 'flat'], required: true },
     value:         { type: Number, required: true },
     minOrderValue: { type: Number, default: 0 },
-    maxDiscount:   { type: Number }, // caps a percent coupon's rupee value; ignored for flat coupons
+    maxDiscount:   { type: Number },
     expiresAt:     { type: Date },
-    usageLimit:    { type: Number }, // total redemptions across all customers; unlimited if unset
+    usageLimit:    { type: Number },
     usedCount:     { type: Number, default: 0 },
     isActive:      { type: Boolean, default: true },
   },

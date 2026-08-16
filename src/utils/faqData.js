@@ -1,14 +1,9 @@
-// Content consolidated from the old HelplineWidget's FAQ list and
-// chatPrompt.js's STORE DETAILS (the backend system prompt still uses its
-// own copy of these facts for the AI-fallback tier — kept in sync by hand
-// since one lives in the Gemini prompt string and the other renders as UI).
 export const FAQS = [
   {
     id: 'order-status',
     keywords: ['order status', 'track my order', 'where is my order', 'track order', 'my order'],
     question: 'How do I track my order?',
     answer: "I can look that up for you — I'll need to check your account.",
-    // Handled by the order-lookup tier, not answered from static text.
     isOrderLookup: true,
   },
   {
@@ -56,8 +51,6 @@ export const FAQS = [
   },
 ];
 
-// Quick-reply chips shown under every bot message — a mix of the explicitly
-// requested ones and the most useful FAQ/product shortcuts.
 export const QUICK_REPLIES = [
   'Track my order',
   'Size guide',

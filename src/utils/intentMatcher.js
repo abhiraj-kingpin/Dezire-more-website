@@ -6,9 +6,6 @@ const HUMAN_PHRASES = [
   'talk to an agent', 'speak to a human',
 ];
 
-// Loose enough to catch "show me sarees", "looking for a kurta", "do you
-// have jewelry under 2000", without needing a real NLP model for what's
-// fundamentally still a small, closed set of storefront categories.
 const PRODUCT_KEYWORDS = [
   'saree', 'sarees', 'dress material', 'kurta', 'kurtas', 'co-ord', 'coord',
   'ready to wear', 'western', 'jewelry', 'jewellery', 'accessories', 'earring',
@@ -26,10 +23,6 @@ function scoreKeywords(text, keywords) {
   return keywords.some(kw => text.includes(kw));
 }
 
-// The one entry point the widget calls per message. Returns a discriminated
-// result the widget switches on to decide which pipeline tier handles it —
-// FAQ and human-escalation resolve instantly with no network call at all;
-// order/product route to a direct REST call; only 'ai' ever reaches Gemini.
 export function matchIntent(rawText) {
   const text = normalize(rawText);
   if (!text) return { type: 'ai' };

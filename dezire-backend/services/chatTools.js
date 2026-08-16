@@ -1,10 +1,6 @@
 const Product = require('../models/Product');
 const Order = require('../models/Order');
 
-// Mirrors the map already used for search-result links in src/components/Navbar.jsx —
-// a product's raw `category` enum value doesn't always match its storefront route
-// (e.g. 'western' lives at /western-apparels), and there are no per-product detail
-// pages, so a "product page URL" is really "that product's category page".
 const CATEGORY_ROUTES = {
   sarees: '/sarees',
   'dress-materials': '/dress-materials',
@@ -21,8 +17,6 @@ function productUrl(product) {
   return `${route}?q=${encodeURIComponent(product.name)}`;
 }
 
-// Only these fields ever leave this function — no cost price, SKU, admin
-// fields, etc. reach the model regardless of what's on the Product document.
 function whitelistProduct(product) {
   return {
     name: product.name,
@@ -34,11 +28,6 @@ function whitelistProduct(product) {
 
 const RESULT_LIMIT = 5;
 
-// search_products(query, category?, minPrice?, maxPrice?) — the product text
-// index (Product.js) only covers name/description/fabric, not colors/occasion;
-// changing that index would also change the storefront's own live search as a
-// side effect, so instead: run the real text search first, then top up with a
-// colors/occasion match if it came up short, rather than touching the index.
 async function searchProducts(args = {}) {
   const { query, category, minPrice, maxPrice } = args;
   const filter = { isActive: true };
@@ -76,20 +65,12 @@ async function searchProducts(args = {}) {
       matches = [...matches, ...supplemental];
     }
   } else {
-    // No search term — e.g. "show me sarees under 3000" gives only category/price.
     matches = await Product.find(filter).select('name price images category').limit(RESULT_LIMIT).lean();
   }
 
   return { products: matches.map(whitelistProduct) };
 }
 
-// check_order_status(orderNumber?) — orderNumber is the ONLY identifying
-// argument accepted from the model. The query is always additionally scoped
-// to the logged-in user's own verified email server-side; a customer email
-// or arbitrary order ID is never accepted as an argument, so neither the
-// model nor a prompt-injected message can be used to look up someone else's
-// order. If no orderNumber is given, returns the customer's most recent
-// orders instead of requiring them to know it.
 async function checkOrderStatus(args = {}, user) {
   if (!user) return { requiresAuth: true };
 

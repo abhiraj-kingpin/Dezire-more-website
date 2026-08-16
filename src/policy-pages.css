@@ -4,10 +4,6 @@
   --text-mid: #4a4a4a; --text-light: #888; --border: #e8e0d0;
   --surface: #ffffff; --surface-alt: #f9f4ea;
   --shadow-soft: rgba(0, 0, 0, 0.08);
-  /* Heading text that was hardcoded to the brand dark-green in the
-     original design (headings on white/surface cards) — needs a lighter
-     value in dark mode since --dark-green itself goes even darker there
-     (it's tuned for use as a background band, not text on a dark card). */
   --heading-accent: #1a3a2a;
   --success: #1a6640; --success-bg: #f0f8f4; --success-border: #b8dcc8;
   --danger: #c0392b; --danger-bg: #fbeceb; --danger-border: #e8c8c8;
@@ -23,7 +19,6 @@
   --danger: #e57373; --danger-bg: rgba(224,115,115,0.10); --danger-border: rgba(224,115,115,0.32);
 }
 
-/* ─── Policy Pages – Shared Layout ─────────────────────────────── */
 .policy-page {
   min-height: 100vh;
   background: var(--cream);
@@ -90,7 +85,6 @@
   text-transform: uppercase;
 }
 
-/* ─── Size Guide ────────────────────────────────────────────────── */
 .measure-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -203,7 +197,6 @@
   margin: 0;
 }
 
-/* ─── CTA Button (shared) ───────────────────────────────────────── */
 .size-cta {
   text-align: center;
 }
@@ -233,7 +226,6 @@
   color: #fff;
 }
 
-/* ─── Shipping Policy ───────────────────────────────────────────── */
 .policy-journey h2 {
   margin-bottom: 32px;
 }
@@ -373,7 +365,6 @@
   top: 6px;
 }
 
-/* ─── Contact Page ──────────────────────────────────────────────── */
 .contact-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -403,8 +394,6 @@
   color: var(--heading-accent);
 }
 
-/* Third-party brand colors — always the same regardless of theme, same as
-   any WhatsApp/Instagram/Facebook badge elsewhere on the web. */
 .contact-card--whatsapp .contact-card-icon { color: #25d366; }
 .contact-card--instagram .contact-card-icon { color: #e1306c; }
 .contact-card--facebook .contact-card-icon { color: #1877f2; }
@@ -468,7 +457,6 @@
   margin: 0 0 4px;
 }
 
-/* ─── FAQ Accordion ──────────────────────────────────────────────── */
 .faq-list {
   display: flex;
   flex-direction: column;
@@ -514,7 +502,6 @@
   margin: 0;
 }
 
-/* ─── Help & Support Hub ────────────────────────────────────────── */
 .help-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

@@ -24,8 +24,6 @@ import { Search, Heart, ShoppingCart, Settings, User, Menu as MenuIcon, X, Crown
 const FALLBACK_SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 const SUGGESTION_LIMIT = 8;
 
-// Loaded once, on demand, the first time someone actually reaches checkout —
-// keeps Razorpay's script out of the main bundle for everyone just browsing.
 let razorpayScriptPromise = null;
 function loadRazorpayScript() {
   if (window.Razorpay) return Promise.resolve();
@@ -43,10 +41,6 @@ function loadRazorpayScript() {
   return razorpayScriptPromise;
 }
 
-// Amazon-style search-as-you-type: thumbnail + name only, substring-matched,
-// refined on every keystroke. Selecting a row navigates to that product's
-// category page (with the query pinned/highlighted there) instead of
-// opening a separate results view.
 function SearchResults({ query, onNavigate }) {
   const { allProducts, productsLoading } = useSearch();
   const trimmed = query.trim();
@@ -91,25 +85,12 @@ function SearchResults({ query, onNavigate }) {
 
 function Navbar() {
   const [activeTab, setActiveTab] = useState('login');
-  // 'login' | 'signup' | 'check-email' — 'check-email' covers both the
-  // post-signup "we sent you a link" screen and the prompt shown after an
-  // unverified login attempt.
   const [authStep, setAuthStep] = useState('login');
   const [pendingEmail, setPendingEmail] = useState('');
-  // Held only long enough to auto-complete login once verify-status polling
-  // (below) detects the email got verified — never sent anywhere except
-  // that one follow-up login() call, cleared with the rest on modal close.
   const [pendingPassword, setPendingPassword] = useState('');
   const [verifyError, setVerifyError] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
   const [pendingAddress, setPendingAddress] = useState(null);
-  // Checkout is UPI-only — the free manual QR flow (scan/pay, admin
-  // confirms from the Pending Verification tab), not Razorpay. Razorpay is
-  // on hold (its checkout code below — payWithRazorpay/loadRazorpayScript —
-  // is left in place, just unused, so it's a one-line swap to bring back
-  // later) since it charges a per-transaction gateway fee and this manual
-  // flow doesn't. COD is gone entirely. Nothing to choose between anymore,
-  // so this is a constant rather than selectable state.
   const paymentMethod = 'UPI';
   const [upiSettings, setUpiSettings] = useState({ upiId: '' });
   const [orderPlaced, setOrderPlaced] = useState(false);
@@ -145,7 +126,6 @@ function Navbar() {
   const [signupPhone, setSignupPhone] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  // Signup delivery address (new)
   const [signupAddress, setSignupAddress] = useState('');
   const [signupCity, setSignupCity] = useState('');
   const [signupState, setSignupState] = useState('');
@@ -167,7 +147,6 @@ function Navbar() {
     navigate(`${categoryRouteFor(product)}?q=${encodeURIComponent(term)}`);
   };
 
-  // Enter jumps straight to the top match's category page, same as clicking it.
   const handleSearchEnter = (e) => {
     if (e.key !== 'Enter') return;
     const [top] = searchSubstring(allProducts, searchQuery.trim());
@@ -177,16 +156,10 @@ function Navbar() {
   const anyOverlayOpen = cartOpen || wishlistOpen || authOpen || settingsOpen || searchOpen;
   useLockBodyScroll(anyOverlayOpen);
 
-  // Settings/Cart/Wishlist/Search/Auth are drawers layered on top of
-  // whatever page is open, not route changes — so on Home, opening any of
-  // them left the Style Assistant bubble showing underneath, since the
-  // route (and therefore the Home-only check in Layout.jsx) never changed.
-  // HelplineWidget listens for this to hide itself while any of them are open.
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('dm:overlay-visibility', { detail: { open: anyOverlayOpen } }));
   }, [anyOverlayOpen]);
 
-  // Esc closes whichever overlay is currently open, most-specific first.
   useEffect(() => {
     const onKeyDown = (e) => {
       if (e.key !== 'Escape') return;
@@ -204,19 +177,12 @@ function Navbar() {
     return () => window.removeEventListener('keydown', onKeyDown);
   });
 
-  // Phone/Android-app hardware back button (or a browser back click) closes
-  // whichever overlay is open, mirroring the Escape-key behavior above —
-  // mobile has no Escape key, so without this back-swipe used to do nothing
-  // (or leave the page entirely) instead of dismissing the drawer.
   useBackDismiss(searchOpen, closeSearch);
   useBackDismiss(authOpen, () => closeAuthModal());
   useBackDismiss(settingsOpen, () => setSettingsOpen(false));
   useBackDismiss(cartOpen, () => { if (paymentStep) setPaymentStep(false); else setCartOpen(false); });
   useBackDismiss(wishlistOpen, () => setWishlistOpen(false));
 
-  // Listens for the "fly to cart" signal dispatched by product cards/modals
-  // on Add to Cart, and animates a clone of the product image flying into
-  // the cart icon, followed by a cart bounce.
   useEffect(() => {
     const handler = (e) => {
       const cartBtn = document.getElementById('nav-cart-icon');
@@ -225,7 +191,6 @@ function Navbar() {
 
       const bounce = () => {
         cartBtn.classList.remove('cart-bounce');
-        // Force reflow so the animation can re-trigger on rapid clicks.
         void cartBtn.offsetWidth;
         cartBtn.classList.add('cart-bounce');
         setTimeout(() => cartBtn.classList.remove('cart-bounce'), 550);
@@ -268,7 +233,6 @@ function Navbar() {
     return () => window.removeEventListener('dm:fly-to-cart', handler);
   }, []);
 
-  // Checkout delivery address (controlled, pre-filled from account if available)
   const [checkoutName, setCheckoutName] = useState('');
   const [checkoutEmail, setCheckoutEmail] = useState('');
   const [checkoutPhone, setCheckoutPhone] = useState('');
@@ -298,18 +262,9 @@ function Navbar() {
     if (defaultAddress) applyAddress(defaultAddress);
   }, [user]);
 
-  // Free shipping at/above ₹2,500 of cart subtotal, flat ₹99 below it — must
-  // match FREE_SHIPPING_THRESHOLD/SHIPPING_CHARGE in dezire-backend/routes/
-  // orders.js, which is what actually charges it; this is just the checkout
-  // preview shown before the order posts.
   const FREE_SHIPPING_THRESHOLD = 2500;
   const DELIVERY_CHARGE = cartTotal >= FREE_SHIPPING_THRESHOLD ? 0 : 99;
 
-  // GST preview — mirrors gstRateFor()/computeBilling() in the same backend
-  // file: 5% below ₹2,499 per item's own unit price, 18% at/above it,
-  // applied before any coupon discount. The backend recomputes this from
-  // scratch and is the actual source of truth for what gets charged; this
-  // only drives what's shown on screen before the order posts.
   const GST_RATE_THRESHOLD = 2499;
   const gstRateFor = (price) => (price >= GST_RATE_THRESHOLD ? 18 : 5);
   const cartGstBreakdown = cart.reduce((acc, p) => {
@@ -321,7 +276,7 @@ function Navbar() {
   const cartGST = cartGstBreakdown.gst5 + cartGstBreakdown.gst18;
 
   const [couponInput, setCouponInput] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState(null); // { code, discount }
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponError, setCouponError] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
 
@@ -360,8 +315,6 @@ function Navbar() {
   const estimatedDeliveryDate = new Date(Date.now() + 9 * 24 * 60 * 60 * 1000)
     .toLocaleDateString('en-IN', { day: 'numeric', month: 'long' });
 
-  // "You may also like" — a light cross-sell strip in the cart, based on
-  // the category of whatever's already in the bag.
   const [cartRecommendations, setCartRecommendations] = useState([]);
   useEffect(() => {
     if (cart.length === 0) { setCartRecommendations([]); return; }
@@ -371,11 +324,8 @@ function Navbar() {
       .then(res => res.json())
       .then(data => setCartRecommendations((data.data || []).filter(p => !cart.some(c => c.id === p._id)).slice(0, 4)))
       .catch(() => setCartRecommendations([]));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cart.length > 0 ? cart[0].id : null]);
 
-  // Ticks the resend-email cooldown down to 0 once a link has been (re)sent.
-  // Matches the backend's own 60s rate limit on resend-verification.
   const RESEND_COOLDOWN_SECONDS = 60;
   useEffect(() => {
     if (resendCooldown <= 0) return;
@@ -433,10 +383,6 @@ function Navbar() {
     }
   };
 
-  // Auto-detects verification instead of requiring the user to notice the
-  // email landed and come back to manually log in again — polls a cheap
-  // status-only endpoint, then completes the real (password-checked) login
-  // exactly once verification is actually confirmed.
   useEffect(() => {
     if (!authOpen || authStep !== 'check-email' || !pendingEmail || !pendingPassword) return;
     const interval = setInterval(async () => {
@@ -449,36 +395,20 @@ function Navbar() {
         resetAuthFields();
         showToast("Email verified — you're logged in!", 'success');
       } else {
-        // Extremely unlikely (password changed mid-poll, etc.) — fall back
-        // to letting them complete it manually instead of leaving the
-        // "check your email" screen showing a stale, dead-end message.
         setPendingPassword('');
         setLoginEmail(pendingEmail);
         setAuthStep('login');
       }
     }, 3000);
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authOpen, authStep, pendingEmail, pendingPassword]);
 
-  // The pending address (if any) is saved once verification actually
-  // completes — but that happens on the separate /verify-email page, not
-  // here, so stash it where that page's own logic can't reach it directly.
-  // Simplest robust option: persist it to localStorage keyed by email.
   useEffect(() => {
     if (pendingAddress?.line1 && pendingEmail) {
       localStorage.setItem(`dm-pending-address:${pendingEmail}`, JSON.stringify(pendingAddress));
     }
   }, [pendingAddress, pendingEmail]);
 
-  // Powers the "Pay via UPI" QR at checkout — fetched at mount rather than
-  // on cart open, since it rarely changes and this way it's already
-  // available the instant checkout renders. The QR is generated fresh from
-  // this UPI ID plus the real order total (see the upi:// link built in the
-  // payment section below), not a static image. Retries with backoff, plus
-  // a final attempt right when checkout actually opens, so a one-shot fetch
-  // landing while Render's free-tier backend is still waking from a cold
-  // start (30-50s) doesn't silently leave checkout with no way to pay.
   const fetchUpiSettings = () => {
     fetch(`${BASE}/payment-settings`)
       .then(res => res.json())
@@ -493,7 +423,6 @@ function Navbar() {
   }, []);
   useEffect(() => {
     if (paymentStep && !upiSettings.upiId) fetchUpiSettings();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paymentStep]);
 
   const handleResendVerification = async () => {
@@ -513,7 +442,7 @@ function Navbar() {
 
     if (navigator.share) {
       try { await navigator.share({ title: 'My Dezire More Wishlist', text }); }
-      catch { /* user cancelled the share sheet — nothing to do */ }
+      catch { }
       return;
     }
     try {
@@ -525,7 +454,7 @@ function Navbar() {
   };
 
   const handlePlaceOrder = async () => {
-    if (isPlacingOrder) return; // guards against double-click / duplicate orders
+    if (isPlacingOrder) return;
 
     if (!user) {
       setCartOpen(false);
@@ -553,11 +482,6 @@ function Navbar() {
 
     setIsPlacingOrder(true);
     try {
-      // subtotal/GST/deliveryCharge/total aren't sent — the backend computes
-      // all of that itself from `items` (see computeBilling() in
-      // routes/orders.js), so what's shown here is always just a preview of
-      // what the server is about to independently charge, never the source
-      // of truth for it.
       const res = await fetch(`${BASE}/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
@@ -587,11 +511,6 @@ function Navbar() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not place your order. Please try again.');
 
-      // No gateway redirect for the manual-UPI flow — the order is placed
-      // straight away (paymentStatus 'pending') and an admin confirms it
-      // from the Pending Verification tab once the payment actually lands
-      // in the account. (Razorpay's equivalent step, payWithRazorpay below,
-      // is on hold — not called from here right now.)
       finishOrderSuccess(data.order);
     } catch (err) {
       setOrderError(err.message);
@@ -609,16 +528,6 @@ function Navbar() {
     setCouponInput('');
   };
 
-  // ON HOLD — not called from handlePlaceOrder right now (manual UPI is the
-  // live checkout path instead, see above). Left fully intact, backend
-  // routes and all, so switching back is just swapping finishOrderSuccess()
-  // for a call to this in handlePlaceOrder again.
-  //
-  // The order already exists at this point (created just above, status
-  // 'pending') — this only opens Razorpay's checkout for it and shows the
-  // success screen once the payment signature is verified server-side. If
-  // the customer closes the modal or the payment fails, the order stays
-  // pending rather than a second order getting created.
   const payWithRazorpay = async (order) => {
     await loadRazorpayScript();
 
@@ -642,11 +551,6 @@ function Navbar() {
           email: checkoutEmail.trim(),
           contact: checkoutPhone.trim(),
         },
-        // Checkout is UPI-only — restricts the widget itself to the UPI
-        // block so card/netbanking/wallet/pay-later/EMI never appear as
-        // options, rather than relying on there being no other choice
-        // upstream. (Card-saving, previously offered here, doesn't apply to
-        // UPI and was removed along with the card/netbanking methods.)
         method: { upi: true, card: false, netbanking: false, wallet: false, paylater: false, emi: false },
         theme: { color: '#1e3a2f' },
         handler: async (response) => {
@@ -697,9 +601,6 @@ function Navbar() {
         className="nav-logo"
         style={{ flexShrink: 0 }}
         onClick={(e) => {
-          // Already home — a same-path Link click is a no-op in React
-          // Router, so force an actual refresh instead (the ask was
-          // "logo = back to home, or reload if already there").
           if (window.location.pathname === '/') {
             e.preventDefault();
             window.location.reload();
@@ -711,8 +612,6 @@ function Navbar() {
           <span className="logo-royal-tag">Quintessential Queens</span>
         </div>
         <div className="logo-text">
-          {/* Site branding, not page content — the actual page heading
-              (rendered by each route) is the document's one <h1>. */}
           <p className="logo-name">Dezire More</p>
           <p className="logo-tagline">Ethnic Elegance. Modern You.</p>
         </div>
@@ -753,9 +652,6 @@ function Navbar() {
           )}
         </div>
 
-        {/* Mobile-only: Wishlist/Cart/Settings/Account fold into this single
-            icon (opens the same SettingsDrawer that already lists all of
-            them) — desktop keeps the four separate icons above unchanged. */}
         <button
           aria-label="Account"
           className={`auth-trigger-btn mobile-account-btn ${user ? 'user-logged-in' : ''}`}
@@ -776,10 +672,6 @@ function Navbar() {
       {mobileMenuOpen && <div className="nav-mobile-backdrop" onClick={closeMobileMenu} />}
 
       <ul className={`nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
-        {/* Real header row (title + close), not a decorative ::before with
-            the toggle button z-index-layered over it from its collapsed-bar
-            position — that let the "X" land on top of whichever list item
-            happened to sit at that fixed coordinate once the header grew. */}
         <li className="nav-links-header">
           <span>Dezire More</span>
           <button className="nav-links-close" onClick={closeMobileMenu} aria-label={t('nav_closeMenu')}>
@@ -812,8 +704,6 @@ function Navbar() {
         </li>
       </ul>
 
-      {/* Search Overlay — portalled to document.body so it always covers the
-          true viewport, regardless of any transformed/stacked ancestor. */}
       {searchOpen && createPortal(
         <div className="search-overlay" onClick={closeSearch}>
           <div className="search-box" onClick={e => e.stopPropagation()}>
@@ -844,7 +734,6 @@ function Navbar() {
         document.body
       )}
 
-      {/* Wishlist Drawer */}
       {wishlistOpen && (
         <div className="wl-overlay" onClick={() => setWishlistOpen(false)}>
           <div className="wl-drawer" onClick={e => e.stopPropagation()}>
@@ -906,7 +795,6 @@ function Navbar() {
         </div>
       )}
 
-      {/* Cart Modal — centered, always-dark "premium boutique" cart */}
       {cartOpen && !paymentStep && !orderPlaced && (
         <div className="cart-modal-overlay" onClick={() => setCartOpen(false)}>
           <div className="cart-modal-v2" onClick={e => e.stopPropagation()}>
@@ -1134,7 +1022,6 @@ function Navbar() {
         </div>
       )}
 
-      {/* Checkout / Payment — premium centered modal, decoupled from the side drawer */}
       {cartOpen && paymentStep && !orderPlaced && (
         <div className="checkout-overlay" onClick={() => setCartOpen(false)}>
           <div className="checkout-modal" onClick={e => e.stopPropagation()}>
@@ -1191,12 +1078,6 @@ function Navbar() {
               </div>
               <div className="payment-section">
                 <h4 className="payment-section-title">Payment Method</h4>
-                {/* Manual UPI is the only option, so there's no selector —
-                    just the QR to pay with. No UTR/amount-paid fields: that
-                    used to be required here, which meant proving your own
-                    payment right after making it. Now the order just posts,
-                    and an admin confirms it from the Pending Verification
-                    tab once the payment actually lands in the account. */}
                 {upiSettings.upiId ? (
                   <div className="payment-upi-card">
                     <p className="payment-upi-amount">₹{finalTotal.toLocaleString('en-IN')}</p>
@@ -1229,7 +1110,6 @@ function Navbar() {
         </div>
       )}
 
-      {/* Order Confirmation — centered modal */}
       {cartOpen && orderPlaced && placedOrder && (
         <div className="checkout-overlay" onClick={() => {
           setOrderPlaced(false);
@@ -1298,7 +1178,6 @@ function Navbar() {
         </div>
       )}
 
-      {/* Auth Modal */}
       {authOpen && (
         <div className="auth-overlay" onClick={closeAuthModal}>
           <div className="auth-modal" onClick={(e) => e.stopPropagation()}>

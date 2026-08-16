@@ -3,9 +3,6 @@ const z = require('zod/v4');
 const Product = require('../models/Product');
 const { searchProducts, productUrl, CATEGORY_ROUTES } = require('./chatTools');
 
-// Public product catalog only — the same data the storefront already shows
-// anyone who browses it. No auth, no order/customer data, no admin fields
-// (cost price, SKU, exact stockCount, internal flags) ever leave here.
 function whitelistProductDetails(product) {
   const discount = product.originalPrice > product.price
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
