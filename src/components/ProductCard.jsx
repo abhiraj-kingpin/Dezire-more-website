@@ -27,7 +27,7 @@ const SIZE_CHART = [
 const STANDARD_SIZES = SIZE_CHART.map(row => row.size);
 
 function clampImageRatio(ratio) {
-  return Math.min(1.6, Math.max(0.55, ratio));
+  return Math.min(1.8, Math.max(0.35, ratio));
 }
 
 const NO_SIZE_CATEGORIES = ['sarees', 'jewelry-accessories', 'jewelry', 'accessories', 'dress-materials'];

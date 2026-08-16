@@ -2381,7 +2381,7 @@ footer { background: var(--dark-green); color: rgba(255,255,255,0.85); padding: 
 }
 
 .pd-main-img-wrap {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
   min-height: 380px;
   max-height: 64vh;
